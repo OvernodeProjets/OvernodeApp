@@ -40,6 +40,10 @@ public final class AuthService: @unchecked Sendable {
         )
     }
     
+    public func fetchPlatformStats() async throws -> PlatformStatsResponse {
+        return try await client.request(endpoint: "/api/stats")
+    }
+    
     public func logout() {
         client.clearCookies()
     }
