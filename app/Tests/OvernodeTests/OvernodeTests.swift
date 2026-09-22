@@ -50,4 +50,77 @@ final class OvernodeTests: XCTestCase {
         let restoredString = String(data: restoredData!, encoding: .utf8)
         XCTAssertEqual(restoredString, sample)
     }
+    
+    func testServerInstanceDecodingWithIntegerNode() throws {
+        // Pterodactyl returns node as an integer (e.g. 1)
+        let json = """
+        [
+            {
+                "id": 42,
+                "identifier": "srv-42a",
+                "name": "Production VPS",
+                "node": 1,
+                "suspended": false,
+                "state": "running",
+                "memoryUsedMB": 1024,
+                "memoryLimitMB": 2048,
+                "cpuUsedPercent": 25.5,
+                "cpuLimitPercent": 100,
+                "diskUsedMB": 4096,
+                "diskLimitMB": 10240
+            }
+        ]
+        """.data(using: .utf8)!
+        
+        let servers = try JSONDecoder().decode([ServerInstance].self, from: json)
+        XCTAssertEqual(servers.count, 1)
+        XCTAssertEqual(servers[0].id, 42)
+        XCTAssertEqual(servers[0].identifier, "srv-42a")
+        XCTAssertEqual(servers[0].node, "1")
+        XCTAssertTrue(servers[0].isOnline)
+        XCTAssertEqual(servers[0].memoryUsedMB, 1024)
+    }
+    
+    func testInitResponseDecodingWithObjectRolesAndStringUserId() throws {
+        // Real backend returns cuid userId and objects in roles array
+        let json = """
+        {
+            "user": {
+                "id": 1,
+                "username": "Matheus",
+                "email": "matheus@overnode.fr",
+                "global_name": "Matheus"
+            },
+            "coins": 250,
+            "admin": true,
+            "roles": [
+                { "id": "superadmin", "name": "Super Admin" },
+                { "id": "vip", "name": "VIP Member" }
+            ],
+            "servers": [
+                {
+                    "attributes": {
+                        "id": 99,
+                        "identifier": "node-99",
+                        "name": "Game Server",
+                        "node": 2,
+                        "suspended": false,
+                        "limits": {
+                            "memory": 4096,
+                            "cpu": 200,
+                            "disk": 20480
+                        }
+                    }
+                }
+            ]
+        }
+        """.data(using: .utf8)!
+        
+        let initResp = try JSONDecoder().decode(InitResponse.self, from: json)
+        XCTAssertNotNil(initResp.user)
+        XCTAssertEqual(initResp.coins, 250)
+        XCTAssertEqual(initResp.roles, ["Super Admin", "VIP Member"])
+        XCTAssertEqual(initResp.servers?.count, 1)
+        XCTAssertEqual(initResp.servers?[0].attributes.node, "2")
+    }
 }

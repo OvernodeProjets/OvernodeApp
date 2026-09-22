@@ -17,7 +17,7 @@ public struct DashboardView: View {
             HeaderBarView(
                 onRefresh: {
                     authVM.checkSession()
-                    dashboardVM.loadDashboardData()
+                    dashboardVM.loadDashboardData(force: true)
                 }
             )
             
