@@ -66,4 +66,14 @@ public struct ResourcesResponse: Codable, Equatable {
             limits: ResourceBucket(ram: 8192, disk: 40960, cpu: 250, servers: 3)
         )
     }
+    
+    public static var empty: ResourcesResponse {
+        ResourcesResponse(
+            package: nil,
+            allowed: ResourceBucket(ram: 0, disk: 0, cpu: 0, servers: 0),
+            remaining: ResourceBucket(ram: 0, disk: 0, cpu: 0, servers: 0),
+            current: ResourceBucket(ram: 0, disk: 0, cpu: 0, servers: 0),
+            limits: ResourceBucket(ram: 0, disk: 0, cpu: 0, servers: 0)
+        )
+    }
 }

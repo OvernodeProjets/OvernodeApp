@@ -80,8 +80,8 @@ public struct DashboardView: View {
                         }
                         .padding(.top, 8)
                         
-                        // 4 Resources Cards Grid (RAM / CPU / DISK / SERVERS)
-                        let res = dashboardVM.resources ?? authVM.initialResources ?? ResourcesResponse.preview
+                       // 4 Resources Cards Grid (RAM / CPU / DISK / SERVERS)
+                        let res = dashboardVM.resources ?? authVM.initialResources ?? ResourcesResponse.empty
                         
                         LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
                             // 1. Memory RAM

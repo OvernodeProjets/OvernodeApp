@@ -121,8 +121,8 @@ public struct WebAuthModalView: NSViewRepresentable {
                 }).catch(() => '{}');
                 """
                 
-                webView.evaluateJavaScript(fetchRichDataJS) { result, _ in
-                    var parsedUser = User(id: 1, username: "Overnode User", email: "user@overnode.fr", coins: 0)
+               webView.evaluateJavaScript(fetchRichDataJS) { result, _ in
+                    var parsedUser: User? = nil
                     var parsedResources: ResourcesResponse? = nil
                     
                     if let jsonStr = result as? String,
@@ -157,7 +157,27 @@ public struct WebAuthModalView: NSViewRepresentable {
                     }
                     
                     DispatchQueue.main.async {
-                        self.parent.onAuthSuccess(parsedUser, parsedResources)
+                        if let user = parsedUser {
+                            self.parent.onAuthSuccess(user, parsedResources)
+                        } else {
+                            // If evaluateJavaScript didn't return user yet, fetch via URLSession
+                            Task {
+                                if let initData = try? await AuthService.shared.fetchInit(),
+                                   let u = initData.user {
+                                    let resolvedUser = User(
+                                        id: u.id,
+                                        username: u.username,
+                                        email: u.email.isEmpty ? (u.pterodactylEmail ?? "") : u.email,
+                                        globalName: u.globalName,
+                                        role: initData.roles?.first,
+                                        avatarUrl: nil,
+                                        coins: initData.coins ?? 0
+                                    )
+                                    let resources = try? await AuthService.shared.fetchResources()
+                                    self.parent.onAuthSuccess(resolvedUser, resources)
+                                }
+                            }
+                        }
                     }
                 }
             }

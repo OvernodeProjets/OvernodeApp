@@ -30,18 +30,18 @@ public final class DashboardViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        Task {
-            do {
-                let data = try await authService.fetchResources()
-                self.resources = data
-                self.lastUpdated = Date()
-            } catch {
-                if self.resources == nil {
-                    self.resources = ResourcesResponse.preview
-                }
-                self.errorMessage = error.localizedDescription
-            }
-            self.isLoading = false
-        }
+       Task {
+           do {
+               let data = try await authService.fetchResources()
+               self.resources = data
+               self.lastUpdated = Date()
+           } catch {
+               if self.resources == nil {
+                    self.resources = ResourcesResponse.empty
+               }
+               self.errorMessage = error.localizedDescription
+           }
+           self.isLoading = false
+       }
     }
 }
