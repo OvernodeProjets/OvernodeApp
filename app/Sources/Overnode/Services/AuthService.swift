@@ -79,38 +79,12 @@ public final class AuthService: @unchecked Sendable {
         return await withTaskGroup(of: ServerInstance.self) { group in
             for server in servers {
                 group.addTask {
-                    struct LiveResResponse: Decodable {
-                        struct LiveAttributes: Decodable {
-                            let currentState: String?
-                            struct Res: Decodable {
-                                let memoryBytes: Double?
-                                let cpuAbsolute: Double?
-                                let diskBytes: Double?
-                                enum CodingKeys: String, CodingKey {
-                                    case memoryBytes = "memory_bytes"
-                                    case cpuAbsolute = "cpu_absolute"
-                                    case diskBytes = "disk_bytes"
-                                }
-                            }
-                            let resources: Res?
-                            enum CodingKeys: String, CodingKey {
-                                case currentState = "current_state"
-                                case resources
-                            }
-                        }
-                        let attributes: LiveAttributes?
-                    }
-                    
                     var updated = server
-                    if let resData: LiveResResponse = try? await APIClient.shared.request(endpoint: "/api/client/servers/\(server.identifier)/resources") {
-                        if let attr = resData.attributes {
-                            updated.state = attr.currentState ?? "offline"
-                            if let r = attr.resources {
-                                updated.memoryUsedMB = (r.memoryBytes ?? 0) / 1024.0 / 1024.0
-                                updated.cpuUsedPercent = r.cpuAbsolute ?? 0
-                                updated.diskUsedMB = (r.diskBytes ?? 0) / 1024.0 / 1024.0
-                            }
-                        }
+                    if let live = await ServerWebSocketManager.fetchSingleServerLiveStats(identifier: server.identifier) {
+                        updated.state = live.state
+                        updated.cpuUsedPercent = round(live.cpu * 10) / 10
+                        updated.memoryUsedMB = round(live.memBytes / 1024.0 / 1024.0)
+                        updated.diskUsedMB = round(live.diskBytes / 1024.0 / 1024.0)
                     }
                     return updated
                 }

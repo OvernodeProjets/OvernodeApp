@@ -53,11 +53,7 @@ public struct ServerDetailView: View {
                         .background(Color(red: 0.125, green: 0.133, blue: 0.161))
                         .cornerRadius(4)
                     
-                    if let node = vm.server.node {
-                        Text(node)
-                            .font(.system(size: 11))
-                            .foregroundColor(OvernodeTheme.textSecondary)
-                    }
+
                 }
                 
                 Spacer()

@@ -296,12 +296,9 @@ public struct DashboardView: View {
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 16),
                 GridItem(.flexible(), spacing: 16),
-                GridItem(.flexible(), spacing: 16),
-                GridItem(.flexible(), spacing: 16)
-            ], spacing: 16) {
+                GridItem(.flexible(), spacing: 16)], spacing: 16) {
                 PlatformStatCard(iconName: "person.2", label: loc.string("stats_total_users"), value: dashboardVM.platformStats?.totalUsers.map(String.init) ?? "—")
                 PlatformStatCard(iconName: "server.rack", label: loc.string("stats_active_servers"), value: dashboardVM.platformStats?.totalServers.map(String.init) ?? "—")
-                PlatformStatCard(iconName: "cpu", label: loc.string("stats_nodes"), value: dashboardVM.platformStats?.totalNodes.map(String.init) ?? "—")
                 PlatformStatCard(iconName: "mappin.and.ellipse", label: loc.string("stats_locations"), value: dashboardVM.platformStats?.totalLocations.map(String.init) ?? "—")
             }
         }
