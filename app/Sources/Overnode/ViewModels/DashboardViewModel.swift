@@ -6,6 +6,7 @@ import Combine
 public final class DashboardViewModel: ObservableObject {
     @Published public var resources: ResourcesResponse?
     @Published public var platformStats: PlatformStatsResponse?
+    @Published public var servers: [ServerInstance] = []
     @Published public var isLoading: Bool = false
     @Published public var errorMessage: String?
     @Published public var lastUpdated: Date?
@@ -34,14 +35,15 @@ public final class DashboardViewModel: ObservableObject {
         Task {
             async let resTask = authService.fetchResources()
             async let statsTask = authService.fetchPlatformStats()
+            async let serversTask = authService.fetchServersStatus()
             
             do {
-                let (res, stats) = try await (resTask, statsTask)
+                let (res, stats, srvs) = try await (resTask, statsTask, serversTask)
                 self.resources = res
                 self.platformStats = stats
+                self.servers = srvs
                 self.lastUpdated = Date()
             } catch {
-                // If parallel load fails, fallback to individually trying resources
                 if let res = try? await authService.fetchResources() {
                     self.resources = res
                 } else if self.resources == nil {
@@ -50,6 +52,10 @@ public final class DashboardViewModel: ObservableObject {
                 
                 if let stats = try? await authService.fetchPlatformStats() {
                     self.platformStats = stats
+                }
+                
+                if let srvs = try? await authService.fetchServersStatus() {
+                    self.servers = srvs
                 }
                 
                 self.errorMessage = error.localizedDescription

@@ -44,5 +44,12 @@
   "coins_balance": "Ocoins",
   "user_email": "Adresse email",
   "account_info": "Informations du compte",
-  "resource_limit_reached": "Limite atteinte"
+  "resource_limit_reached": "Limite atteinte",
+  "dashboard_servers_title": "Mes Serveurs",
+  "server_status_online": "En ligne",
+  "server_status_offline": "Hors ligne",
+  "server_status_starting": "Démarrage...",
+  "server_status_stopping": "Arrêt...",
+  "server_status_suspended": "Suspendu",
+  "server_manage_button": "Gérer"
 }

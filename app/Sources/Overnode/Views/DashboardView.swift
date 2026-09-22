@@ -42,7 +42,7 @@ public struct DashboardView: View {
                         }
                         .padding(.top, 4)
                         
-                        // 4 Resources Cards Grid with crisp, solid modern colors
+                        // 4 Resources Cards Grid with solid modern colors
                         let res = dashboardVM.resources ?? authVM.initialResources ?? ResourcesResponse.empty
                         
                         LazyVGrid(columns: [
@@ -88,12 +88,40 @@ public struct DashboardView: View {
                             ResourceGaugeView(
                                 title: "Servers",
                                 iconName: "server.rack",
-                                usedFormatted: "\(res.current.servers)",
-                                totalFormatted: "\(res.limits.servers)",
+                                usedFormatted: "(res.current.servers)",
+                                totalFormatted: "(res.limits.servers)",
                                 unit: "",
                                 percentage: res.serversPercentage,
                                 solidColor: Color(red: 0.58, green: 0.45, blue: 0.92)
                             )
+                        }
+                        
+                        // User Servers Section (Displayed ONLY if the user has servers)
+                        if !dashboardVM.servers.isEmpty {
+                            VStack(alignment: .leading, spacing: 16) {
+                                HStack(spacing: 8) {
+                                    Text(loc.string("dashboard_servers_title"))
+                                        .font(.system(size: 18, weight: .medium))
+                                        .foregroundColor(OvernodeTheme.textPrimary)
+                                    
+                                    Text("(dashboardVM.servers.count)")
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(OvernodeTheme.textSecondary)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color(red: 0.125, green: 0.133, blue: 0.161))
+                                        .cornerRadius(4)
+                                }
+                                
+                                LazyVGrid(columns: [
+                                    GridItem(.flexible(), spacing: 16),
+                                    GridItem(.flexible(), spacing: 16)
+                                ], spacing: 16) {
+                                    ForEach(dashboardVM.servers) { server in
+                                        DashboardServerCardView(server: server)
+                                    }
+                                }
+                            }
                         }
                         
                         // Platform Statistics Section

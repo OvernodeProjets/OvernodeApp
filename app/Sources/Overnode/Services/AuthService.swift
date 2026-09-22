@@ -44,6 +44,10 @@ public final class AuthService: @unchecked Sendable {
         return try await client.request(endpoint: "/api/stats")
     }
     
+    public func fetchServersStatus() async throws -> [ServerInstance] {
+        return try await client.request(endpoint: "/api/v5/servers/status")
+    }
+    
     public func logout() {
         client.clearCookies()
     }

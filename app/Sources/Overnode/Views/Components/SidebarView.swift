@@ -45,7 +45,7 @@ public struct SidebarView: View {
                             .foregroundColor(selectedTab == tab ? Color.white : OvernodeTheme.textSecondary)
                             .frame(width: 20)
                         
-                        Text(loc.string("nav_(tab.rawValue)"))
+                        Text(loc.string("nav_\(tab.rawValue)"))
                             .font(.system(size: 13, weight: selectedTab == tab ? .semibold : .medium))
                             .foregroundColor(selectedTab == tab ? OvernodeTheme.textPrimary : OvernodeTheme.textSecondary)
                         
