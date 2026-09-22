@@ -50,6 +50,18 @@ public final class DailyRewardViewModel: ObservableObject {
             self.leaderboard = boardRes ?? []
             self.history = histRes ?? []
             self.isLoading = false
+            
+            if let st = statusRes {
+                let widgetData = DailyRewardWidgetData(
+                    canClaim: st.canClaim,
+                    currentStreak: st.currentStreak,
+                    lastClaimTimestamp: st.lastClaimTimestamp,
+                    nextRewardAmount: st.nextReward?.amount ?? 25,
+                    coins: st.totalCoinsEarned,
+                    lastUpdated: Date()
+                )
+                DailyRewardStorage.shared.saveWidgetData(widgetData)
+            }
         }
     }
     
@@ -111,4 +123,3 @@ public final class DailyRewardViewModel: ObservableObject {
         }
     }
 }
-

@@ -12,15 +12,33 @@ BUNDLE_DIR="$DIR/build/$APP_NAME.app"
 CONTENTS_DIR="$BUNDLE_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
+PLUGINS_DIR="$CONTENTS_DIR/PlugIns"
+WIDGET_APPEX="$PLUGINS_DIR/OvernodeWidgetExtension.appex"
+WIDGET_CONTENTS="$WIDGET_APPEX/Contents"
+WIDGET_MACOS="$WIDGET_CONTENTS/MacOS"
 
 echo "==> Creating Application Bundle: $BUNDLE_DIR"
 rm -rf "$BUNDLE_DIR"
 mkdir -p "$MACOS_DIR"
 mkdir -p "$RESOURCES_DIR"
+mkdir -p "$PLUGINS_DIR"
+mkdir -p "$WIDGET_MACOS"
 
 # Copy binary
 cp ".build/release/$APP_NAME" "$MACOS_DIR/$APP_NAME"
 chmod +x "$MACOS_DIR/$APP_NAME"
+
+# Copy Widget Extension binary & bundle
+if [ -f ".build/release/OvernodeWidgetExtension" ]; then
+    cp ".build/release/OvernodeWidgetExtension" "$WIDGET_MACOS/OvernodeWidgetExtension"
+    chmod +x "$WIDGET_MACOS/OvernodeWidgetExtension"
+    
+    # Create Widget Info.plist
+    cp "$DIR/widget-Info.plist" "$WIDGET_CONTENTS/Info.plist"
+    
+    # Sign widget extension with entitlements
+    codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
+fi
 
 # Copy resources
 if [ -d ".build/release/Overnode_Overnode.bundle" ]; then
@@ -73,8 +91,13 @@ EOF
 # Clear extended attributes before signing to prevent macOS detritus rejection
 xattr -cr "$BUNDLE_DIR"
 
-# Sign ad-hoc for local execution on Apple Silicon
-codesign --force --deep --sign - "$BUNDLE_DIR"
+# Sign Widget Extension first with sandbox entitlements
+if [ -d "$WIDGET_APPEX" ]; then
+    codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
+fi
+
+# Sign Main App Bundle (preserving embedded appex signature)
+codesign --force --sign - "$BUNDLE_DIR"
 
 # Remove quarantine attribute if present
 xattr -d com.apple.quarantine "$BUNDLE_DIR" 2>/dev/null || true

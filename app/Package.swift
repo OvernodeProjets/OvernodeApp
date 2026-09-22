@@ -11,6 +11,10 @@ let package = Package(
         .executable(
             name: "Overnode",
             targets: ["Overnode"]
+        ),
+        .executable(
+            name: "OvernodeWidgetExtension",
+            targets: ["OvernodeWidget"]
         )
     ],
     dependencies: [],
@@ -22,6 +26,11 @@ let package = Package(
             resources: [
                 .process("Resources")
             ]
+        ),
+        .executableTarget(
+            name: "OvernodeWidget",
+            dependencies: [],
+            path: "Sources/OvernodeWidget"
         ),
         .testTarget(
             name: "OvernodeTests",
