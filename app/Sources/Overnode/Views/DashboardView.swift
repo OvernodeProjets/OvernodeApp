@@ -7,6 +7,7 @@ public struct DashboardView: View {
     @State private var selectedTab: NavigationTab = .dashboard
     @State private var selectedServer: ServerInstance?
     @State private var selectedServerTab: ServerTab = .console
+    @State private var isShowingCreateServerModal: Bool = false
     
     public init(authVM: AuthViewModel) {
         self.authVM = authVM
@@ -71,6 +72,15 @@ public struct DashboardView: View {
         .onAppear {
             dashboardVM.setInitialResourcesIfNeeded(authVM.initialResources)
             dashboardVM.loadDashboardData()
+        }
+        .sheet(isPresented: $isShowingCreateServerModal) {
+            CreateServerModalView(
+                onDismiss: { isShowingCreateServerModal = false },
+                onServerCreated: { newServer in
+                    dashboardVM.onServerCreatedOptimistic(newServer)
+                    authVM.checkSession()
+                }
+            )
         }
     }
     
@@ -147,6 +157,22 @@ public struct DashboardView: View {
                                 .background(Color(red: 0.125, green: 0.133, blue: 0.161))
                                 .cornerRadius(4)
                         }
+                        
+                        Spacer()
+                        
+                        Button(action: { isShowingCreateServerModal = true }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle.fill")
+                                Text(loc.string("create_server_button"))
+                            }
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color.black)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(OvernodeTheme.accentGold)
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
                     }
                     
                     if dashboardVM.isLoading && dashboardVM.servers.isEmpty {
@@ -218,6 +244,19 @@ public struct DashboardView: View {
                             .foregroundColor(OvernodeTheme.textSecondary)
                     }
                     Spacer()
+                    Button(action: { isShowingCreateServerModal = true }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus.circle.fill")
+                            Text(loc.string("create_server_button"))
+                        }
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.black)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(OvernodeTheme.accentGold)
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.top, 4)
                 

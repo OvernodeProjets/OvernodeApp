@@ -239,5 +239,22 @@
   "afk_feature_2": "1.5x multipliers stackable with Packs",
   "afk_feature_3": "Secure daily cap reset every day",
   "afk_btn_open": "Open AFK Session",
-  "afk_footnote": "The page will open directly in your default browser."
+  "afk_footnote": "The page will open directly in your default browser.",
+  "create_server_button": "Create Server",
+  "create_server_title": "Create a Server",
+  "create_server_subtitle": "Deploy a new cloud server in seconds",
+  "create_server_loading": "Loading deployment options...",
+  "create_server_name_label": "Server Name",
+  "create_server_name_placeholder": "e.g. Minecraft Survival, Discord Bot...",
+  "create_server_location_label": "Datacenter & Location",
+  "create_server_software_label": "Server Type & Software",
+  "create_server_resources_title": "Resource Allocation",
+  "create_server_remaining": "Remaining",
+  "create_server_action_deploy": "Deploy Server",
+  "create_server_success": "Server created successfully!",
+  "btn_cancel": "Cancel",
+  "create_server_node_label": "Node",
+  "server_status_installing": "Installing...",
+  "server_installing_notice": "The server is currently being installed by Overnode Cloud. It will be ready to start in a few moments.",
+  "server_installing_tooltip": "Installation in progress..."
 }

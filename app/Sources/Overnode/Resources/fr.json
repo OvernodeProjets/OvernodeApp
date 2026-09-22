@@ -239,5 +239,22 @@
   "afk_feature_2": "Multiplicateurs 1.5x cumulables avec les Packs",
   "afk_feature_3": "Plafond quotidien sécurisé et renouvelé chaque jour",
   "afk_btn_open": "Ouvrir la session AFK",
-  "afk_footnote": "La page s'ouvrira directement dans votre navigateur par défaut."
+  "afk_footnote": "La page s'ouvrira directement dans votre navigateur par défaut.",
+  "create_server_button": "Créer un serveur",
+  "create_server_title": "Créer un serveur",
+  "create_server_subtitle": "Déployez un nouveau serveur cloud en quelques secondes",
+  "create_server_loading": "Chargement des options de déploiement...",
+  "create_server_name_label": "Nom du serveur",
+  "create_server_name_placeholder": "ex : Survie Minecraft, Bot Discord...",
+  "create_server_location_label": "Datacenter & Emplacement",
+  "create_server_software_label": "Type de serveur & Logiciel",
+  "create_server_resources_title": "Allocation des ressources",
+  "create_server_remaining": "Restant",
+  "create_server_action_deploy": "Créer le serveur",
+  "create_server_success": "Serveur créé avec succès !",
+  "btn_cancel": "Annuler",
+  "create_server_node_label": "Nœud",
+  "server_status_installing": "Installation en cours...",
+  "server_installing_notice": "Le serveur est en cours d'installation par la Console Cloud. Il sera prêt à être allumé dans quelques instants.",
+  "server_installing_tooltip": "Installation en cours..."
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ResourceBucket: Codable, Equatable {
+public struct ResourceBucket: Codable, Equatable, Sendable {
     public let ram: Double
     public let disk: Double
     public let cpu: Double
@@ -14,7 +14,7 @@ public struct ResourceBucket: Codable, Equatable {
     }
 }
 
-public struct ResourcesResponse: Codable, Equatable {
+public struct ResourcesResponse: Codable, Equatable, Sendable {
     public let package: String?
     public let allowed: ResourceBucket
     public let remaining: ResourceBucket

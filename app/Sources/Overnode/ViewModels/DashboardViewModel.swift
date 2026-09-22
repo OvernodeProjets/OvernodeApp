@@ -60,6 +60,46 @@ public final class DashboardViewModel: ObservableObject {
         }
     }
     
+    public func onServerCreatedOptimistic(_ newServer: ServerInstance) {
+        if !self.servers.contains(where: { $0.identifier == newServer.identifier || $0.id == newServer.id }) {
+            self.servers.insert(newServer, at: 0)
+            saveCachedServers(self.servers)
+        }
+        
+        if let cur = self.resources {
+            let updatedCurrent = ResourceBucket(
+                ram: cur.current.ram + newServer.memoryLimitMB,
+                disk: cur.current.disk + newServer.diskLimitMB,
+                cpu: cur.current.cpu + newServer.cpuLimitPercent,
+                servers: cur.current.servers + 1
+            )
+            let updatedRemaining = ResourceBucket(
+                ram: max(0, cur.remaining.ram - newServer.memoryLimitMB),
+                disk: max(0, cur.remaining.disk - newServer.diskLimitMB),
+                cpu: max(0, cur.remaining.cpu - newServer.cpuLimitPercent),
+                servers: max(0, cur.remaining.servers - 1)
+            )
+            self.resources = ResourcesResponse(
+                package: cur.package,
+                allowed: cur.allowed,
+                remaining: updatedRemaining,
+                current: updatedCurrent,
+                limits: cur.limits
+            )
+        }
+        
+        Task {
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            self.loadDashboardData(force: true, isBackground: true)
+            
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            self.loadDashboardData(force: true, isBackground: true)
+            
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            self.loadDashboardData(force: true, isBackground: true)
+        }
+    }
+    
     public func setInitialResourcesIfNeeded(_ res: ResourcesResponse?) {
         if self.resources == nil, let res = res {
             self.resources = res
