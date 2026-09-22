@@ -9,8 +9,6 @@ public struct RootContentView: View {
         Group {
             if authVM.isAuthenticated {
                 DashboardView(authVM: authVM)
-            } else if authVM.isTwoFactorPending {
-                TwoFactorVerificationView(authVM: authVM)
             } else {
                 AuthView(authVM: authVM)
             }

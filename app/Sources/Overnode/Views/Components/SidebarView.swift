@@ -55,7 +55,7 @@ public struct SidebarView: View {
             
             // External Links section
             VStack(alignment: .leading, spacing: 8) {
-                Text("OVERNODE CLOUD")
+                Text("OVERNODE NETWORK")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(OvernodeTheme.textMuted)
                     .padding(.horizontal, 12)

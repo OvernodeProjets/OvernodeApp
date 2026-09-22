@@ -173,13 +173,21 @@ public struct AuthView: View {
         )) { identURL in
             VStack(spacing: 0) {
                 HStack {
-                    Text(loc.string("app_name"))
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(OvernodeTheme.textPrimary)
+                    HStack(spacing: 8) {
+                        Image(systemName: authVM.isPasskeyMode ? "person.badge.key.fill" : "lock.shield.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(OvernodeTheme.accentGold)
+                        Text(authVM.isPasskeyMode ? loc.string("auth_login_passkey") : loc.string("auth_login_discord"))
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(OvernodeTheme.textPrimary)
+                    }
                     
                     Spacer()
                     
-                    Button(action: { authVM.activeWebAuthURL = nil }) {
+                    Button(action: {
+                        authVM.activeWebAuthURL = nil
+                        authVM.isPasskeyMode = false
+                    }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 18))
                             .foregroundColor(OvernodeTheme.textSecondary)
@@ -192,18 +200,17 @@ public struct AuthView: View {
                 
                 WebAuthModalView(
                     initialURL: identURL.url,
+                    autoTriggerPasskey: authVM.isPasskeyMode,
                     onAuthSuccess: {
                         authVM.onWebAuthCompleted()
                     },
-                    onAuthTwoFactor: {
-                        authVM.onWebAuthRequested2FA()
-                    },
                     onCancel: {
                         authVM.activeWebAuthURL = nil
+                        authVM.isPasskeyMode = false
                     }
                 )
             }
-            .frame(width: 600, height: 680)
+            .frame(width: 620, height: 700)
         }
     }
 }

@@ -3,19 +3,19 @@ import WebKit
 
 public struct WebAuthModalView: NSViewRepresentable {
     let initialURL: URL
+    let autoTriggerPasskey: Bool
     let onAuthSuccess: () -> Void
-    let onAuthTwoFactor: () -> Void
     let onCancel: () -> Void
     
     public init(
         initialURL: URL,
+        autoTriggerPasskey: Bool = false,
         onAuthSuccess: @escaping () -> Void,
-        onAuthTwoFactor: @escaping () -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.initialURL = initialURL
+        self.autoTriggerPasskey = autoTriggerPasskey
         self.onAuthSuccess = onAuthSuccess
-        self.onAuthTwoFactor = onAuthTwoFactor
         self.onCancel = onCancel
     }
     
@@ -30,6 +30,8 @@ public struct WebAuthModalView: NSViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
+        
+        // Custom user agent that supports standard modern web standards
         webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15 OvernodeNativeApp"
         
         let request = URLRequest(url: initialURL)
@@ -42,6 +44,7 @@ public struct WebAuthModalView: NSViewRepresentable {
     public class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var parent: WebAuthModalView
         private var hasTriggered = false
+        private var passkeyAttempted = false
         
         init(_ parent: WebAuthModalView) {
             self.parent = parent
@@ -49,13 +52,45 @@ public struct WebAuthModalView: NSViewRepresentable {
         
         public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             guard let url = webView.url else { return }
-            checkAuthURL(url, in: webView)
+            
+            // Check if login is already complete
+            if checkAuthCompletion(url, in: webView) {
+                return
+            }
+            
+            // If requested, auto-trigger the passkey login button on the /auth page
+            if parent.autoTriggerPasskey && !passkeyAttempted && (url.path == "/auth" || url.path.hasPrefix("/auth")) {
+                passkeyAttempted = true
+                
+                let triggerJS = """
+                (function() {
+                    const checkAndClick = () => {
+                        const buttons = Array.from(document.querySelectorAll('button'));
+                        const passkeyBtn = buttons.find(b => {
+                            const text = (b.innerText || '').toLowerCase();
+                            return text.includes('passkey') || text.includes('clé');
+                        });
+                        if (passkeyBtn && !passkeyBtn.disabled) {
+                            passkeyBtn.click();
+                            return true;
+                        }
+                        return false;
+                    };
+                    
+                    if (!checkAndClick()) {
+                        setTimeout(checkAndClick, 500);
+                        setTimeout(checkAndClick, 1500);
+                    }
+                })();
+                """
+                webView.evaluateJavaScript(triggerJS, completionHandler: nil)
+            }
         }
         
         @MainActor
         public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
             if let url = navigationAction.request.url {
-                if checkAuthURL(url, in: webView) {
+                if checkAuthCompletion(url, in: webView) {
                     decisionHandler(.cancel)
                     return
                 }
@@ -64,24 +99,11 @@ public struct WebAuthModalView: NSViewRepresentable {
         }
         
         @discardableResult
-        private func checkAuthURL(_ url: URL, in webView: WKWebView) -> Bool {
+        private func checkAuthCompletion(_ url: URL, in webView: WKWebView) -> Bool {
             let path = url.path
             
-            // Check if 2FA verification page reached
-            if path.contains("/auth/2fa") {
-                if !hasTriggered {
-                    hasTriggered = true
-                    syncCookies(from: webView) {
-                        DispatchQueue.main.async {
-                            self.parent.onAuthTwoFactor()
-                        }
-                    }
-                    return true
-                }
-            }
-            
-            // Check if user reached dashboard (login successful)
-            if path.contains("/dashboard") || path == "/" && url.host == "console.overnode.fr" {
+            // Check if user reached dashboard (login successful via Discord, 2FA, or Passkey)
+            if path.contains("/dashboard") || (path == "/" && url.host?.contains("overnode.fr") == true) {
                 if !hasTriggered {
                     hasTriggered = true
                     syncCookies(from: webView) {
