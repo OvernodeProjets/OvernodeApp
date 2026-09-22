@@ -15,25 +15,27 @@ public struct HeaderBarView: View {
     public var body: some View {
         HStack(spacing: 16) {
             // Brand Logo & Status
-            HStack(spacing: 10) {
-                Image(systemName: "server.rack")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(OvernodeTheme.accentGold)
+            HStack(spacing: 12) {
+                if let logoURL = Bundle.module.url(forResource: "overnode_logo", withExtension: "png"),
+                   let nsImage = NSImage(contentsOf: logoURL) {
+                    Image(nsImage: nsImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 26)
+                } else {
+                    Image(systemName: "server.rack")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(OvernodeTheme.accentGold)
+                }
                 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(loc.string("app_name"))
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(OvernodeTheme.textPrimary)
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(OvernodeTheme.accentSuccess)
+                        .frame(width: 7, height: 7)
                     
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(OvernodeTheme.accentSuccess)
-                            .frame(width: 7, height: 7)
-                        
-                        Text(loc.string("status_connected"))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(OvernodeTheme.textSecondary)
-                    }
+                    Text(loc.string("status_connected"))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(OvernodeTheme.textSecondary)
                 }
             }
             

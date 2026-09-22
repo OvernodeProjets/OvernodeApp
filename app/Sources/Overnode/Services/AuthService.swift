@@ -28,6 +28,16 @@ public final class AuthService: @unchecked Sendable {
         )
     }
     
+    public func verifyTwoFactor(code: String) async throws {
+        let payload = ["code": code]
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        let _: [String: Bool] = try await client.request(
+            endpoint: "/auth/2fa/verify",
+            method: "POST",
+            body: data
+        )
+    }
+    
     public func logout() {
         client.clearCookies()
     }

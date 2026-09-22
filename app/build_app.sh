@@ -69,7 +69,14 @@ cat << 'EOF' > "$CONTENTS_DIR/Info.plist"
 </plist>
 EOF
 
-# Code sign bundle locally
-codesign --force --deep --sign - "$BUNDLE_DIR"
+# Clear extended attributes before signing
+xattr -cr "$BUNDLE_DIR"
+
+# Code sign bundle locally with entitlements
+if [ -f "$DIR/Overnode.entitlements" ]; then
+    codesign --force --deep --sign - --entitlements "$DIR/Overnode.entitlements" "$BUNDLE_DIR"
+else
+    codesign --force --deep --sign - "$BUNDLE_DIR"
+fi
 
 echo "==> Overnode.app successfully created at $BUNDLE_DIR"

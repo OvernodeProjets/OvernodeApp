@@ -43,19 +43,28 @@ public struct AuthView: View {
                 
                 // Central Card
                 VStack(spacing: 24) {
-                    // Logo Icon
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(OvernodeTheme.accentGold.opacity(0.12))
-                            .frame(width: 64, height: 64)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(OvernodeTheme.accentGold.opacity(0.3), lineWidth: 1)
-                            )
-                        
-                        Image(systemName: "server.rack")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(OvernodeTheme.accentGold)
+                    // Real Overnode Logo
+                    if let logoURL = Bundle.module.url(forResource: "overnode_logo", withExtension: "png"),
+                       let nsImage = NSImage(contentsOf: logoURL) {
+                        Image(nsImage: nsImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 48)
+                            .padding(.bottom, 4)
+                    } else {
+                        // Fallback icon
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(OvernodeTheme.accentGold.opacity(0.12))
+                                .frame(width: 64, height: 64)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(OvernodeTheme.accentGold.opacity(0.3), lineWidth: 1)
+                                )
+                            Image(systemName: "server.rack")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(OvernodeTheme.accentGold)
+                        }
                     }
                     
                     // Titles
@@ -158,5 +167,48 @@ public struct AuthView: View {
                     .padding(.bottom, 20)
             }
         }
+        .sheet(item: Binding(
+            get: { authVM.activeWebAuthURL.map { IdentifiableURL(url: $0) } },
+            set: { _ in authVM.activeWebAuthURL = nil }
+        )) { identURL in
+            VStack(spacing: 0) {
+                HStack {
+                    Text(loc.string("app_name"))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(OvernodeTheme.textPrimary)
+                    
+                    Spacer()
+                    
+                    Button(action: { authVM.activeWebAuthURL = nil }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(OvernodeTheme.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(OvernodeTheme.cardBackground)
+                
+                WebAuthModalView(
+                    initialURL: identURL.url,
+                    onAuthSuccess: {
+                        authVM.onWebAuthCompleted()
+                    },
+                    onAuthTwoFactor: {
+                        authVM.onWebAuthRequested2FA()
+                    },
+                    onCancel: {
+                        authVM.activeWebAuthURL = nil
+                    }
+                )
+            }
+            .frame(width: 600, height: 680)
+        }
     }
+}
+
+private struct IdentifiableURL: Identifiable {
+    let id = UUID()
+    let url: URL
 }
