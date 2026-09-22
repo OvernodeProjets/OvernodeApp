@@ -78,12 +78,20 @@ public struct WebAuthModalView: NSViewRepresentable {
                 return
             }
             
-            // Query window.location.pathname via JS
+            // Query window.location.pathname and verify auth state
             webView.evaluateJavaScript("window.location.pathname") { [weak self] result, _ in
                 Task { @MainActor in
                     guard let self = self, !self.isCompleted else { return }
-                    if let path = result as? String, path.contains("dashboard") {
-                        self.triggerSuccess(from: webView)
+                    let path = (result as? String) ?? ""
+                    if path.contains("dashboard") || path == "/" || path.contains("servers") {
+                        webView.evaluateJavaScript("fetch('/api/v5/state', { credentials: 'include' }).then(r => r.json()).then(d => d.authenticated === true).catch(() => false)") { authRes, _ in
+                            Task { @MainActor in
+                                guard !self.isCompleted else { return }
+                                if let isAuthed = authRes as? Bool, isAuthed {
+                                    self.triggerSuccess(from: webView)
+                                }
+                            }
+                        }
                     }
                 }
             }
