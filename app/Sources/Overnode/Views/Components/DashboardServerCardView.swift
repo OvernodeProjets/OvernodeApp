@@ -3,9 +3,11 @@ import SwiftUI
 public struct DashboardServerCardView: View {
     @ObservedObject var loc = LocalizationManager.shared
     let server: ServerInstance
+    var onManage: ((ServerInstance) -> Void)?
     
-    public init(server: ServerInstance) {
+    public init(server: ServerInstance, onManage: ((ServerInstance) -> Void)? = nil) {
         self.server = server
+        self.onManage = onManage
     }
     
     private var statusColor: Color {
@@ -82,7 +84,7 @@ public struct DashboardServerCardView: View {
                 
                 // Manage button
                 Button(action: {
-                    // Placeholder button
+                    onManage?(server)
                 }) {
                     HStack(spacing: 5) {
                         Text(loc.string("server_manage_button"))

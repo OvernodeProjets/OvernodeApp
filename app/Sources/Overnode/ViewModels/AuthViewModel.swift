@@ -15,6 +15,11 @@ public final class AuthViewModel: ObservableObject {
     private let authService = AuthService.shared
     
     public init() {
+        if ProcessInfo.processInfo.environment["OVERNODE_DEMO"] == "1" {
+            self.currentUser = User(id: "1", username: "OvernodeUser", email: "user@overnode.fr", globalName: "Overnode User", role: "Client", avatarUrl: nil, coins: 350)
+            self.isAuthenticated = true
+            return
+        }
         checkSession()
     }
     
@@ -31,7 +36,7 @@ public final class AuthViewModel: ObservableObject {
                         username: u.username,
                         email: u.email.isEmpty ? (u.pterodactylEmail ?? "") : u.email,
                         globalName: u.globalName,
-                        role: initData.roles?.first,
+                        role: initData.roles?.first?.name,
                         avatarUrl: nil,
                         coins: initData.coins ?? 0
                     )

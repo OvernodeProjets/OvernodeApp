@@ -22,6 +22,7 @@ public enum OvernodeTheme {
     public static let accentWarning = Color(red: 0.961, green: 0.620, blue: 0.106) // #F59E0B
     public static let accentDanger = Color(red: 0.937, green: 0.267, blue: 0.267) // #EF4444
     public static let accentCyan = Color(red: 0.024, green: 0.714, blue: 0.831) // #06B6D4
+    public static let accentBlue = Color(red: 0.350, green: 0.550, blue: 0.950) // Blue
     
     // Gradients
     public static let goldGradient = LinearGradient(

@@ -14,6 +14,11 @@ public struct ServerInstance: Codable, Identifiable, Equatable, Sendable {
     public var diskUsedMB: Double
     public var diskLimitMB: Double
     
+    enum CodingKeys: String, CodingKey {
+        case id, identifier, name, node, suspended, state
+        case memoryUsedMB, memoryLimitMB, cpuUsedPercent, cpuLimitPercent, diskUsedMB, diskLimitMB
+    }
+    
     public init(
         id: Int,
         identifier: String,
@@ -42,12 +47,51 @@ public struct ServerInstance: Codable, Identifiable, Equatable, Sendable {
         self.diskLimitMB = diskLimitMB
     }
     
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        
+        if let idInt = try? c.decode(Int.self, forKey: .id) {
+            self.id = idInt
+        } else if let idStr = try? c.decode(String.self, forKey: .id), let idParsed = Int(idStr) {
+            self.id = idParsed
+        } else {
+            self.id = 0
+        }
+        
+        self.identifier = (try? c.decode(String.self, forKey: .identifier)) ?? ""
+        self.name = (try? c.decode(String.self, forKey: .name)) ?? "Server"
+        
+        if let nodeStr = try? c.decode(String.self, forKey: .node) {
+            self.node = nodeStr
+        } else if let nodeInt = try? c.decode(Int.self, forKey: .node) {
+            self.node = "Node \(nodeInt)"
+        } else {
+            self.node = nil
+        }
+        
+        if let suspBool = try? c.decode(Bool.self, forKey: .suspended) {
+            self.suspended = suspBool
+        } else if let suspInt = try? c.decode(Int.self, forKey: .suspended) {
+            self.suspended = suspInt != 0
+        } else {
+            self.suspended = false
+        }
+        
+        self.state = (try? c.decode(String.self, forKey: .state)) ?? (self.suspended ? "suspended" : "offline")
+        self.memoryUsedMB = (try? c.decode(Double.self, forKey: .memoryUsedMB)) ?? 0
+        self.memoryLimitMB = (try? c.decode(Double.self, forKey: .memoryLimitMB)) ?? 0
+        self.cpuUsedPercent = (try? c.decode(Double.self, forKey: .cpuUsedPercent)) ?? 0
+        self.cpuLimitPercent = (try? c.decode(Double.self, forKey: .cpuLimitPercent)) ?? 0
+        self.diskUsedMB = (try? c.decode(Double.self, forKey: .diskUsedMB)) ?? 0
+        self.diskLimitMB = (try? c.decode(Double.self, forKey: .diskLimitMB)) ?? 0
+    }
+    
     public var isOnline: Bool {
         return state.lowercased() == "running"
     }
 }
 
-// Model for Pterodactyl Application API server item returned in /api/v5/init or /api/servers
+// Model for Pterodactyl Application API server item returned in /api/v5/servers or /api/v5/init
 public struct PteroServerWrapper: Codable, Equatable, Sendable {
     public struct Attributes: Codable, Equatable, Sendable {
         public let id: Int
@@ -60,8 +104,55 @@ public struct PteroServerWrapper: Codable, Equatable, Sendable {
             public let memory: Double?
             public let cpu: Double?
             public let disk: Double?
+            
+            enum CodingKeys: String, CodingKey {
+                case memory, cpu, disk
+            }
+            
+            public init(memory: Double?, cpu: Double?, disk: Double?) {
+                self.memory = memory
+                self.cpu = cpu
+                self.disk = disk
+            }
+            
+            public init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                self.memory = (try? c.decode(Double.self, forKey: .memory)) ?? (try? c.decode(Int.self, forKey: .memory)).map(Double.init)
+                self.cpu = (try? c.decode(Double.self, forKey: .cpu)) ?? (try? c.decode(Int.self, forKey: .cpu)).map(Double.init)
+                self.disk = (try? c.decode(Double.self, forKey: .disk)) ?? (try? c.decode(Int.self, forKey: .disk)).map(Double.init)
+            }
         }
         public let limits: Limits?
+        
+        enum CodingKeys: String, CodingKey {
+            case id, identifier, name, node, suspended, limits
+        }
+        
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            
+            if let idInt = try? c.decode(Int.self, forKey: .id) {
+                self.id = idInt
+            } else if let idStr = try? c.decode(String.self, forKey: .id), let idParsed = Int(idStr) {
+                self.id = idParsed
+            } else {
+                self.id = 0
+            }
+            
+            self.identifier = (try? c.decode(String.self, forKey: .identifier)) ?? ""
+            self.name = (try? c.decode(String.self, forKey: .name)) ?? "Server"
+            
+            if let nodeStr = try? c.decode(String.self, forKey: .node) {
+                self.node = nodeStr
+            } else if let nodeInt = try? c.decode(Int.self, forKey: .node) {
+                self.node = "Node \(nodeInt)"
+            } else {
+                self.node = nil
+            }
+            
+            self.suspended = try? c.decode(Bool.self, forKey: .suspended)
+            self.limits = try? c.decode(Limits.self, forKey: .limits)
+        }
     }
     
     public let attributes: Attributes
@@ -83,3 +174,4 @@ public struct PteroServerWrapper: Codable, Equatable, Sendable {
         )
     }
 }
+

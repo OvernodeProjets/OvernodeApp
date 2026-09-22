@@ -177,13 +177,13 @@ public struct WebAuthModalView: NSViewRepresentable {
                 // 1. Try resolving from init payload
                 if let initObj = payload["init"] as? [String: Any],
                    let userObj = initObj["user"] as? [String: Any] {
-                    let id = userObj["id"] as? Int ?? 1
+                    let idStr = (userObj["id"] as? String) ?? (userObj["id"] as? Int).map(String.init) ?? "1"
                     let username = userObj["username"] as? String ?? "User"
                     let email = userObj["email"] as? String ?? (userObj["pterodactylEmail"] as? String ?? "")
                     let coins = initObj["coins"] as? Int ?? 0
                     
                     parsedUser = User(
-                        id: id,
+                        id: idStr,
                         username: username,
                         email: email,
                         globalName: userObj["global_name"] as? String,
@@ -194,12 +194,12 @@ public struct WebAuthModalView: NSViewRepresentable {
                 } else if let stateObj = payload["state"] as? [String: Any],
                           let userObj = stateObj["user"] as? [String: Any] {
                     // 2. Fallback to state payload
-                    let id = userObj["id"] as? Int ?? 1
+                    let idStr = (userObj["id"] as? String) ?? (userObj["id"] as? Int).map(String.init) ?? "1"
                     let username = userObj["username"] as? String ?? "User"
                     let email = userObj["email"] as? String ?? ""
                     
                     parsedUser = User(
-                        id: id,
+                        id: idStr,
                         username: username,
                         email: email,
                         globalName: username,
@@ -228,7 +228,7 @@ public struct WebAuthModalView: NSViewRepresentable {
                                     username: u.username,
                                     email: u.email.isEmpty ? (u.pterodactylEmail ?? "") : u.email,
                                     globalName: u.globalName,
-                                    role: initData.roles?.first,
+                                    role: initData.roles?.first?.name,
                                     avatarUrl: nil,
                                     coins: initData.coins ?? 0
                                 )
