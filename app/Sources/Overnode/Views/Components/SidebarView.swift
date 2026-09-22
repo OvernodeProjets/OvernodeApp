@@ -70,7 +70,7 @@ public struct SidebarView: View {
                             .font(.system(size: 12))
                             .foregroundColor(OvernodeTheme.accentGold)
                         
-                        Text("(user.coins)")
+                        Text("\(user.coins)")
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                             .foregroundColor(OvernodeTheme.textPrimary)
                         
