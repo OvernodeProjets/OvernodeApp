@@ -1,0 +1,23 @@
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    container_name: toledo-server
+    ports:
+      - "13000:13000"
+    volumes:
+      - backend-data:/app/prisma
+      - backend-sessions:/app/sessions
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - IS_DOCKER=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
+
+volumes:
+  backend-data:
+  backend-sessions:
