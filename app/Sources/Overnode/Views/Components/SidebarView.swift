@@ -19,13 +19,21 @@ public enum NavigationTab: String, CaseIterable, Identifiable {
 public struct SidebarView: View {
     @ObservedObject var loc = LocalizationManager.shared
     @Binding var selectedTab: NavigationTab
+    let user: User?
+    let onLogout: () -> Void
     
-    public init(selectedTab: Binding<NavigationTab>) {
+    public init(
+        selectedTab: Binding<NavigationTab>,
+        user: User?,
+        onLogout: @escaping () -> Void
+    ) {
         self._selectedTab = selectedTab
+        self.user = user
+        self.onLogout = onLogout
     }
     
     public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             // Navigation items
             ForEach(NavigationTab.allCases) { tab in
                 Button(action: {
@@ -34,10 +42,10 @@ public struct SidebarView: View {
                     HStack(spacing: 12) {
                         Image(systemName: tab.iconName)
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(selectedTab == tab ? OvernodeTheme.accentGold : OvernodeTheme.textSecondary)
+                            .foregroundColor(selectedTab == tab ? Color.white : OvernodeTheme.textSecondary)
                             .frame(width: 20)
                         
-                        Text(loc.string("nav_\(tab.rawValue)"))
+                        Text(loc.string("nav_(tab.rawValue)"))
                             .font(.system(size: 13, weight: selectedTab == tab ? .semibold : .medium))
                             .foregroundColor(selectedTab == tab ? OvernodeTheme.textPrimary : OvernodeTheme.textSecondary)
                         
@@ -53,70 +61,94 @@ public struct SidebarView: View {
             
             Spacer()
             
-            // External Links section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("OVERNODE NETWORK")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(OvernodeTheme.textMuted)
-                    .padding(.horizontal, 12)
-                
-                Link(destination: URL(string: "https://console.overnode.fr")!) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "safari")
+            // Bottom section: User Profile Pill with Menu + Coins Display
+            if let user = user {
+                VStack(spacing: 8) {
+                    // Overnode Credits Pill (Solid, sleek style)
+                    HStack(spacing: 6) {
+                        Image(systemName: "circle.circle.fill")
                             .font(.system(size: 12))
-                        Text(loc.string("links_console"))
+                            .foregroundColor(OvernodeTheme.accentGold)
+                        
+                        Text("(user.coins)")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(OvernodeTheme.textPrimary)
+                        
+                        Text(loc.string("coins_balance"))
                             .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(OvernodeTheme.textSecondary)
+                        
                         Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 9))
                     }
-                    .foregroundColor(OvernodeTheme.textSecondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                }
-                .buttonStyle(.plain)
-                
-                Link(destination: URL(string: "https://mantle.overnode.fr")!) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "cpu")
-                            .font(.system(size: 12))
-                        Text(loc.string("links_mantle"))
-                            .font(.system(size: 11, weight: .medium))
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 9))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(Color(red: 0.125, green: 0.133, blue: 0.161)) // #202229
+                    .cornerRadius(8)
+                    
+                    // User Profile Menu (Clicking user menu reveals Sign Out)
+                    Menu {
+                        VStack {
+                            Text(user.username)
+                                .font(.headline)
+                            if !user.email.isEmpty {
+                                Text(user.email)
+                                    .font(.caption)
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        Button(role: .destructive, action: onLogout) {
+                            Label(loc.string("nav_logout"), systemImage: "rectangle.portrait.and.arrow.right")
+                        }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Circle()
+                                .fill(Color.white.opacity(0.12))
+                                .frame(width: 32, height: 32)
+                                .overlay(
+                                    Text(String(user.username.prefix(1)).uppercased())
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundColor(OvernodeTheme.textPrimary)
+                                )
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(user.username)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(OvernodeTheme.textPrimary)
+                                    .lineLimit(1)
+                                
+                                if !user.email.isEmpty {
+                                    Text(user.email)
+                                        .font(.system(size: 10))
+                                        .foregroundColor(OvernodeTheme.textMuted)
+                                        .lineLimit(1)
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 11))
+                                .foregroundColor(OvernodeTheme.textMuted)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(Color(red: 0.125, green: 0.133, blue: 0.161)) // #202229
+                        .cornerRadius(8)
                     }
-                    .foregroundColor(OvernodeTheme.textSecondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .menuStyle(.borderlessButton)
                 }
-                .buttonStyle(.plain)
-                
-                Link(destination: URL(string: "https://overnode.fr")!) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "globe")
-                            .font(.system(size: 12))
-                        Text(loc.string("links_website"))
-                            .font(.system(size: 11, weight: .medium))
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 9))
-                    }
-                    .foregroundColor(OvernodeTheme.textSecondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                }
-                .buttonStyle(.plain)
+                .padding(.bottom, 8)
             }
-            .padding(.bottom, 12)
         }
         .padding(12)
-        .frame(width: 200)
+        .frame(width: 220)
         .background(OvernodeTheme.cardBackground)
         .overlay(
             Rectangle()
                 .frame(width: 1)
-                .foregroundColor(OvernodeTheme.border),
+                .foregroundColor(OvernodeTheme.borderSubtle),
             alignment: .trailing
         )
     }
