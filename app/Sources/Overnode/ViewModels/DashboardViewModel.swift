@@ -12,13 +12,19 @@ public final class DashboardViewModel: ObservableObject {
     @Published public var lastUpdated: Date?
     
     private let authService = AuthService.shared
+    private var autoRefreshTask: Task<Void, Never>?
     
     public init(initialResources: ResourcesResponse? = nil) {
         if let initial = initialResources {
             self.resources = initial
             self.lastUpdated = Date()
         }
-        loadDashboardData()
+        loadDashboardData(force: true)
+        startAutoRefresh()
+    }
+    
+    deinit {
+        autoRefreshTask?.cancel()
     }
     
     public func setInitialResourcesIfNeeded(_ res: ResourcesResponse?) {
@@ -28,20 +34,47 @@ public final class DashboardViewModel: ObservableObject {
         }
     }
     
-    public func loadDashboardData() {
-        isLoading = true
+    public func startAutoRefresh() {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 20_000_000_000)
+                if Task.isCancelled { break }
+                self?.loadDashboardData(isBackground: true)
+            }
+        }
+    }
+    
+    public func stopAutoRefresh() {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = nil
+    }
+    
+    public func loadDashboardData(force: Bool = false, isBackground: Bool = false) {
+        if isLoading && !force { return }
+        if !force, let last = lastUpdated, Date().timeIntervalSince(last) < 2.0 {
+            return
+        }
+        
+        if !isBackground {
+            isLoading = true
+        }
         errorMessage = nil
         
         Task {
-            // 1. Fetch servers reliably
-            let srvs = await authService.fetchServersStatus()
+            // Concurrently fetch servers, platform statistics, and account resources
+            async let srvsTask = authService.fetchServersStatus()
+            async let statsTask = authService.fetchPlatformStats()
+            async let resTask = authService.fetchResources()
+            
+            // Progressive assignment as results resolve
+            let srvs = await srvsTask
             self.servers = srvs
             
-            // 2. Fetch platform stats & resources
-            let stats = await authService.fetchPlatformStats()
+            let stats = await statsTask
             self.platformStats = stats
             
-            if let res = try? await authService.fetchResources() {
+            if let res = try? await resTask {
                 self.resources = res
             } else if self.resources == nil {
                 self.resources = ResourcesResponse.empty

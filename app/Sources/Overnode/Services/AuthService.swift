@@ -57,12 +57,17 @@ public final class AuthService: @unchecked Sendable {
             return live
         }
         
-        // 2. Fallback to /api/servers and fetch live status individually if needed
+        // 2. Fallback to /api/v5/servers
+        if let raw: [PteroServerWrapper] = try? await client.request(endpoint: "/api/v5/servers") {
+            return await enrichServers(raw.map { $0.toServerInstance() })
+        }
+        
+        // 3. Fallback to /api/servers and fetch live status individually if needed
         if let raw: [PteroServerWrapper] = try? await client.request(endpoint: "/api/servers") {
             return await enrichServers(raw.map { $0.toServerInstance() })
         }
         
-        // 3. Fallback to /api/v5/init
+        // 4. Fallback to /api/v5/init
         if let initData = try? await fetchInit(), let srvs = initData.servers {
             return await enrichServers(srvs.map { $0.toServerInstance() })
         }
