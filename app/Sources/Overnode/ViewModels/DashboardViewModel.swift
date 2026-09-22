@@ -11,8 +11,19 @@ public final class DashboardViewModel: ObservableObject {
     
     private let authService = AuthService.shared
     
-    public init() {
+    public init(initialResources: ResourcesResponse? = nil) {
+        if let initial = initialResources {
+            self.resources = initial
+            self.lastUpdated = Date()
+        }
         loadResources()
+    }
+    
+    public func setInitialResourcesIfNeeded(_ res: ResourcesResponse?) {
+        if self.resources == nil, let res = res {
+            self.resources = res
+            self.lastUpdated = Date()
+        }
     }
     
     public func loadResources() {
@@ -25,7 +36,6 @@ public final class DashboardViewModel: ObservableObject {
                 self.resources = data
                 self.lastUpdated = Date()
             } catch {
-                // If not authenticated or offline, provide preview/fallback
                 if self.resources == nil {
                     self.resources = ResourcesResponse.preview
                 }

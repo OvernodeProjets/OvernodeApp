@@ -2,12 +2,13 @@ import SwiftUI
 
 public struct DashboardView: View {
     @ObservedObject var authVM: AuthViewModel
-    @StateObject private var dashboardVM = DashboardViewModel()
+    @StateObject private var dashboardVM: DashboardViewModel
     @ObservedObject var loc = LocalizationManager.shared
     @State private var selectedTab: NavigationTab = .dashboard
     
     public init(authVM: AuthViewModel) {
         self.authVM = authVM
+        self._dashboardVM = StateObject(wrappedValue: DashboardViewModel(initialResources: authVM.initialResources))
     }
     
     public var body: some View {
@@ -16,7 +17,10 @@ public struct DashboardView: View {
             HeaderBarView(
                 user: authVM.currentUser,
                 onLogout: { authVM.logout() },
-                onRefresh: { dashboardVM.loadResources() }
+                onRefresh: {
+                    authVM.checkSession()
+                    dashboardVM.loadResources()
+                }
             )
             
             // Content Layout: Sidebar + Main Area
@@ -26,20 +30,34 @@ public struct DashboardView: View {
                 // Main Dashboard Body
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        // Welcome Banner
+                        // Welcome Banner with User Email and Plan
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("\(loc.string("dashboard_welcome")), \(authVM.currentUser?.username ?? "Admin")")
+                                Text("\(loc.string("dashboard_welcome")), \(authVM.currentUser?.username ?? "User")")
                                     .font(.system(size: 24, weight: .bold))
                                     .foregroundColor(OvernodeTheme.textPrimary)
+                                
+                                if let email = authVM.currentUser?.email, !email.isEmpty {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "envelope.fill")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(OvernodeTheme.textSecondary)
+                                        Text(email)
+                                            .font(.system(size: 12))
+                                            .foregroundColor(OvernodeTheme.textSecondary)
+                                    }
+                                    .padding(.top, 2)
+                                }
                                 
                                 Text(loc.string("dashboard_resources_desc"))
                                     .font(.system(size: 13))
                                     .foregroundColor(OvernodeTheme.textSecondary)
+                                    .padding(.top, 2)
                             }
                             
                             Spacer()
                             
+                            // User Package badge
                             if let pkg = dashboardVM.resources?.package {
                                 HStack(spacing: 6) {
                                     Image(systemName: "sparkles")
@@ -62,8 +80,8 @@ public struct DashboardView: View {
                         }
                         .padding(.top, 8)
                         
-                        // 4 Resources Cards Grid (RAM / DISK / CPU / SERVERS)
-                        let res = dashboardVM.resources ?? ResourcesResponse.preview
+                        // 4 Resources Cards Grid (RAM / CPU / DISK / SERVERS)
+                        let res = dashboardVM.resources ?? authVM.initialResources ?? ResourcesResponse.preview
                         
                         LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
                             // 1. Memory RAM
@@ -160,6 +178,7 @@ public struct DashboardView: View {
         }
         .background(OvernodeTheme.background)
         .onAppear {
+            dashboardVM.setInitialResourcesIfNeeded(authVM.initialResources)
             dashboardVM.loadResources()
         }
     }

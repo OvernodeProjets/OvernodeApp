@@ -200,8 +200,8 @@ public struct AuthView: View {
                 
                 WebAuthModalView(
                     initialURL: identURL.url,
-                    onAuthSuccess: { user in
-                        authVM.onWebAuthCompleted(with: user)
+                    onAuthSuccess: { user, resources in
+                        authVM.onWebAuthCompleted(with: user, resources: resources)
                     },
                     onCancel: {
                         authVM.activeWebAuthURL = nil

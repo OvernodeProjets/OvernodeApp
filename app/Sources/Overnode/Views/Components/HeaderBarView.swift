@@ -41,6 +41,31 @@ public struct HeaderBarView: View {
             
             Spacer()
             
+            // Real Coins Balance Pill
+            if let user = user {
+                HStack(spacing: 6) {
+                    Image(systemName: "circle.circle.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(OvernodeTheme.accentGold)
+                    
+                    Text("\(user.coins)")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(OvernodeTheme.textPrimary)
+                    
+                    Text(loc.string("coins_balance"))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(OvernodeTheme.textSecondary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(OvernodeTheme.secondaryCardBackground)
+                .cornerRadius(16)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(OvernodeTheme.border, lineWidth: 1)
+                )
+            }
+            
             // Language Switcher
             HStack(spacing: 4) {
                 ForEach(AppLanguage.allCases) { lang in
@@ -86,7 +111,7 @@ public struct HeaderBarView: View {
             .buttonStyle(.plain)
             .help(loc.string("status_refresh"))
             
-            // User Profile Pill
+            // Real User Profile Pill (Avatar initial + Username + Real Email)
             if let user = user {
                 HStack(spacing: 8) {
                     Circle()
@@ -103,9 +128,12 @@ public struct HeaderBarView: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(OvernodeTheme.textPrimary)
                         
-                        Text(user.email)
-                            .font(.system(size: 10))
-                            .foregroundColor(OvernodeTheme.textMuted)
+                        if !user.email.isEmpty {
+                            Text(user.email)
+                                .font(.system(size: 10))
+                                .foregroundColor(OvernodeTheme.textMuted)
+                                .lineLimit(1)
+                        }
                     }
                 }
                 .padding(.horizontal, 10)

@@ -10,8 +10,20 @@ public final class AuthService: @unchecked Sendable {
         return try await client.request(endpoint: "/api/v5/state")
     }
     
+    public func fetchInit() async throws -> InitResponse {
+        return try await client.request(endpoint: "/api/v5/init")
+    }
+    
     public func fetchResources() async throws -> ResourcesResponse {
         return try await client.request(endpoint: "/api/v5/resources")
+    }
+    
+    public func fetchCoins() async throws -> Int {
+        struct CoinsResponse: Decodable {
+            let coins: Int
+        }
+        let res: CoinsResponse = try await client.request(endpoint: "/api/coins")
+        return res.coins
     }
     
     public func getPasskeyOptions() async throws -> PasskeyOptionsResponse {
@@ -23,16 +35,6 @@ public final class AuthService: @unchecked Sendable {
         let data = try encoder.encode(payload)
         return try await client.request(
             endpoint: "/auth/passkey/verify",
-            method: "POST",
-            body: data
-        )
-    }
-    
-    public func verifyTwoFactor(code: String) async throws {
-        let payload = ["code": code]
-        let data = try JSONSerialization.data(withJSONObject: payload)
-        let _: [String: Bool] = try await client.request(
-            endpoint: "/auth/2fa/verify",
             method: "POST",
             body: data
         )

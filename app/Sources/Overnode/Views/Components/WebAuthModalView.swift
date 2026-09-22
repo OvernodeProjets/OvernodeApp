@@ -3,12 +3,12 @@ import WebKit
 
 public struct WebAuthModalView: NSViewRepresentable {
     let initialURL: URL
-    let onAuthSuccess: (User) -> Void
+    let onAuthSuccess: (User, ResourcesResponse?) -> Void
     let onCancel: () -> Void
     
     public init(
         initialURL: URL,
-        onAuthSuccess: @escaping (User) -> Void,
+        onAuthSuccess: @escaping (User, ResourcesResponse?) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.initialURL = initialURL
@@ -108,25 +108,56 @@ public struct WebAuthModalView: NSViewRepresentable {
                     HTTPCookieStorage.shared.setCookie(cookie)
                 }
                 
-                // Fetch authenticated user profile directly from session
-                let fetchUserJS = """
-                fetch('/api/v5/state', { credentials: 'include' })
-                    .then(r => r.json())
-                    .then(d => JSON.stringify(d.user || {}))
-                    .catch(() => '{}')
+                // Fetch full authenticated init payload (user, email, coins) and resources directly
+                let fetchRichDataJS = """
+                Promise.all([
+                    fetch('/api/v5/init', { credentials: 'include' }).then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch('/api/v5/resources', { credentials: 'include' }).then(r => r.ok ? r.json() : null).catch(() => null)
+                ]).then(([initData, resData]) => {
+                    return JSON.stringify({
+                        init: initData,
+                        resources: resData
+                    });
+                }).catch(() => '{}');
                 """
                 
-                webView.evaluateJavaScript(fetchUserJS) { userJsonResult, _ in
-                    var parsedUser = User(id: 1, username: "Overnode User", email: "user@overnode.fr")
+                webView.evaluateJavaScript(fetchRichDataJS) { result, _ in
+                    var parsedUser = User(id: 1, username: "Overnode User", email: "user@overnode.fr", coins: 0)
+                    var parsedResources: ResourcesResponse? = nil
                     
-                    if let jsonStr = userJsonResult as? String,
+                    if let jsonStr = result as? String,
                        let data = jsonStr.data(using: .utf8),
-                       let user = try? JSONDecoder().decode(User.self, from: data) {
-                        parsedUser = user
+                       let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        
+                        // Parse Init / User data
+                        if let initObj = obj["init"] as? [String: Any],
+                           let userObj = initObj["user"] as? [String: Any] {
+                            let id = userObj["id"] as? Int ?? 1
+                            let username = userObj["username"] as? String ?? "User"
+                            let email = userObj["email"] as? String ?? (userObj["pterodactylEmail"] as? String ?? "")
+                            let coins = initObj["coins"] as? Int ?? 0
+                            
+                            parsedUser = User(
+                                id: id,
+                                username: username,
+                                email: email,
+                                globalName: userObj["global_name"] as? String,
+                                role: nil,
+                                avatarUrl: nil,
+                                coins: coins
+                            )
+                        }
+                        
+                        // Parse Resources
+                        if let resObj = obj["resources"] as? [String: Any],
+                           let resData = try? JSONSerialization.data(withJSONObject: resObj),
+                           let res = try? JSONDecoder().decode(ResourcesResponse.self, from: resData) {
+                            parsedResources = res
+                        }
                     }
                     
                     DispatchQueue.main.async {
-                        self.parent.onAuthSuccess(parsedUser)
+                        self.parent.onAuthSuccess(parsedUser, parsedResources)
                     }
                 }
             }

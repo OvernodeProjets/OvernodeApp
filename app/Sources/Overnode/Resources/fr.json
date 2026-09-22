@@ -40,5 +40,8 @@
   "lang_en": "English",
   "links_console": "Console Cloud",
   "links_mantle": "Mantle VPS Cloud",
-  "links_website": "Site Overnode"
+  "links_website": "Site Overnode",
+  "coins_balance": "Crédits Overnode",
+  "user_email": "Adresse email",
+  "account_info": "Informations du compte"
 }
