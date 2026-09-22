@@ -72,26 +72,15 @@ public struct WebAuthModalView: NSViewRepresentable {
         private func evaluateCurrentState() {
             guard !isCompleted, let webView = self.webView else { return }
             
-            // Check native webView URL
-            if let url = webView.url, isDashboardURL(url) {
-                triggerSuccess(from: webView)
-                return
-            }
+            // Query auth state directly in the webview via /api/v5/state
+            // When user has 2FA enabled, authenticated becomes true only after 2FA is validated
+            let checkJS = "fetch('/api/v5/state', { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(d => (d && d.authenticated === true && !d.twoFactorPending) ? true : false).catch(() => false)"
             
-            // Query window.location.pathname and verify auth state
-            webView.evaluateJavaScript("window.location.pathname") { [weak self] result, _ in
+            webView.evaluateJavaScript(checkJS) { [weak self] authRes, _ in
                 Task { @MainActor in
                     guard let self = self, !self.isCompleted else { return }
-                    let path = (result as? String) ?? ""
-                    if path.contains("dashboard") || path == "/" || path.contains("servers") {
-                        webView.evaluateJavaScript("fetch('/api/v5/state', { credentials: 'include' }).then(r => r.json()).then(d => d.authenticated === true).catch(() => false)") { authRes, _ in
-                            Task { @MainActor in
-                                guard !self.isCompleted else { return }
-                                if let isAuthed = authRes as? Bool, isAuthed {
-                                    self.triggerSuccess(from: webView)
-                                }
-                            }
-                        }
+                    if let isAuthed = authRes as? Bool, isAuthed {
+                        self.triggerSuccess(from: webView)
                     }
                 }
             }
