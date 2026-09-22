@@ -53,10 +53,12 @@ public final class AuthViewModel: ObservableObject {
         self.activeWebAuthURL = passkeyURL
     }
     
-    public func onWebAuthCompleted() {
+    public func onWebAuthCompleted(with user: User) {
+        self.currentUser = user
+        self.isAuthenticated = true
         self.activeWebAuthURL = nil
         self.isPasskeyMode = false
-        checkSession()
+        self.isLoading = false
     }
     
     public func logout() {

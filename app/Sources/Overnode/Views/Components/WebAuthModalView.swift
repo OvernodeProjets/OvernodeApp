@@ -3,12 +3,12 @@ import WebKit
 
 public struct WebAuthModalView: NSViewRepresentable {
     let initialURL: URL
-    let onAuthSuccess: () -> Void
+    let onAuthSuccess: (User) -> Void
     let onCancel: () -> Void
     
     public init(
         initialURL: URL,
-        onAuthSuccess: @escaping () -> Void,
+        onAuthSuccess: @escaping (User) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.initialURL = initialURL
@@ -24,46 +24,68 @@ public struct WebAuthModalView: NSViewRepresentable {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = WKWebsiteDataStore.default()
         
+        // Ensure JavaScript and standard web capabilities are fully enabled
+        let preferences = WKWebpagePreferences()
+        preferences.allowsContentJavaScript = true
+        configuration.defaultWebpagePreferences = preferences
+        
         let userContentController = WKUserContentController()
         userContentController.add(context.coordinator, name: "authBridge")
         
-        // Inject script to detect client-side SPA navigation (React Router) to /dashboard
-        let spaMonitorScript = """
+        // Injected monitor that checks for genuine authentication status
+        let sessionObserverScript = """
         (function() {
-            function notifyDashboardIfReached() {
-                if (window.location.pathname.includes('/dashboard') || 
-                    (window.location.pathname === '/' && window.location.host.includes('overnode.fr') && !document.querySelector('form'))) {
-                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.authBridge) {
-                        window.webkit.messageHandlers.authBridge.postMessage('auth_success');
-                    }
-                }
+            let hasReportedAuth = false;
+
+            function checkAuthenticationState() {
+                if (hasReportedAuth) return;
+
+                fetch('/api/v5/state', { credentials: 'include' })
+                    .then(response => {
+                        if (!response.ok) return null;
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.authenticated === true && data.user) {
+                            hasReportedAuth = true;
+                            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.authBridge) {
+                                window.webkit.messageHandlers.authBridge.postMessage(JSON.stringify({
+                                    type: 'authenticated',
+                                    user: data.user
+                                }));
+                            }
+                        }
+                    })
+                    .catch(() => {});
             }
 
-            // Hook HTML5 History API used by React Router
+            // Hook HTML5 History API for instant detection on React Router navigation
             const originalPushState = history.pushState;
             history.pushState = function() {
                 originalPushState.apply(this, arguments);
-                notifyDashboardIfReached();
+                setTimeout(checkAuthenticationState, 200);
             };
 
             const originalReplaceState = history.replaceState;
             history.replaceState = function() {
                 originalReplaceState.apply(this, arguments);
-                notifyDashboardIfReached();
+                setTimeout(checkAuthenticationState, 200);
             };
 
-            window.addEventListener('popstate', notifyDashboardIfReached);
+            window.addEventListener('popstate', () => {
+                setTimeout(checkAuthenticationState, 200);
+            });
 
-            // Periodic fallback check in case of internal transitions
-            setInterval(notifyDashboardIfReached, 300);
-            
+            // Poll every 800ms while user completes Discord / 2FA / Passkey login
+            setInterval(checkAuthenticationState, 800);
+
             // Check immediately on load
-            notifyDashboardIfReached();
+            checkAuthenticationState();
         })();
         """
         
         let userScript = WKUserScript(
-            source: spaMonitorScript,
+            source: sessionObserverScript,
             injectionTime: .atDocumentEnd,
             forMainFrameOnly: true
         )
@@ -84,50 +106,47 @@ public struct WebAuthModalView: NSViewRepresentable {
     
     public class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         var parent: WebAuthModalView
-        private var hasTriggered = false
+        private var isCompleted = false
         
         init(_ parent: WebAuthModalView) {
             self.parent = parent
         }
         
-        // Handle SPA postMessage from injected script
         public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-            if message.name == "authBridge", let body = message.body as? String, body == "auth_success" {
-                handleAuthSuccess(from: message.webView)
+            guard message.name == "authBridge",
+                  let jsonString = message.body as? String,
+                  let data = jsonString.data(using: .utf8) else {
+                return
+            }
+            
+            struct AuthBridgeMessage: Decodable {
+                let type: String
+                let user: User
+            }
+            
+            if let parsed = try? JSONDecoder().decode(AuthBridgeMessage.self, from: data),
+               parsed.type == "authenticated" {
+                finalizeAuthentication(with: parsed.user, from: message.webView)
             }
         }
         
         public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            guard let url = webView.url else { return }
-            if url.path.contains("/dashboard") || (url.path == "/" && url.host?.contains("overnode.fr") == true) {
-                handleAuthSuccess(from: webView)
-            }
+            // Trigger check on page navigation completion as well
+            webView.evaluateJavaScript("typeof checkAuthenticationState === 'function' ? checkAuthenticationState() : null", completionHandler: nil)
         }
         
-        @MainActor
-        public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
-            if let url = navigationAction.request.url {
-                if url.path.contains("/dashboard") {
-                    handleAuthSuccess(from: webView)
-                    decisionHandler(.cancel)
-                    return
-                }
-            }
-            decisionHandler(.allow)
-        }
-        
-        private func handleAuthSuccess(from webView: WKWebView?) {
-            guard !hasTriggered else { return }
-            hasTriggered = true
+        private func finalizeAuthentication(with user: User, from webView: WKWebView?) {
+            guard !isCompleted else { return }
+            isCompleted = true
             
-            let store = webView?.configuration.websiteDataStore.httpCookieStore ?? WKWebsiteDataStore.default().httpCookieStore
+            let cookieStore = webView?.configuration.websiteDataStore.httpCookieStore ?? WKWebsiteDataStore.default().httpCookieStore
             
-            store.getAllCookies { cookies in
+            cookieStore.getAllCookies { cookies in
                 for cookie in cookies {
                     HTTPCookieStorage.shared.setCookie(cookie)
                 }
                 DispatchQueue.main.async {
-                    self.parent.onAuthSuccess()
+                    self.parent.onAuthSuccess(user)
                 }
             }
         }
