@@ -20,6 +20,7 @@ mkdir -p "$RESOURCES_DIR"
 
 # Copy binary
 cp ".build/release/$APP_NAME" "$MACOS_DIR/$APP_NAME"
+chmod +x "$MACOS_DIR/$APP_NAME"
 
 # Copy resources
 if [ -d ".build/release/Overnode_Overnode.bundle" ]; then
@@ -69,14 +70,13 @@ cat << 'EOF' > "$CONTENTS_DIR/Info.plist"
 </plist>
 EOF
 
-# Clear extended attributes before signing
+# Clear extended attributes before signing to prevent macOS detritus rejection
 xattr -cr "$BUNDLE_DIR"
 
-# Code sign bundle locally with entitlements
-if [ -f "$DIR/Overnode.entitlements" ]; then
-    codesign --force --deep --sign - --entitlements "$DIR/Overnode.entitlements" "$BUNDLE_DIR"
-else
-    codesign --force --deep --sign - "$BUNDLE_DIR"
-fi
+# Sign ad-hoc for local execution on Apple Silicon
+codesign --force --deep --sign - "$BUNDLE_DIR"
 
-echo "==> Overnode.app successfully created at $BUNDLE_DIR"
+# Remove quarantine attribute if present
+xattr -d com.apple.quarantine "$BUNDLE_DIR" 2>/dev/null || true
+
+echo "==> Overnode.app successfully created and ready to launch at: $BUNDLE_DIR"
