@@ -43,5 +43,6 @@
   "links_website": "Overnode Website",
   "coins_balance": "Overnode Credits",
   "user_email": "Email Address",
-  "account_info": "Account Details"
+  "account_info": "Account Details",
+  "resource_limit_reached": "Limit reached"
 }

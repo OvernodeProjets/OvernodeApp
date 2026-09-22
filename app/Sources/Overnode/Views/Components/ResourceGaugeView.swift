@@ -31,80 +31,82 @@ public struct ResourceGaugeView: View {
     
     public var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            // Header: Icon + Title + Value
+            // Header: Title with discrete indicator + Value
             HStack(alignment: .center) {
                 HStack(spacing: 8) {
                     Image(systemName: iconName)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(accentColor)
-                        .frame(width: 28, height: 28)
-                        .background(accentColor.opacity(0.12))
-                        .cornerRadius(6)
                     
                     Text(title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(OvernodeTheme.textPrimary)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(OvernodeTheme.textSecondary)
                 }
                 
                 Spacer()
                 
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text(usedFormatted)
-                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
                         .foregroundColor(OvernodeTheme.textPrimary)
                     
-                    Text("/ \(totalFormatted) \(unit)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(OvernodeTheme.textSecondary)
+                    if !totalFormatted.isEmpty && totalFormatted != "0" {
+                        Text("/ (totalFormatted)(unit)")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(OvernodeTheme.textMuted)
+                    } else if !unit.isEmpty {
+                        Text(unit)
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(OvernodeTheme.textMuted)
+                    }
                 }
             }
             
-            // Progress Bar
+            // Subtle refined Progress Bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(OvernodeTheme.secondaryCardBackground)
-                        .frame(height: 8)
+                    Capsule()
+                        .fill(Color.white.opacity(0.06))
+                        .frame(height: 4)
                     
-                    RoundedRectangle(cornerRadius: 6)
+                    Capsule()
                         .fill(
-                            LinearGradient(
-                                colors: [accentColor.opacity(0.8), accentColor],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
+                            percentage > 95
+                                ? OvernodeTheme.accentDanger
+                                : (percentage > 80 ? OvernodeTheme.accentGold : accentColor)
                         )
-                        .frame(width: max(8, geo.size.width * CGFloat(min(percentage / 100.0, 1.0))), height: 8)
-                        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: percentage)
+                        .frame(width: max(4, geo.size.width * CGFloat(min(percentage / 100.0, 1.0))), height: 4)
+                        .animation(.easeOut(duration: 0.3), value: percentage)
                 }
             }
-            .frame(height: 8)
+            .frame(height: 4)
             
-            // Footer: Percentage
+            // Footer: percentage note
             HStack {
                 Text(String(format: "%.1f%% %@", percentage, loc.string("resource_utilization")))
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(OvernodeTheme.textSecondary)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundColor(OvernodeTheme.textMuted)
                 
                 Spacer()
                 
                 if percentage > 90 {
-                    Text("LIMITE ATTEINTE")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(OvernodeTheme.accentDanger)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(OvernodeTheme.accentDanger.opacity(0.15))
-                        .cornerRadius(4)
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(OvernodeTheme.accentDanger)
+                            .frame(width: 5, height: 5)
+                        Text(loc.string("resource_limit_reached"))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(OvernodeTheme.accentDanger)
+                    }
                 }
             }
         }
         .padding(16)
         .background(OvernodeTheme.cardBackground)
-        .cornerRadius(12)
+        .cornerRadius(10)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(OvernodeTheme.border, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(OvernodeTheme.borderSubtle, lineWidth: 1)
         )
     }
 }
