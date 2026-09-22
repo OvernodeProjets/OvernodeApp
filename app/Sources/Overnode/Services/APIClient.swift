@@ -15,8 +15,8 @@ public final class APIClient: @unchecked Sendable {
         config.httpCookieAcceptPolicy = .always
         config.httpShouldSetCookies = true
         config.httpCookieStorage = HTTPCookieStorage.shared
-        config.timeoutIntervalForRequest = 25
-        config.timeoutIntervalForResource = 60
+        config.timeoutIntervalForRequest = 12
+        config.timeoutIntervalForResource = 25
         self.session = URLSession(configuration: config)
     }
     
