@@ -60,6 +60,7 @@ public struct InitResponse: Codable {
     public let admin: Bool?
     public let permissions: [String]?
     public let roles: [String]?
+    public let servers: [PteroServerWrapper]?
 }
 
 public struct AuthStateResponse: Codable {

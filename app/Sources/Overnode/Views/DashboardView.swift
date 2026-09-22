@@ -88,8 +88,8 @@ public struct DashboardView: View {
                             ResourceGaugeView(
                                 title: "Servers",
                                 iconName: "server.rack",
-                                usedFormatted: "(res.current.servers)",
-                                totalFormatted: "(res.limits.servers)",
+                                usedFormatted: "\(res.current.servers)",
+                                totalFormatted: "\(res.limits.servers)",
                                 unit: "",
                                 percentage: res.serversPercentage,
                                 solidColor: Color(red: 0.58, green: 0.45, blue: 0.92)
@@ -104,7 +104,7 @@ public struct DashboardView: View {
                                         .font(.system(size: 18, weight: .medium))
                                         .foregroundColor(OvernodeTheme.textPrimary)
                                     
-                                    Text("(dashboardVM.servers.count)")
+                                    Text("\(dashboardVM.servers.count)")
                                         .font(.system(size: 11, weight: .bold, design: .monospaced))
                                         .foregroundColor(OvernodeTheme.textSecondary)
                                         .padding(.horizontal, 6)

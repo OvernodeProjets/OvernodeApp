@@ -33,33 +33,25 @@ public final class DashboardViewModel: ObservableObject {
         errorMessage = nil
         
         Task {
+            // 1. Fetch servers reliably
+            let srvs = await authService.fetchServersStatus()
+            self.servers = srvs
+            
+            // 2. Fetch resources & platform stats in parallel
             async let resTask = authService.fetchResources()
             async let statsTask = authService.fetchPlatformStats()
-            async let serversTask = authService.fetchServersStatus()
             
-            do {
-                let (res, stats, srvs) = try await (resTask, statsTask, serversTask)
+            if let res = try? await resTask {
                 self.resources = res
-                self.platformStats = stats
-                self.servers = srvs
-                self.lastUpdated = Date()
-            } catch {
-                if let res = try? await authService.fetchResources() {
-                    self.resources = res
-                } else if self.resources == nil {
-                    self.resources = ResourcesResponse.empty
-                }
-                
-                if let stats = try? await authService.fetchPlatformStats() {
-                    self.platformStats = stats
-                }
-                
-                if let srvs = try? await authService.fetchServersStatus() {
-                    self.servers = srvs
-                }
-                
-                self.errorMessage = error.localizedDescription
+            } else if self.resources == nil {
+                self.resources = ResourcesResponse.empty
             }
+            
+            if let stats = try? await statsTask {
+                self.platformStats = stats
+            }
+            
+            self.lastUpdated = Date()
             self.isLoading = false
         }
     }

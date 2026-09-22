@@ -38,16 +38,26 @@ public struct DashboardServerCardView: View {
         }
     }
     
+    private var diskFormattedString: String {
+        let used = server.diskUsedMB
+        let limit = server.diskLimitMB
+        
+        let usedStr = used >= 1024 ? String(format: "%.2f GB", used / 1024.0) : String(format: "%.0f MB", used)
+        let limitStr = limit >= 1024 ? String(format: "%.0f GB", limit / 1024.0) : String(format: "%.0f MB", limit)
+        
+        return "\(usedStr) / \(limitStr)"
+    }
+    
     public var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Header: Server icon + Name + Status dot + Manage button
+        VStack(alignment: .leading, spacing: 16) {
+            // Header: Toledo Icon square + Server Name + Status + Manage button
             HStack(alignment: .center, spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(red: 0.125, green: 0.133, blue: 0.161)) // #202229
-                        .frame(width: 36, height: 36)
+                        .frame(width: 40, height: 40)
                     Image(systemName: "server.rack")
-                        .font(.system(size: 15))
+                        .font(.system(size: 16))
                         .foregroundColor(Color(red: 0.584, green: 0.631, blue: 0.678)) // #95a1ad
                 }
                 
@@ -57,31 +67,22 @@ public struct DashboardServerCardView: View {
                         .foregroundColor(OvernodeTheme.textPrimary)
                         .lineLimit(1)
                     
-                    HStack(spacing: 5) {
+                    HStack(spacing: 6) {
                         Circle()
                             .fill(statusColor)
                             .frame(width: 6, height: 6)
                         
                         Text(statusLabel)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(statusColor)
-                        
-                        if let node = server.node, !node.isEmpty {
-                            Text("•")
-                                .font(.system(size: 10))
-                                .foregroundColor(OvernodeTheme.textMuted)
-                            Text(node)
-                                .font(.system(size: 11))
-                                .foregroundColor(OvernodeTheme.textMuted)
-                        }
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color(red: 0.584, green: 0.631, blue: 0.678)) // #95a1ad
                     }
                 }
                 
                 Spacer()
                 
-                // Manage button (button style placeholder as requested)
+                // Manage button
                 Button(action: {
-                    // Action factice pour l'instant
+                    // Placeholder button
                 }) {
                     HStack(spacing: 5) {
                         Text(loc.string("server_manage_button"))
@@ -96,23 +97,23 @@ public struct DashboardServerCardView: View {
                     .cornerRadius(6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
             }
             
-            // Consumptions: RAM & CPU progress lines
-            VStack(spacing: 8) {
-                // RAM Gauge line
-                VStack(spacing: 3) {
+            // Consumptions list: Memory, CPU, Disk
+            VStack(spacing: 12) {
+                // Memory Gauge line
+                VStack(spacing: 5) {
                     HStack {
-                        Text("RAM")
-                            .font(.system(size: 11, weight: .medium))
+                        Text("Memory")
+                            .font(.system(size: 12, weight: .regular))
                             .foregroundColor(Color(red: 0.584, green: 0.631, blue: 0.678))
                         Spacer()
-                        Text(String(format: "%.0f MB / %.0f MB", server.memoryUsedMB, server.memoryLimitMB))
-                            .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        Text(String(format: "%.0f / %.0f MB", server.memoryUsedMB, server.memoryLimitMB))
+                            .font(.system(size: 12, weight: .regular, design: .monospaced))
                             .foregroundColor(OvernodeTheme.textPrimary)
                     }
                     
@@ -132,14 +133,14 @@ public struct DashboardServerCardView: View {
                 }
                 
                 // CPU Gauge line
-                VStack(spacing: 3) {
+                VStack(spacing: 5) {
                     HStack {
                         Text("CPU")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 12, weight: .regular))
                             .foregroundColor(Color(red: 0.584, green: 0.631, blue: 0.678))
                         Spacer()
-                        Text(String(format: "%.1f%% / %.0f%%", server.cpuUsedPercent, server.cpuLimitPercent))
-                            .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        Text(String(format: "%.1f / %.0f%%", server.cpuUsedPercent, server.cpuLimitPercent))
+                            .font(.system(size: 12, weight: .regular, design: .monospaced))
                             .foregroundColor(OvernodeTheme.textPrimary)
                     }
                     
@@ -157,13 +158,40 @@ public struct DashboardServerCardView: View {
                     }
                     .frame(height: 3)
                 }
+                
+                // Disk Gauge line
+                VStack(spacing: 5) {
+                    HStack {
+                        Text("Disk")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color(red: 0.584, green: 0.631, blue: 0.678))
+                        Spacer()
+                        Text(diskFormattedString)
+                            .font(.system(size: 12, weight: .regular, design: .monospaced))
+                            .foregroundColor(OvernodeTheme.textPrimary)
+                    }
+                    
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color(red: 0.125, green: 0.133, blue: 0.161))
+                                .frame(height: 3)
+                            
+                            let pct = server.diskLimitMB > 0 ? min(server.diskUsedMB / server.diskLimitMB, 1.0) : 0
+                            Capsule()
+                                .fill(Color(red: 0.25, green: 0.78, blue: 0.50))
+                                .frame(width: max(0, geo.size.width * CGFloat(pct)), height: 3)
+                        }
+                    }
+                    .frame(height: 3)
+                }
             }
         }
-        .padding(14)
+        .padding(18)
         .background(Color.clear)
-        .cornerRadius(8)
+        .cornerRadius(10)
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 10)
                 .stroke(Color(red: 0.180, green: 0.200, blue: 0.216).opacity(0.5), lineWidth: 1)
         )
     }
