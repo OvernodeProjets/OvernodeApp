@@ -200,7 +200,6 @@ public struct AuthView: View {
                 
                 WebAuthModalView(
                     initialURL: identURL.url,
-                    autoTriggerPasskey: authVM.isPasskeyMode,
                     onAuthSuccess: {
                         authVM.onWebAuthCompleted()
                     },
