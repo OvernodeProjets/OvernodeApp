@@ -48,6 +48,16 @@ public struct DashboardView: View {
                             serversListContent
                         case .wallet:
                             WalletView(userCoins: authVM.currentUser?.coins ?? 0)
+                        case .dailyReward:
+                            DailyRewardView(
+                                userCoins: authVM.currentUser?.coins ?? 0,
+                                currentUserId: authVM.currentUser?.id,
+                                onRewardClaimed: { newCoins in
+                                    authVM.currentUser?.coins = newCoins
+                                    authVM.checkSession()
+                                    dashboardVM.loadDashboardData(force: true)
+                                }
+                            )
                         case .store:
                             StoreView(
                                 initialCoins: authVM.currentUser?.coins ?? 0,
