@@ -84,6 +84,7 @@ public struct ServerRenewalTabView: View {
                     
                     Spacer()
                     
+                    let canRenew = vm.renewalStatus?.canRenew ?? false
                     Button(action: {
                         vm.renewServer()
                     }) {
@@ -98,14 +99,14 @@ public struct ServerRenewalTabView: View {
                             Text(loc.string("renewal_button_now"))
                                 .font(.system(size: 13, weight: .semibold))
                         }
-                        .foregroundColor(Color.white)
+                        .foregroundColor(canRenew ? Color.white : Color.white.opacity(0.4))
                         .padding(.horizontal, 18)
                         .padding(.vertical, 9)
-                        .background(OvernodeTheme.accentGold)
+                        .background(canRenew ? OvernodeTheme.accentGold : Color(red: 0.18, green: 0.20, blue: 0.24))
                         .cornerRadius(8)
                     }
                     .buttonStyle(.plain)
-                    .disabled(vm.isRenewing)
+                    .disabled(vm.isRenewing || !canRenew)
                 }
                 
                 if let msg = vm.successMessage {
@@ -131,6 +132,17 @@ public struct ServerRenewalTabView: View {
                     }
                     .padding(10)
                     .background(Color.red.opacity(0.1))
+                    .cornerRadius(6)
+                } else if vm.renewalStatus?.canRenew == false, let avail = vm.renewalStatus?.availableIn {
+                    HStack(spacing: 8) {
+                        Image(systemName: "clock")
+                            .foregroundColor(OvernodeTheme.accentGold)
+                        Text("\(loc.string("renewal_not_available_yet")) \(loc.string("renewal_available_in")) \(avail)")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(OvernodeTheme.textSecondary)
+                    }
+                    .padding(10)
+                    .background(OvernodeTheme.accentGold.opacity(0.08))
                     .cornerRadius(6)
                 }
             }

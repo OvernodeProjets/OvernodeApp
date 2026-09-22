@@ -145,6 +145,53 @@ public final class ServerConfigService: @unchecked Sendable {
     
     // MARK: - Plugins
     public func fetchInstalledPlugins(serverId: String) async throws -> [ServerPluginItem] {
+        struct RawInstalledItem: Decodable {
+            let id: String
+            let name: String
+            let pluginName: String?
+            let platform: String?
+            let installedAt: String?
+            let manuallyAdded: Bool?
+            
+            enum CodingKeys: String, CodingKey {
+                case id, name, pluginName, platform, installedAt, manuallyAdded
+            }
+            
+            init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                if let idStr = try? c.decode(String.self, forKey: .id) {
+                    self.id = idStr
+                } else if let idInt = try? c.decode(Int.self, forKey: .id) {
+                    self.id = String(idInt)
+                } else {
+                    self.id = UUID().uuidString
+                }
+                self.name = (try? c.decode(String.self, forKey: .name)) ?? "Plugin"
+                self.pluginName = try? c.decode(String.self, forKey: .pluginName)
+                self.platform = try? c.decode(String.self, forKey: .platform)
+                self.installedAt = try? c.decode(String.self, forKey: .installedAt)
+                self.manuallyAdded = try? c.decode(Bool.self, forKey: .manuallyAdded)
+            }
+        }
+        
+        // Direct array response (/api/plugins/installed/:serverId returns [InstalledPlugin])
+        if let rawList: [RawInstalledItem] = try? await client.request(endpoint: "/api/plugins/installed/\(serverId)") {
+            return rawList.map { p in
+                ServerPluginItem(
+                    id: p.id,
+                    name: p.name,
+                    description: p.pluginName != nil && p.pluginName != p.name ? p.pluginName : nil,
+                    iconUrl: nil,
+                    version: "installed",
+                    author: nil,
+                    platform: p.platform ?? "modrinth",
+                    downloads: nil,
+                    isInstalled: true
+                )
+            }
+        }
+        
+        // Fallback wrapped structure
         if let res: InstalledPluginsResponse = try? await client.request(endpoint: "/api/plugins/installed/\(serverId)") {
             return res.plugins.map { p in
                 ServerPluginItem(
@@ -163,7 +210,7 @@ public final class ServerConfigService: @unchecked Sendable {
         return []
     }
     
-    public func searchPlugins(query: String, platform: String = "modrinth") async throws -> [ServerPluginItem] {
+    public func searchPlugins(query: String, platform: String = "spigot") async throws -> [ServerPluginItem] {
         let cleanQuery = query.trimmingCharacters(in: .whitespaces).isEmpty ? "world" : query
         let encoded = cleanQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? cleanQuery
         struct RawPluginItem: Decodable {
@@ -236,7 +283,7 @@ public final class ServerConfigService: @unchecked Sendable {
         return []
     }
     
-    public func installPlugin(serverId: String, pluginId: String, platform: String = "modrinth") async throws {
+    public func installPlugin(serverId: String, pluginId: String, platform: String = "spigot") async throws {
         struct Payload: Encodable {
             let pluginId: String
             let platform: String

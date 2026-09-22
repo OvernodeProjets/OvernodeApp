@@ -10,14 +10,39 @@ public struct ServerPackageTabView: View {
     
     public var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Header
-            VStack(alignment: .leading, spacing: 4) {
-                Text(loc.string("package_title"))
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(OvernodeTheme.textPrimary)
-                Text(loc.string("package_subtitle"))
-                    .font(.system(size: 12))
-                    .foregroundColor(OvernodeTheme.textSecondary)
+            // Header with Set Max Button
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(loc.string("package_title"))
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(OvernodeTheme.textPrimary)
+                    Text(loc.string("package_subtitle"))
+                        .font(.system(size: 12))
+                        .foregroundColor(OvernodeTheme.textSecondary)
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    vm.setMaxPackageResources()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.up.right.and.arrow.down.left.rectangle.fill")
+                            .font(.system(size: 12))
+                        Text(loc.string("package_max_allowed"))
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundColor(Color.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Color(red: 0.125, green: 0.133, blue: 0.161))
+                    .cornerRadius(6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
             }
             .padding(18)
             .background(OvernodeTheme.cardBackground)
@@ -35,8 +60,8 @@ public struct ServerPackageTabView: View {
                     icon: "chart.pie",
                     iconColor: Color(red: 0.35, green: 0.55, blue: 0.95),
                     value: $vm.packageRamMB,
-                    range: 512...32768,
-                    step: 512,
+                    range: 512...max(vm.maxAvailableRamMB, 512),
+                    step: 128,
                     unit: "MB"
                 )
                 
@@ -48,8 +73,8 @@ public struct ServerPackageTabView: View {
                     icon: "cpu",
                     iconColor: Color(red: 0.20, green: 0.75, blue: 0.85),
                     value: $vm.packageCpuPercent,
-                    range: 50...800,
-                    step: 25,
+                    range: 50...max(vm.maxAvailableCpuPercent, 50),
+                    step: 5,
                     unit: "%"
                 )
                 
@@ -61,7 +86,7 @@ public struct ServerPackageTabView: View {
                     icon: "archivebox",
                     iconColor: Color(red: 0.25, green: 0.78, blue: 0.50),
                     value: $vm.packageDiskMB,
-                    range: 1024...65536,
+                    range: 1024...max(vm.maxAvailableDiskMB, 1024),
                     step: 1024,
                     unit: "MB"
                 )

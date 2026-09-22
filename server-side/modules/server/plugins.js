@@ -606,6 +606,10 @@ module.exports.load = async function (app, db) {
       // Download the plugin
       const pluginResponse = await axios.get(downloadUrl, {
         responseType: "arraybuffer",
+        headers: {
+          'User-Agent': 'Overnode-ServerManager/1.0 (contact@overnode.fr)'
+        },
+        timeout: 15000
       });
       const pluginBuffer = Buffer.from(pluginResponse.data, "binary");
 

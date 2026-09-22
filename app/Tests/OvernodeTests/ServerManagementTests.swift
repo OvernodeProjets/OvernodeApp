@@ -118,6 +118,26 @@ final class ServerManagementTests: XCTestCase {
     }
     
     @MainActor
+    func testRenewalActionResponseDecodingWithError() throws {
+        let json = """
+        {
+            "error": "Renewal not available yet",
+            "availableIn": {
+                "totalMs": 9377175,
+                "totalSeconds": 9377,
+                "days": 0,
+                "hours": 2,
+                "minutes": 36,
+                "seconds": 17
+            }
+        }
+        """
+        let res = try JSONDecoder().decode(ServerRenewalActionResponse.self, from: json.data(using: .utf8)!)
+        XCTAssertEqual(res.error, "Renewal not available yet")
+        XCTAssertEqual(res.availableIn, "2h 36min")
+    }
+    
+    @MainActor
     func testServerTranslations() {
         let loc = LocalizationManager.shared
         

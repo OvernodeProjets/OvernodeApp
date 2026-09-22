@@ -5,3 +5,4 @@ app/build/
 DerivedData/
 *.xcuserstate
 *.swp
+.claude/

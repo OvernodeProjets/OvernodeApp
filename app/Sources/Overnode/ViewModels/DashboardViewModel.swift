@@ -13,6 +13,7 @@ public final class DashboardViewModel: ObservableObject {
     
     private let authService = AuthService.shared
     private let cacheKey = "overnode_cached_servers"
+    private var autoRefreshTask: Task<Void, Never>?
     
     public init(initialResources: ResourcesResponse? = nil) {
         if let initial = initialResources {
@@ -20,7 +21,28 @@ public final class DashboardViewModel: ObservableObject {
             self.lastUpdated = Date()
         }
         self.servers = loadCachedServers()
-        loadDashboardData()
+        loadDashboardData(force: true)
+        startAutoRefresh()
+    }
+    
+    deinit {
+        autoRefreshTask?.cancel()
+    }
+    
+    public func startAutoRefresh() {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 20_000_000_000)
+                if Task.isCancelled { break }
+                self?.loadDashboardData(isBackground: true)
+            }
+        }
+    }
+    
+    public func stopAutoRefresh() {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = nil
     }
     
     private func loadCachedServers() -> [ServerInstance] {
@@ -29,23 +51,7 @@ public final class DashboardViewModel: ObservableObject {
            !list.isEmpty {
             return list
         }
-        // Fallback default user server for seamless startup
-        return [
-            ServerInstance(
-                id: 4159,
-                identifier: "96a07e23",
-                name: "ccc",
-                node: "Node 31",
-                suspended: false,
-                state: "offline",
-                memoryUsedMB: 0,
-                memoryLimitMB: 2048,
-                cpuUsedPercent: 0,
-                cpuLimitPercent: 100,
-                diskUsedMB: 0,
-                diskLimitMB: 3072
-            )
-        ]
+        return []
     }
     
     private func saveCachedServers(_ srvs: [ServerInstance]) {
@@ -61,8 +67,15 @@ public final class DashboardViewModel: ObservableObject {
         }
     }
     
-    public func loadDashboardData() {
-        isLoading = true
+    public func loadDashboardData(force: Bool = false, isBackground: Bool = false) {
+        if isLoading && !force { return }
+        if !force, let last = lastUpdated, Date().timeIntervalSince(last) < 2.0 {
+            return
+        }
+        
+        if !isBackground {
+            isLoading = true
+        }
         errorMessage = nil
         
         if ProcessInfo.processInfo.environment["OVERNODE_DEMO"] == "1" {
@@ -109,18 +122,20 @@ public final class DashboardViewModel: ObservableObject {
         }
         
         Task {
-            // 1. Fetch servers reliably
-            let srvs = await authService.fetchServersStatus()
+            async let srvsTask = authService.fetchServersStatus()
+            async let statsTask = authService.fetchPlatformStats()
+            async let resTask = authService.fetchResources()
+            
+            let srvs = await srvsTask
             if !srvs.isEmpty {
                 self.servers = srvs
                 saveCachedServers(srvs)
             }
             
-            // 2. Fetch platform stats & resources
-            let stats = await authService.fetchPlatformStats()
+            let stats = await statsTask
             self.platformStats = stats
             
-            if let res = try? await authService.fetchResources() {
+            if let res = try? await resTask {
                 self.resources = res
             } else if self.resources == nil {
                 self.resources = ResourcesResponse.empty

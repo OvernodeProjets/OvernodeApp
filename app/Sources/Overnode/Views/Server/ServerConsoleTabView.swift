@@ -108,6 +108,13 @@ public struct ServerConsoleTabView: View {
                     }
                     .frame(height: 380)
                     .background(Color(red: 0.05, green: 0.06, blue: 0.08))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                            if let lastIndex = vm.consoleLines.indices.last {
+                                proxy.scrollTo(lastIndex, anchor: .bottom)
+                            }
+                        }
+                    }
                     .onChange(of: vm.consoleLines.count) { _, _ in
                         if let lastIndex = vm.consoleLines.indices.last {
                             proxy.scrollTo(lastIndex, anchor: .bottom)

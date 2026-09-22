@@ -49,10 +49,19 @@ public final class ServerService: @unchecked Sendable {
     }
     
     public func renewServer(serverId: String) async throws -> ServerRenewalActionResponse {
-        return try await client.request(
-            endpoint: "/api/server/\(serverId)/renewal/renew",
-            method: "POST"
-        )
+        do {
+            return try await client.request(
+                endpoint: "/api/server/\(serverId)/renewal/renew",
+                method: "POST"
+            )
+        } catch let nsError as NSError {
+            if let rawJson = nsError.userInfo[NSLocalizedDescriptionKey] as? String,
+               let data = rawJson.data(using: .utf8),
+               let actionResponse = try? JSONDecoder().decode(ServerRenewalActionResponse.self, from: data) {
+                return actionResponse
+            }
+            throw nsError
+        }
     }
     
     // MARK: - Live Resources & Status

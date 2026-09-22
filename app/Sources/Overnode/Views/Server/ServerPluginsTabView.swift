@@ -40,6 +40,32 @@ public struct ServerPluginsTabView: View {
                 .buttonStyle(.plain)
             }
             
+            if let msg = vm.successMessage {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(Color(red: 0.25, green: 0.78, blue: 0.50))
+                    Text(msg)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(red: 0.25, green: 0.78, blue: 0.50))
+                }
+                .padding(8)
+                .background(Color(red: 0.25, green: 0.78, blue: 0.50).opacity(0.1))
+                .cornerRadius(6)
+            }
+            
+            if let err = vm.errorMessage {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(Color(red: 0.95, green: 0.35, blue: 0.35))
+                    Text(err)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(red: 0.95, green: 0.35, blue: 0.35))
+                }
+                .padding(8)
+                .background(Color.red.opacity(0.1))
+                .cornerRadius(6)
+            }
+            
             if pluginSubTab == 0 {
                 // Installed Plugins List
                 if vm.isLoading && vm.installedPlugins.isEmpty {
@@ -172,21 +198,28 @@ public struct ServerPluginsTabView: View {
                                         
                                         Spacer()
                                         
+                                        let isInstalled = vm.installedPlugins.contains { $0.id == p.id || $0.name.lowercased() == p.name.lowercased() }
                                         Button(action: {
                                             Task { await vm.installPlugin(p) }
                                         }) {
                                             HStack(spacing: 4) {
-                                                Image(systemName: "arrow.down.circle.fill")
-                                                Text(loc.string("plugins_install_btn"))
+                                                if isInstalled {
+                                                    Image(systemName: "checkmark")
+                                                    Text(loc.string("plugins_installed"))
+                                                } else {
+                                                    Image(systemName: "arrow.down.circle.fill")
+                                                    Text(loc.string("plugins_install_btn"))
+                                                }
                                             }
                                             .font(.system(size: 11, weight: .semibold))
                                             .foregroundColor(Color.white)
                                             .padding(.horizontal, 10)
                                             .padding(.vertical, 5)
-                                            .background(OvernodeTheme.accentGold)
+                                            .background(isInstalled ? Color(red: 0.25, green: 0.78, blue: 0.50) : OvernodeTheme.accentGold)
                                             .cornerRadius(6)
                                         }
                                         .buttonStyle(.plain)
+                                        .disabled(isInstalled || vm.isLoading)
                                     }
                                     .padding(12)
                                     .background(OvernodeTheme.cardBackground)

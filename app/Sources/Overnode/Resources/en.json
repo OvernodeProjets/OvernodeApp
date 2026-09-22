@@ -142,5 +142,10 @@
   "stats_nodes": "Infrastructure Nodes",
   "stats_locations": "Network Locations",
   "generic_cancel": "Cancel",
-  "generic_create": "Create"
+  "generic_create": "Create",
+  "subdomains_active": "Active & Connected",
+  "renewal_not_available_yet": "Renewal is not available yet.",
+  "renewal_available_in": "Available in",
+  "package_max_allowed": "Maximum available from your plan",
+  "plugins_installed": "Installed"
 }

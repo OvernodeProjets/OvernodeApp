@@ -52,26 +52,75 @@ public final class AuthService: @unchecked Sendable {
     }
     
     public func fetchServersStatus() async -> [ServerInstance] {
-        // 1. Fetch from /api/v5/servers (Toledo server router)
-        do {
-            let raw: [PteroServerWrapper] = try await client.request(endpoint: "/api/v5/servers")
-            if !raw.isEmpty {
-                return raw.map { $0.toServerInstance() }
-            }
-        } catch {
+        // 1. Try our dedicated live endpoint (/api/v5/servers/status)
+        if let live: [ServerInstance] = try? await client.request(endpoint: "/api/v5/servers/status") {
+            return live
         }
         
-        // 2. Fallback to /api/v5/init
-        if let initData = try? await fetchInit(), let srvs = initData.servers, !srvs.isEmpty {
-            return srvs.map { $0.toServerInstance() }
+        // 2. Fallback to /api/v5/servers and enrich with real-time status & consumptions
+        if let raw: [PteroServerWrapper] = try? await client.request(endpoint: "/api/v5/servers"), !raw.isEmpty {
+            return await enrichServers(raw.map { $0.toServerInstance() })
         }
         
-        // 3. Fallback to /api/servers
+        // 3. Fallback to /api/servers and enrich with real-time status & consumptions
         if let raw: [PteroServerWrapper] = try? await client.request(endpoint: "/api/servers"), !raw.isEmpty {
-            return raw.map { $0.toServerInstance() }
+            return await enrichServers(raw.map { $0.toServerInstance() })
+        }
+        
+        // 4. Fallback to /api/v5/init
+        if let initData = try? await fetchInit(), let srvs = initData.servers, !srvs.isEmpty {
+            return await enrichServers(srvs.map { $0.toServerInstance() })
         }
         
         return []
+    }
+    
+    private func enrichServers(_ servers: [ServerInstance]) async -> [ServerInstance] {
+        return await withTaskGroup(of: ServerInstance.self) { group in
+            for server in servers {
+                group.addTask {
+                    struct LiveResResponse: Decodable {
+                        struct LiveAttributes: Decodable {
+                            let currentState: String?
+                            struct Res: Decodable {
+                                let memoryBytes: Double?
+                                let cpuAbsolute: Double?
+                                let diskBytes: Double?
+                                enum CodingKeys: String, CodingKey {
+                                    case memoryBytes = "memory_bytes"
+                                    case cpuAbsolute = "cpu_absolute"
+                                    case diskBytes = "disk_bytes"
+                                }
+                            }
+                            let resources: Res?
+                            enum CodingKeys: String, CodingKey {
+                                case currentState = "current_state"
+                                case resources
+                            }
+                        }
+                        let attributes: LiveAttributes?
+                    }
+                    
+                    var updated = server
+                    if let resData: LiveResResponse = try? await APIClient.shared.request(endpoint: "/api/client/servers/\(server.identifier)/resources") {
+                        if let attr = resData.attributes {
+                            updated.state = attr.currentState ?? "offline"
+                            if let r = attr.resources {
+                                updated.memoryUsedMB = (r.memoryBytes ?? 0) / 1024.0 / 1024.0
+                                updated.cpuUsedPercent = r.cpuAbsolute ?? 0
+                                updated.diskUsedMB = (r.diskBytes ?? 0) / 1024.0 / 1024.0
+                            }
+                        }
+                    }
+                    return updated
+                }
+            }
+            var result: [ServerInstance] = []
+            for await item in group {
+                result.append(item)
+            }
+            return result.sorted { $0.name < $1.name }
+        }
     }
     
     public func logout() {

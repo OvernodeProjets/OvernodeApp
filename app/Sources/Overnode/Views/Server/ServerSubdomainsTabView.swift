@@ -83,7 +83,7 @@ public struct ServerSubdomainsTabView: View {
                                     .font(.system(size: 13, weight: .semibold, design: .monospaced))
                                     .foregroundColor(OvernodeTheme.textPrimary)
                                 
-                                Text(loc.string("subdomains_cloudflare_active"))
+                                Text(loc.string("subdomains_active"))
                                     .font(.system(size: 10))
                                     .foregroundColor(Color(red: 0.25, green: 0.78, blue: 0.50))
                             }
@@ -198,4 +198,3 @@ private struct AddSubdomainSheetView: View {
         .background(OvernodeTheme.cardBackground)
     }
 }
-

@@ -120,6 +120,28 @@ public struct ServerRenewalActionResponse: Codable, Sendable {
     public let message: String?
     public let restarted: Bool?
     public let renewalData: ServerRenewalStatus?
+    public let error: String?
+    public let availableIn: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case message, restarted, renewalData, error, availableIn
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.message = try? c.decode(String.self, forKey: .message)
+        self.restarted = try? c.decode(Bool.self, forKey: .restarted)
+        self.renewalData = try? c.decode(ServerRenewalStatus.self, forKey: .renewalData)
+        self.error = try? c.decode(String.self, forKey: .error)
+        
+        if let str = try? c.decode(String.self, forKey: .availableIn) {
+            self.availableIn = str
+        } else if let dur = try? c.decode(RenewalDurationObject.self, forKey: .availableIn) {
+            self.availableIn = dur.formatted
+        } else {
+            self.availableIn = nil
+        }
+    }
 }
 
 // MARK: - File System Models

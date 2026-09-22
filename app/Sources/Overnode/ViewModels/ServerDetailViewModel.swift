@@ -64,6 +64,9 @@ public final class ServerDetailViewModel: ObservableObject {
     @Published public var packageRamMB: Double = 0
     @Published public var packageDiskMB: Double = 0
     @Published public var packageCpuPercent: Double = 0
+    @Published public var maxAvailableRamMB: Double = 32768
+    @Published public var maxAvailableDiskMB: Double = 65536
+    @Published public var maxAvailableCpuPercent: Double = 800
     @Published public var isSavingPackage: Bool = false
     
     // Plugins
@@ -211,9 +214,7 @@ public final class ServerDetailViewModel: ObservableObject {
             case .subusers:
                 await loadSubusers()
             case .package:
-                self.packageRamMB = server.memoryLimitMB
-                self.packageDiskMB = server.diskLimitMB
-                self.packageCpuPercent = server.cpuLimitPercent
+                await loadPackageResources()
             case .plugins:
                 await loadPlugins()
             case .logs:
@@ -290,11 +291,22 @@ public final class ServerDetailViewModel: ObservableObject {
         Task {
             do {
                 let res = try await serverService.renewServer(serverId: server.identifier)
-                successMessage = res.message ?? "Server renewed successfully"
-                if let data = res.renewalData {
-                    self.renewalStatus = data
+                if let err = res.error {
+                    var msg = err
+                    if let avail = res.availableIn {
+                        msg += " (" + LocalizationManager.shared.string("renewal_available_in") + " " + avail + ")"
+                    }
+                    errorMessage = msg
+                    if let data = res.renewalData {
+                        self.renewalStatus = data
+                    }
                 } else {
-                    await loadRenewal()
+                    successMessage = res.message ?? "Server renewed successfully"
+                    if let data = res.renewalData {
+                        self.renewalStatus = data
+                    } else {
+                        await loadRenewal()
+                    }
                 }
             } catch {
                 errorMessage = error.localizedDescription
@@ -433,6 +445,32 @@ public final class ServerDetailViewModel: ObservableObject {
     }
     
     // MARK: - Package
+    public func loadPackageResources() async {
+        self.packageRamMB = server.memoryLimitMB
+        self.packageDiskMB = server.diskLimitMB
+        self.packageCpuPercent = server.cpuLimitPercent
+        
+        if let res = try? await AuthService.shared.fetchResources() {
+            let remainingRam = res.remaining.ram
+            let remainingDisk = res.remaining.disk
+            let remainingCpu = res.remaining.cpu
+            
+            let allowedMaxRam = max(server.memoryLimitMB + remainingRam, server.memoryLimitMB)
+            let allowedMaxDisk = max(server.diskLimitMB + remainingDisk, server.diskLimitMB)
+            let allowedMaxCpu = max(server.cpuLimitPercent + remainingCpu, server.cpuLimitPercent)
+            
+            self.maxAvailableRamMB = max(allowedMaxRam, 512)
+            self.maxAvailableDiskMB = max(allowedMaxDisk, 1024)
+            self.maxAvailableCpuPercent = max(allowedMaxCpu, 50)
+        }
+    }
+    
+    public func setMaxPackageResources() {
+        self.packageRamMB = maxAvailableRamMB
+        self.packageDiskMB = maxAvailableDiskMB
+        self.packageCpuPercent = maxAvailableCpuPercent
+    }
+    
     public func savePackageChanges() {
         isSavingPackage = true
         errorMessage = nil
@@ -479,12 +517,17 @@ public final class ServerDetailViewModel: ObservableObject {
     }
     
     public func installPlugin(_ item: ServerPluginItem) async {
+        isLoading = true
+        errorMessage = nil
+        successMessage = nil
         do {
             try await configService.installPlugin(serverId: server.identifier, pluginId: item.id, platform: item.platform)
+            successMessage = "Plugin \(item.name) installed successfully"
             await loadPlugins()
         } catch {
             errorMessage = error.localizedDescription
         }
+        isLoading = false
     }
     
     public func untrackPlugin(_ item: ServerPluginItem) async {
