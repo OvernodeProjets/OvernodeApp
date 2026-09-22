@@ -28,6 +28,82 @@ public struct WebAuthModalView: NSViewRepresentable {
         preferences.allowsContentJavaScript = true
         configuration.defaultWebpagePreferences = preferences
         
+        let userContentController = WKUserContentController()
+        userContentController.add(context.coordinator, name: "overnodeBridge")
+        
+        // Injected monitor that checks for genuine authentication status
+        let sessionObserverScript = """
+        (function() {
+            let hasReportedAuth = false;
+            
+            function checkAuthState() {
+                if (hasReportedAuth) return;
+                
+                var path = window.location.pathname || '';
+                if (path.indexOf('2fa') !== -1) return;
+                
+                fetch('/api/v5/state', { credentials: 'include' })
+                    .then(function(r) { return r.ok ? r.json() : null; })
+                    .then(function(stateData) {
+                        if (!stateData) return;
+                        if (stateData.authenticated === true && !stateData.twoFactorPending) {
+                            hasReportedAuth = true;
+                            
+                            Promise.all([
+                                fetch('/api/v5/init', { credentials: 'include' }).then(r => r.ok ? r.json() : null).catch(() => null),
+                                fetch('/api/v5/resources', { credentials: 'include' }).then(r => r.ok ? r.json() : null).catch(() => null)
+                            ]).then(([initData, resData]) => {
+                                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.overnodeBridge) {
+                                    window.webkit.messageHandlers.overnodeBridge.postMessage(JSON.stringify({
+                                        state: stateData,
+                                        init: initData,
+                                        resources: resData
+                                    }));
+                                }
+                            }).catch(() => {
+                                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.overnodeBridge) {
+                                    window.webkit.messageHandlers.overnodeBridge.postMessage(JSON.stringify({
+                                        state: stateData,
+                                        init: null,
+                                        resources: null
+                                    }));
+                                }
+                            });
+                        }
+                    })
+                    .catch(function() {});
+            }
+            
+            // Hook HTML5 History API for instant detection on React Router navigation
+            const originalPushState = history.pushState;
+            history.pushState = function() {
+                originalPushState.apply(this, arguments);
+                setTimeout(checkAuthState, 150);
+            };
+            
+            const originalReplaceState = history.replaceState;
+            history.replaceState = function() {
+                originalReplaceState.apply(this, arguments);
+                setTimeout(checkAuthState, 150);
+            };
+            
+            window.addEventListener('popstate', () => {
+                setTimeout(checkAuthState, 150);
+            });
+            
+            setInterval(checkAuthState, 600);
+            checkAuthState();
+        })();
+        """
+        
+        let userScript = WKUserScript(
+            source: sessionObserverScript,
+            injectionTime: .atDocumentEnd,
+            forMainFrameOnly: false
+        )
+        userContentController.addUserScript(userScript)
+        configuration.userContentController = userContentController
+        
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
@@ -43,7 +119,7 @@ public struct WebAuthModalView: NSViewRepresentable {
     public func updateNSView(_ nsView: WKWebView, context: Context) {}
     
     @MainActor
-    public class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    public class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         var parent: WebAuthModalView
         private weak var webView: WKWebView?
         private var isCompleted = false
@@ -54,125 +130,109 @@ public struct WebAuthModalView: NSViewRepresentable {
         
         func attach(to webView: WKWebView) {
             self.webView = webView
-            scheduleStateCheck()
+            scheduleStatePolling()
         }
         
-        private func scheduleStateCheck() {
+        private func scheduleStatePolling() {
             guard !isCompleted else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                self?.evaluateCurrentState()
-                self?.scheduleStateCheck()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self = self, !self.isCompleted, let webView = self.webView else { return }
+                webView.evaluateJavaScript("typeof checkAuthState === 'function' ? checkAuthState() : null", completionHandler: nil)
+                self.scheduleStatePolling()
             }
+        }
+        
+        public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard message.name == "overnodeBridge",
+                  let jsonString = message.body as? String,
+                  let data = jsonString.data(using: .utf8),
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let webView = message.webView else {
+                return
+            }
+            
+            handleSuccessfulAuth(payload: obj, from: webView)
         }
         
         public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            evaluateCurrentState()
+            webView.evaluateJavaScript("typeof checkAuthState === 'function' ? checkAuthState() : null", completionHandler: nil)
         }
         
-        private func evaluateCurrentState() {
-            guard !isCompleted, let webView = self.webView else { return }
-            
-            // Query auth state directly in the webview via /api/v5/state
-            // When user has 2FA enabled, authenticated becomes true only after 2FA is validated
-            let checkJS = "fetch('/api/v5/state', { credentials: 'include' }).then(r => r.ok ? r.json() : null).then(d => (d && d.authenticated === true && !d.twoFactorPending) ? true : false).catch(() => false)"
-            
-            webView.evaluateJavaScript(checkJS) { [weak self] authRes, _ in
-                Task { @MainActor in
-                    guard let self = self, !self.isCompleted else { return }
-                    if let isAuthed = authRes as? Bool, isAuthed {
-                        self.triggerSuccess(from: webView)
-                    }
-                }
-            }
-        }
-        
-        private func isDashboardURL(_ url: URL) -> Bool {
-            let path = url.path.lowercased()
-            return path.contains("dashboard")
-        }
-        
-        private func triggerSuccess(from webView: WKWebView) {
+        private func handleSuccessfulAuth(payload: [String: Any], from webView: WKWebView) {
             guard !isCompleted else { return }
             isCompleted = true
             
             let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
             
-            // Sync all cookies to URLSession HTTPCookieStorage
             cookieStore.getAllCookies { [weak self] cookies in
                 guard let self = self else { return }
-                
                 for cookie in cookies {
                     HTTPCookieStorage.shared.setCookie(cookie)
                 }
                 
-                // Fetch full authenticated init payload (user, email, coins) and resources directly
-                let fetchRichDataJS = """
-                Promise.all([
-                    fetch('/api/v5/init', { credentials: 'include' }).then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch('/api/v5/resources', { credentials: 'include' }).then(r => r.ok ? r.json() : null).catch(() => null)
-                ]).then(([initData, resData]) => {
-                    return JSON.stringify({
-                        init: initData,
-                        resources: resData
-                    });
-                }).catch(() => '{}');
-                """
+                var parsedUser: User? = nil
+                var parsedResources: ResourcesResponse? = nil
                 
-               webView.evaluateJavaScript(fetchRichDataJS) { result, _ in
-                    var parsedUser: User? = nil
-                    var parsedResources: ResourcesResponse? = nil
+                // 1. Try resolving from init payload
+                if let initObj = payload["init"] as? [String: Any],
+                   let userObj = initObj["user"] as? [String: Any] {
+                    let id = userObj["id"] as? Int ?? 1
+                    let username = userObj["username"] as? String ?? "User"
+                    let email = userObj["email"] as? String ?? (userObj["pterodactylEmail"] as? String ?? "")
+                    let coins = initObj["coins"] as? Int ?? 0
                     
-                    if let jsonStr = result as? String,
-                       let data = jsonStr.data(using: .utf8),
-                       let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        
-                        // Parse Init / User data
-                        if let initObj = obj["init"] as? [String: Any],
-                           let userObj = initObj["user"] as? [String: Any] {
-                            let id = userObj["id"] as? Int ?? 1
-                            let username = userObj["username"] as? String ?? "User"
-                            let email = userObj["email"] as? String ?? (userObj["pterodactylEmail"] as? String ?? "")
-                            let coins = initObj["coins"] as? Int ?? 0
-                            
-                            parsedUser = User(
-                                id: id,
-                                username: username,
-                                email: email,
-                                globalName: userObj["global_name"] as? String,
-                                role: nil,
-                                avatarUrl: nil,
-                                coins: coins
-                            )
-                        }
-                        
-                        // Parse Resources
-                        if let resObj = obj["resources"] as? [String: Any],
-                           let resData = try? JSONSerialization.data(withJSONObject: resObj),
-                           let res = try? JSONDecoder().decode(ResourcesResponse.self, from: resData) {
-                            parsedResources = res
-                        }
-                    }
+                    parsedUser = User(
+                        id: id,
+                        username: username,
+                        email: email,
+                        globalName: userObj["global_name"] as? String,
+                        role: nil,
+                        avatarUrl: nil,
+                        coins: coins
+                    )
+                } else if let stateObj = payload["state"] as? [String: Any],
+                          let userObj = stateObj["user"] as? [String: Any] {
+                    // 2. Fallback to state payload
+                    let id = userObj["id"] as? Int ?? 1
+                    let username = userObj["username"] as? String ?? "User"
+                    let email = userObj["email"] as? String ?? ""
                     
-                    DispatchQueue.main.async {
-                        if let user = parsedUser {
-                            self.parent.onAuthSuccess(user, parsedResources)
-                        } else {
-                            // If evaluateJavaScript didn't return user yet, fetch via URLSession
-                            Task {
-                                if let initData = try? await AuthService.shared.fetchInit(),
-                                   let u = initData.user {
-                                    let resolvedUser = User(
-                                        id: u.id,
-                                        username: u.username,
-                                        email: u.email.isEmpty ? (u.pterodactylEmail ?? "") : u.email,
-                                        globalName: u.globalName,
-                                        role: initData.roles?.first,
-                                        avatarUrl: nil,
-                                        coins: initData.coins ?? 0
-                                    )
-                                    let resources = try? await AuthService.shared.fetchResources()
-                                    self.parent.onAuthSuccess(resolvedUser, resources)
-                                }
+                    parsedUser = User(
+                        id: id,
+                        username: username,
+                        email: email,
+                        globalName: username,
+                        role: nil,
+                        avatarUrl: nil,
+                        coins: 0
+                    )
+                }
+                
+                // Parse Resources
+                if let resObj = payload["resources"] as? [String: Any],
+                   let resData = try? JSONSerialization.data(withJSONObject: resObj),
+                   let res = try? JSONDecoder().decode(ResourcesResponse.self, from: resData) {
+                    parsedResources = res
+                }
+                
+                DispatchQueue.main.async {
+                    if let user = parsedUser {
+                        self.parent.onAuthSuccess(user, parsedResources)
+                    } else {
+                        Task {
+                            if let initData = try? await AuthService.shared.fetchInit(),
+                               let u = initData.user {
+                                let resolved = User(
+                                    id: u.id,
+                                    username: u.username,
+                                    email: u.email.isEmpty ? (u.pterodactylEmail ?? "") : u.email,
+                                    globalName: u.globalName,
+                                    role: initData.roles?.first,
+                                    avatarUrl: nil,
+                                    coins: initData.coins ?? 0
+                                )
+                                let res = try? await AuthService.shared.fetchResources()
+                                self.parent.onAuthSuccess(resolved, res)
                             }
                         }
                     }
