@@ -169,6 +169,7 @@ public struct WebAuthModalView: NSViewRepresentable {
                 for cookie in cookies {
                     HTTPCookieStorage.shared.setCookie(cookie)
                 }
+                SessionPersistence.shared.persistCookies()
                 
                 var parsedUser: User? = nil
                 var parsedResources: ResourcesResponse? = nil

@@ -45,7 +45,7 @@ public struct ResourceGaugeView: View {
                 
                 Spacer()
                 
-                Text("(usedFormatted)(unit) / (totalFormatted)(unit)")
+                Text("\(usedFormatted)\(!unit.isEmpty ? " " + unit : "") / \(totalFormatted)\(!unit.isEmpty ? " " + unit : "")")
                     .font(.system(size: 11, weight: .regular))
                     .foregroundColor(Color(red: 0.584, green: 0.631, blue: 0.678)) // #95a1ad
             }

@@ -88,8 +88,8 @@ public struct DashboardView: View {
                             ResourceGaugeView(
                                 title: "Servers",
                                 iconName: "server.rack",
-                                usedFormatted: "(res.current.servers)",
-                                totalFormatted: "(res.limits.servers)",
+                                usedFormatted: "\(res.current.servers)",
+                                totalFormatted: "\(res.limits.servers)",
                                 unit: "",
                                 percentage: res.serversPercentage,
                                 solidColor: Color(red: 0.58, green: 0.45, blue: 0.92)

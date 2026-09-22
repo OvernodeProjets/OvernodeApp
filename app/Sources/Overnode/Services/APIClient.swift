@@ -8,6 +8,9 @@ public final class APIClient: @unchecked Sendable {
     private let session: URLSession
     
     private init() {
+        // Restore persistent cookies at launch
+        SessionPersistence.shared.restoreCookies()
+        
         let config = URLSessionConfiguration.default
         config.httpCookieAcceptPolicy = .always
         config.httpShouldSetCookies = true
@@ -62,10 +65,11 @@ public final class APIClient: @unchecked Sendable {
             for cookie in cookies {
                 HTTPCookieStorage.shared.setCookie(cookie)
             }
+            SessionPersistence.shared.persistCookies()
         }
         
         guard (200...299).contains(httpResponse.statusCode) else {
-            let errorMsg = String(data: data, encoding: .utf8) ?? "HTTP \(httpResponse.statusCode)"
+            let errorMsg = String(data: data, encoding: .utf8) ?? "HTTP (httpResponse.statusCode)"
             throw NSError(domain: "APIClient", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMsg])
         }
         
@@ -74,6 +78,8 @@ public final class APIClient: @unchecked Sendable {
     }
     
     public func clearCookies() {
+        SessionPersistence.shared.clear()
+        
         if let cookies = HTTPCookieStorage.shared.cookies(for: baseURL) {
             for cookie in cookies {
                 HTTPCookieStorage.shared.deleteCookie(cookie)
