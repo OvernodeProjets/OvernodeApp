@@ -23,6 +23,7 @@ The detailed rules live in `.agents/rules/`. Read the relevant file before actin
 - **i18n** - [.agents/rules/i18n.md](.agents/rules/i18n.md) - Conventions de traduction FR/EN et localisation
 - **UI & Content** - [.agents/rules/ui-rules.md](.agents/rules/ui-rules.md) - Règles d'interface, interdiction de mentionner console.overnode.fr sur l'UI, logos
 - **Server Management** - [.agents/rules/server-management.md](.agents/rules/server-management.md) - Règles et architecture de la gestion des serveurs
+- **Wallet, Store & Support** - [.agents/rules/wallet-store-support.md](.agents/rules/wallet-store-support.md) - Règles d architecture et flux pour le Wallet, la Boutique, le Support et l AFK
 
 ## Universal Rules
 

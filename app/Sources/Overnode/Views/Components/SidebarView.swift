@@ -3,6 +3,10 @@ import SwiftUI
 public enum NavigationTab: String, CaseIterable, Identifiable {
     case dashboard = "dashboard"
     case servers = "servers"
+    case wallet = "wallet"
+    case store = "store"
+    case support = "support"
+    case afk = "afk"
     case settings = "settings"
     
     public var id: String { rawValue }
@@ -11,6 +15,10 @@ public enum NavigationTab: String, CaseIterable, Identifiable {
         switch self {
         case .dashboard: return "square.grid.2x2"
         case .servers: return "server.rack"
+        case .wallet: return "creditcard"
+        case .store: return "bag"
+        case .support: return "bubble.left.and.bubble.right"
+        case .afk: return "clock.arrow.circlepath"
         case .settings: return "gearshape"
         }
     }

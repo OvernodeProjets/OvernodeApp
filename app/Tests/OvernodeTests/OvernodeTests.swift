@@ -76,7 +76,7 @@ final class OvernodeTests: XCTestCase {
         XCTAssertEqual(servers.count, 1)
         XCTAssertEqual(servers[0].id, 42)
         XCTAssertEqual(servers[0].identifier, "srv-42a")
-        XCTAssertEqual(servers[0].node, "1")
+        XCTAssertEqual(servers[0].node, "Node 1")
         XCTAssertTrue(servers[0].isOnline)
         XCTAssertEqual(servers[0].memoryUsedMB, 1024)
     }
@@ -119,8 +119,8 @@ final class OvernodeTests: XCTestCase {
         let initResp = try JSONDecoder().decode(InitResponse.self, from: json)
         XCTAssertNotNil(initResp.user)
         XCTAssertEqual(initResp.coins, 250)
-        XCTAssertEqual(initResp.roles, ["Super Admin", "VIP Member"])
+        XCTAssertEqual(initResp.roles?.compactMap { $0.name }, ["Super Admin", "VIP Member"])
         XCTAssertEqual(initResp.servers?.count, 1)
-        XCTAssertEqual(initResp.servers?[0].attributes.node, "2")
+        XCTAssertEqual(initResp.servers?[0].attributes.node, "Node 2")
     }
 }

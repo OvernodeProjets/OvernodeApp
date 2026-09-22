@@ -45,6 +45,20 @@ public struct DashboardView: View {
                             overviewContent
                         case .servers:
                             serversListContent
+                        case .wallet:
+                            WalletView(userCoins: authVM.currentUser?.coins ?? 0)
+                        case .store:
+                            StoreView(
+                                initialCoins: authVM.currentUser?.coins ?? 0,
+                                onResourcePurchased: { newCoins in
+                                    authVM.currentUser?.coins = newCoins
+                                    dashboardVM.loadDashboardData(force: true)
+                                }
+                            )
+                        case .support:
+                            SupportView()
+                        case .afk:
+                            AFKView()
                         case .settings:
                             settingsContent
                         }
