@@ -37,18 +37,14 @@ public final class DashboardViewModel: ObservableObject {
             let srvs = await authService.fetchServersStatus()
             self.servers = srvs
             
-            // 2. Fetch resources & platform stats in parallel
-            async let resTask = authService.fetchResources()
-            async let statsTask = authService.fetchPlatformStats()
+            // 2. Fetch platform stats & resources
+            let stats = await authService.fetchPlatformStats()
+            self.platformStats = stats
             
-            if let res = try? await resTask {
+            if let res = try? await authService.fetchResources() {
                 self.resources = res
             } else if self.resources == nil {
                 self.resources = ResourcesResponse.empty
-            }
-            
-            if let stats = try? await statsTask {
-                self.platformStats = stats
             }
             
             self.lastUpdated = Date()
