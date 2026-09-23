@@ -97,6 +97,8 @@ if [ -d "$WIDGET_APPEX" ]; then
 fi
 
 # Sign Main App Bundle (preserving embedded appex signature)
+xattr -c -r "$BUNDLE_DIR" 2>/dev/null || true
+
 codesign --force --sign - "$BUNDLE_DIR"
 
 # Remove quarantine attribute if present
