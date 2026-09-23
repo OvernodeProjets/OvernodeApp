@@ -97,7 +97,24 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             .frame(width: 1100, height: 740)
         
         let finalView: AnyView
-        if args.contains("--snapshot-dashboard") {
+        if args.contains("--snapshot-update") {
+            let updateVM = UpdateViewModel.shared
+            updateVM.state = .available(
+                UpdateCheckResponse(
+                    updateAvailable: true,
+                    clientVersion: "1.0.0",
+                    latestVersion: "1.1.0",
+                    downloadUrl: "https://zBvoGzjDABxGuLuKux59LtECbKIpNPcp.overnode.fr/downloads/Overnode-v1.1.0.zip",
+                    releaseNotes: "• Système d'auto-mise à jour en temps réel\n• Compatibilité complète Apple Silicon\n• Optimisations et fluidité améliorée",
+                    mandatory: false
+                )
+            )
+            updateVM.showModal = true
+            finalView = AnyView(RootContentView().preferredColorScheme(.dark).frame(width: 1100, height: 740))
+        } else if args.contains("--snapshot-settings") {
+            let authVM = AuthViewModel()
+            finalView = AnyView(DashboardView(authVM: authVM, initialTab: .settings).preferredColorScheme(.dark).frame(width: 1100, height: 740))
+        } else if args.contains("--snapshot-dashboard") {
             let authVM = AuthViewModel()
             finalView = AnyView(DashboardView(authVM: authVM).preferredColorScheme(.dark).frame(width: 1100, height: 740))
         } else {
@@ -119,6 +136,16 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            hosting.layoutSubtreeIfNeeded()
+            if let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) {
+                hosting.cacheDisplay(in: hosting.bounds, to: rep)
+                if let pngData = rep.representation(using: .png, properties: [:]) {
+                    try? pngData.write(to: URL(fileURLWithPath: path))
+                    print("SNAPSHOT_SAVED:\(path)")
+                    exit(0)
+                }
+            }
+            
             let wid = window.windowNumber
             let task = Process()
             task.launchPath = "/usr/sbin/screencapture"
@@ -135,3 +162,4 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 }
+

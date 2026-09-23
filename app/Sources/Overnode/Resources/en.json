@@ -301,5 +301,20 @@
   "daily_hist_date": "DATE & TIME",
   "daily_hist_streak": "STREAK",
   "daily_hist_details": "EARNING DETAILS",
-  "daily_hist_reward": "REWARD"
+  "daily_hist_reward": "REWARD",
+  "update_badge": "Update available",
+  "update_title": "New version of Overnode",
+  "update_notes_title": "What's new & fixes",
+  "update_default_notes": "This update includes performance and stability improvements.",
+  "update_downloading": "Downloading update...",
+  "update_restarting": "Installing & restarting...",
+  "update_later": "Later",
+  "update_now_button": "Update Now",
+  "update_check_button": "Check for updates",
+  "update_checking": "Checking for updates...",
+  "update_up_to_date": "Your application is up to date",
+  "update_section_title": "Software Updates",
+  "update_arch_label": "Architecture",
+  "update_version_label": "Installed version",
+  "update_btn_install": "Install version"
 }

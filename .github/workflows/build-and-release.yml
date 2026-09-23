@@ -1,0 +1,170 @@
+name: Build, Verify & Release Overnode macOS (Apple Silicon)
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version de release (ex: 1.1.0)'
+        required: false
+        default: '1.1.0'
+      create_release:
+        description: 'Créer une release GitHub officielle'
+        type: boolean
+        default: true
+
+jobs:
+  validate-and-build:
+    name: Verify Apple Silicon & Build App
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer || true
+          swift --version
+
+      - name: Clean Extended Attributes & Caches
+        run: |
+          echo "==> Cleaning macOS extended attributes & detritus..."
+          xattr -cr app/Sources app/Tests app/Resources 2>/dev/null || true
+
+      - name: Run Swift Tests
+        run: |
+          echo "==> Running Overnode test suite..."
+          cd app
+          swift test
+
+      - name: Pre-compile & Verify Apple Silicon (arm64) Compatibility
+        run: |
+          echo "==> Pre-compiling Overnode for Apple Silicon..."
+          cd app
+          swift build -c release --triple arm64-apple-macosx14.0
+
+          BINARY_PATH=".build/arm64-apple-macosx14.0/release/Overnode"
+          if [ ! -f "$BINARY_PATH" ]; then
+            BINARY_PATH=".build/release/Overnode"
+          fi
+
+          echo "==> Verifying binary architecture..."
+          ARCH_INFO=$(file "$BINARY_PATH")
+          echo "Binary details: $ARCH_INFO"
+          if [[ "$ARCH_INFO" != *"arm64"* ]]; then
+            echo "::error::Binary is not compiled for arm64 (Apple Silicon)!"
+            exit 1
+          fi
+          echo "✓ Verified: Native Apple Silicon (arm64) executable."
+
+          echo "==> Verifying minimum macOS compatibility..."
+          grep -q "macOS(.v14)" Package.swift || grep -q "14.0" widget-Info.plist
+          echo "✓ Verified: Compatible with macOS 14+ on Apple Silicon (M1, M2, M3, M4)."
+
+      - name: Setup Apple Signing Keychain (app@overnode.fr)
+        env:
+          APPLE_CERT_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD || 'overnode-temporary-keychain-2026' }}
+        run: |
+          if [ -n "$APPLE_CERT_BASE64" ]; then
+            echo "==> Setting up Apple Developer ID certificate for app@overnode.fr..."
+            KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+            security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+            security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+            CERT_PATH=$RUNNER_TEMP/certificate.p12
+            echo "$APPLE_CERT_BASE64" | base64 --decode > "$CERT_PATH"
+
+            security import "$CERT_PATH" -P "$APPLE_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+            security list-keychain-db -d user -s "$KEYCHAIN_PATH"
+            security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+            echo "✓ Keychain successfully prepared for code signing."
+          else
+            echo "ℹ No Apple signing secret provided; signing with local ad-hoc identity."
+          fi
+
+      - name: Build Application Bundle & Sign
+        env:
+          SIGNING_IDENTITY: ${{ secrets.SIGNING_IDENTITY || 'Developer ID Application: Overnode (app@overnode.fr)' }}
+        run: |
+          echo "==> Generating production Overnode.app bundle..."
+          cd app
+          ./build_app.sh
+
+          APP_PATH="build/Overnode.app"
+          
+          # Check if Apple certificate identity is available in keychain
+          if security find-identity -v -p codesigning | grep -q "app@overnode.fr"; then
+            echo "==> Signing bundle with Apple ID identity ($SIGNING_IDENTITY)..."
+            codesign --force --deep --options runtime --sign "$SIGNING_IDENTITY" "$APP_PATH"
+          else
+            echo "==> Signing with ad-hoc identity for general distribution..."
+            codesign --force --deep --sign - "$APP_PATH"
+          fi
+
+          echo "==> Verifying signature integrity..."
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          spctl --assess --type execute --verbose "$APP_PATH" || true
+          echo "✓ Bundle successfully signed and verified."
+
+      - name: Package Release Archive & Compute Checksums
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${{ github.ref_name }}"
+            VERSION=${VERSION#v}
+          fi
+          if [ -z "$VERSION" ] || [ "$VERSION" = "main" ]; then
+            VERSION="1.1.0"
+          fi
+
+          echo "Packaging version: v$VERSION"
+          cd app/build
+          ZIP_NAME="Overnode-v${VERSION}-macOS-arm64.zip"
+          ditto -c -k --sequesterRsrc --keepParent "Overnode.app" "$ZIP_NAME"
+
+          shasum -a 256 "$ZIP_NAME" > "checksums.sha256"
+          cat "checksums.sha256"
+
+          echo "ZIP_PATH=app/build/$ZIP_NAME" >> $GITHUB_ENV
+          echo "CHECKSUM_PATH=app/build/checksums.sha256" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Overnode-macOS-arm64
+          path: |
+            ${{ env.ZIP_PATH }}
+            ${{ env.CHECKSUM_PATH }}
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.RELEASE_VERSION }}
+          name: Overnode v${{ env.RELEASE_VERSION }} (Apple Silicon)
+          body: |
+            ### Mise à jour Overnode v${{ env.RELEASE_VERSION }}
+            - Optimisé pour Apple Silicon (M1/M2/M3/M4)
+            - Signature Apple : app@overnode.fr
+            - Auto-updater compatible OvernodeApp-Updater
+          files: |
+            ${{ env.ZIP_PATH }}
+            ${{ env.CHECKSUM_PATH }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

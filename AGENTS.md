@@ -14,17 +14,19 @@ Porte l'expérience de gestion cloud nativement sur macOS avec authentification 
 
 - `cd app && swift build -c release` - Compiler l'application macOS
 - `cd app && ./build_app.sh` - Générer le bundle macOS Overnode.app complet
+- `cd OvernodeApp-Updater && npm start` - Démarrer le portail web de gestion des mises à jour
 
 ## Rules
 
 The detailed rules live in `.agents/rules/`. Read the relevant file before acting:
 
 - **Architecture** - [.agents/rules/architecture.md](.agents/rules/architecture.md) - Structure modulaire, séparation des responsabilités et petits fichiers
+- **Auto-Updater** - [.agents/rules/auto-updater.md](.agents/rules/auto-updater.md) - Système de mise à jour automatique, portail OvernodeApp-Updater et CI/CD GitHub
 - **i18n** - [.agents/rules/i18n.md](.agents/rules/i18n.md) - Conventions de traduction FR/EN et localisation
 - **UI & Content** - [.agents/rules/ui-rules.md](.agents/rules/ui-rules.md) - Règles d'interface, interdiction de mentionner console.overnode.fr sur l'UI, logos
 - **Server Management** - [.agents/rules/server-management.md](.agents/rules/server-management.md) - Règles et architecture de la gestion des serveurs
 - **Wallet, Store & Support** - [.agents/rules/wallet-store-support.md](.agents/rules/wallet-store-support.md) - Règles d architecture et flux pour le Wallet, la Boutique, le Support et l AFK
- - **Daily Reward & Widget** - [.agents/rules/daily-reward-widget.md](.agents/rules/daily-reward-widget.md) - Règles du module Daily Reward et du widget macOS
+- **Daily Reward & Widget** - [.agents/rules/daily-reward-widget.md](.agents/rules/daily-reward-widget.md) - Règles du module Daily Reward et du widget macOS
 
 ## Universal Rules
 
@@ -32,3 +34,4 @@ The detailed rules live in `.agents/rules/`. Read the relevant file before actin
 - **CRITICAL**: Ne JAMAIS afficher `console.overnode.fr` à l'utilisateur dans l'interface. Utiliser "Console Cloud" ou "Overnode".
 - **CRITICAL**: Supporter nativement Apple Silicon avec UI ultra-fluide respectant la charte Overnode (Dark theme, accents dorés/bleus, police système SF Pro / Inter).
 - **CRITICAL**: Gérer l'authentification avec persistance sécurisée des sessions (cookies HTTP / Bearer) et écran natif de saisie TOTP pour le double facteur (2FA).
+

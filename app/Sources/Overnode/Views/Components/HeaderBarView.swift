@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct HeaderBarView: View {
     @ObservedObject var loc = LocalizationManager.shared
+    @ObservedObject var updateVM = UpdateViewModel.shared
     let onRefresh: () -> Void
     
     public init(onRefresh: @escaping () -> Void) {
@@ -10,7 +11,7 @@ public struct HeaderBarView: View {
     
     public var body: some View {
         HStack(spacing: 16) {
-            // Brand Logo Only (clean and minimal, no "Connected" badge)
+            // Brand Logo
             HStack(spacing: 10) {
                 if let logoURL = Bundle.module.url(forResource: "overnode_logo", withExtension: "png"),
                    let nsImage = NSImage(contentsOf: logoURL) {
@@ -26,6 +27,27 @@ public struct HeaderBarView: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(OvernodeTheme.textPrimary)
                 }
+            }
+            
+            // Available Update Badge Indicator
+            if updateVM.hasUpdateAvailable {
+                Button(action: {
+                    updateVM.showModal = true
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 11, weight: .bold))
+                        Text(loc.string("update_badge"))
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundColor(Color.black)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(OvernodeTheme.accentGold)
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .help(loc.string("update_title"))
             }
             
             Spacer()
@@ -86,3 +108,4 @@ public struct HeaderBarView: View {
         )
     }
 }
+

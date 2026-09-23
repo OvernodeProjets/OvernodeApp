@@ -301,5 +301,20 @@
   "daily_hist_date": "DATE & HEURE",
   "daily_hist_streak": "SÉRIE",
   "daily_hist_details": "DÉTAILS DES GAINS",
-  "daily_hist_reward": "RÉCOMPENSE"
+  "daily_hist_reward": "RÉCOMPENSE",
+  "update_badge": "Mise à jour disponible",
+  "update_title": "Nouvelle version d'Overnode",
+  "update_notes_title": "Nouveautés & Correctifs",
+  "update_default_notes": "Cette mise à jour apporte des améliorations de performance et de stabilité.",
+  "update_downloading": "Téléchargement de la mise à jour...",
+  "update_restarting": "Installation & redémarrage...",
+  "update_later": "Plus tard",
+  "update_now_button": "Mettre à jour",
+  "update_check_button": "Rechercher des mises à jour",
+  "update_checking": "Vérification en cours...",
+  "update_up_to_date": "Votre application est à jour",
+  "update_section_title": "Mises à jour du logiciel",
+  "update_arch_label": "Architecture",
+  "update_version_label": "Version installée",
+  "update_btn_install": "Installer la version"
 }

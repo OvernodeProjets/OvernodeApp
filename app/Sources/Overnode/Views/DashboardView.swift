@@ -4,14 +4,16 @@ public struct DashboardView: View {
     @ObservedObject var authVM: AuthViewModel
     @StateObject private var dashboardVM: DashboardViewModel
     @ObservedObject var loc = LocalizationManager.shared
+    @ObservedObject var updateVM = UpdateViewModel.shared
     @State private var selectedTab: NavigationTab = .dashboard
     @State private var selectedServer: ServerInstance?
     @State private var selectedServerTab: ServerTab = .console
     @State private var isShowingCreateServerModal: Bool = false
     
-    public init(authVM: AuthViewModel) {
+    public init(authVM: AuthViewModel, initialTab: NavigationTab = .dashboard) {
         self.authVM = authVM
         self._dashboardVM = StateObject(wrappedValue: DashboardViewModel(initialResources: authVM.initialResources))
+        self._selectedTab = State(initialValue: initialTab)
     }
     
     public var body: some View {
@@ -310,6 +312,7 @@ public struct DashboardView: View {
                     .foregroundColor(OvernodeTheme.textPrimary)
                     .padding(.top, 4)
                 
+                // Language Switcher Card
                 VStack(alignment: .leading, spacing: 16) {
                     Text(loc.string("settings_language_title"))
                         .font(.system(size: 15, weight: .semibold))
@@ -336,6 +339,85 @@ public struct DashboardView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(18)
+                .background(OvernodeTheme.cardBackground)
+                .cornerRadius(10)
+                
+                // Software Updates Card
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(loc.string("update_section_title"))
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(OvernodeTheme.textPrimary)
+                            Text("\(loc.string("update_version_label")) : v\(updateVM.currentVersion)")
+                                .font(.system(size: 12))
+                                .foregroundColor(OvernodeTheme.textSecondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            Task {
+                                await updateVM.checkForUpdates(silent: false)
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                Text(loc.string("update_check_button"))
+                            }
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color.black)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(OvernodeTheme.accentGold)
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    if updateVM.hasUpdateAvailable {
+                        HStack(spacing: 12) {
+                            Image(systemName: "sparkles")
+                                .foregroundColor(OvernodeTheme.accentGold)
+                            Text(loc.string("update_badge"))
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(OvernodeTheme.textPrimary)
+                            Spacer()
+                            Button(action: {
+                                updateVM.showModal = true
+                            }) {
+                                Text(loc.string("update_btn_install"))
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(Color.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.blue)
+                                    .cornerRadius(6)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(12)
+                        .background(OvernodeTheme.accentGold.opacity(0.1))
+                        .cornerRadius(8)
+                    } else if case .checking = updateVM.state {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                            Text(loc.string("update_checking"))
+                                .font(.system(size: 13))
+                                .foregroundColor(OvernodeTheme.textSecondary)
+                        }
+                    } else {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(Color(red: 0.133, green: 0.773, blue: 0.365))
+                            Text(loc.string("update_up_to_date"))
+                                .font(.system(size: 13))
+                                .foregroundColor(OvernodeTheme.textSecondary)
                         }
                     }
                 }
@@ -402,3 +484,4 @@ private struct PlatformStatCard: View {
         )
     }
 }
+

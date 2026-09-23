@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OvernodeApp-Updater - Inscription Administrateur</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif; }
+    body {
+      background: radial-gradient(circle at 50% 20%, #151d2f 0%, #080b11 80%);
+      color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .auth-card {
+      background: rgba(19, 26, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 16px;
+      padding: 36px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 30px rgba(245, 158, 11, 0.08);
+    }
+    .logo-container {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+    p.subtitle {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .console-hint {
+      background: rgba(11, 15, 25, 0.9);
+      border: 1px dashed rgba(245, 158, 11, 0.4);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #fbbf24;
+      margin-bottom: 18px;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert {
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+    .alert-error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      background: rgba(11, 15, 25, 0.8);
+      border: 1px solid #29354d;
+      border-radius: 8px;
+      padding: 11px 14px;
+      color: #ffffff;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    input:focus {
+      border-color: #fbbf24;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    }
+    .code-input {
+      font-family: 'SF Mono', Monaco, Menlo, monospace;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: #fbbf24;
+    }
+    button.btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.4);
+      transition: all 0.2s;
+      margin-top: 6px;
+    }
+    button.btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(217, 119, 6, 0.5);
+    }
+    .footer-link {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    .footer-link a {
+      color: #38bdf8;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    <div class="logo-container">
+      <div class="badge">SÉCURITÉ CONSOLE</div>
+      <h1>Créer un compte</h1>
+      <p class="subtitle">Accès au portail OvernodeApp-Updater</p>
+    </div>
+
+    <div class="console-hint">
+      <span>🔑</span>
+      <span>Le <strong>code console</strong> est généré et affiché dans les logs du serveur lors du démarrage.</span>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <form action="/auth/register" method="POST">
+      <div class="form-group">
+        <label for="username">Nom d'utilisateur</label>
+        <input type="text" id="username" name="username" required placeholder="admin" autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password" required placeholder="••••••••">
+      </div>
+
+      <div class="form-group">
+        <label for="consoleCode">Code Console (Vérification serveur)</label>
+        <input type="text" id="consoleCode" name="consoleCode" class="code-input" required placeholder="UP-XXXX-XXXX" autocomplete="off">
+      </div>
+
+      <button type="submit" class="btn-primary">Valider & S'inscrire</button>
+    </form>
+
+    <div class="footer-link">
+      Déjà un compte ? <a href="/auth/login">Se connecter</a>
+    </div>
+  </div>
+</body>
+</html>
+

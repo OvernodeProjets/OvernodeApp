@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  overnode-updater:
+    build: .
+    container_name: overnode-app-updater
+    restart: unless-stopped
+    ports:
+      - "3344:3344"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=3344
+      - NODE_ENV=production
+      - SESSION_SECRET=${SESSION_SECRET:-overnode-super-secret-updater-token-2026}
+      - CONSOLE_CODE=${CONSOLE_CODE:-}
+      - GITHUB_REPO=${GITHUB_REPO:-overnode-network/OvernodeApp}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+
