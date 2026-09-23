@@ -75,6 +75,27 @@ public struct UpdateModalView: View {
                     )
                 }
                 
+                // Error banner
+                if let errorMsg = vm.errorMessage {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(Color.red)
+                        Text(errorMsg)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.red)
+                            .lineLimit(3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(10)
+                    .background(Color.red.opacity(0.12))
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                    )
+                }
+                
                 // Download progress bar
                 if case let .downloading(progress) = vm.state {
                     VStack(spacing: 8) {
@@ -146,7 +167,7 @@ public struct UpdateModalView: View {
                                 Image(systemName: "arrow.down.circle.fill")
                                     .font(.system(size: 13))
                             }
-                            Text(loc.string("update_now_button"))
+                            Text(vm.errorMessage != nil ? loc.string("update_retry") : loc.string("update_now_button"))
                         }
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color.black)

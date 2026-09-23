@@ -67,6 +67,7 @@ public final class UpdateViewModel: ObservableObject {
         
         state = .downloading(progress: 0.0)
         downloadProgress = 0.0
+        errorMessage = nil
         
         do {
             let fileURL = try await service.downloadUpdate(from: update.downloadUrl) { [weak self] p in

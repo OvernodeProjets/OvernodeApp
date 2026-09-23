@@ -125,9 +125,12 @@ cat << EOF > "$CONTENTS_DIR/Info.plist"
 EOF
 
 # 5. Clean attributes & ad-hoc sign bundle
+dot_clean "$BUNDLE_DIR" 2>/dev/null || true
 xattr -cr "$BUNDLE_DIR" 2>/dev/null || true
 if [ -d "$WIDGET_APPEX" ]; then
     codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
 fi
+dot_clean "$BUNDLE_DIR" 2>/dev/null || true
+xattr -cr "$BUNDLE_DIR" 2>/dev/null || true
 codesign --force --sign - "$BUNDLE_DIR"
 echo "==> Successfully created and signed Overnode.app"

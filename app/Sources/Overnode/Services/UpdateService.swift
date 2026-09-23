@@ -77,9 +77,28 @@ public final class UpdateService: @unchecked Sendable {
         
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        let destinationFile = tempDir.appendingPathComponent("Overnode-Update.zip")
         
-        let (bytes, response) = try await session.bytes(from: url)
+        let ext = url.pathExtension.lowercased()
+        let filename = (ext == "dmg" || ext == "zip") ? "Overnode-Update.\(ext)" : "Overnode-Update.dmg"
+        let destinationFile = tempDir.appendingPathComponent(filename)
+        
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 60
+        request.setValue("Overnode-Updater-Client/\(currentAppVersion)", forHTTPHeaderField: "User-Agent")
+        
+        let (bytes, response) = try await session.bytes(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+        
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw NSError(
+                domain: "OvernodeUpdater",
+                code: httpResponse.statusCode,
+                userInfo: [NSLocalizedDescriptionKey: "Erreur HTTP \(httpResponse.statusCode) lors du téléchargement de la mise à jour."]
+            )
+        }
+        
         let totalBytes = response.expectedContentLength
         var receivedBytes: Int64 = 0
         
@@ -95,6 +114,14 @@ public final class UpdateService: @unchecked Sendable {
             }
         }
         
+        guard fileData.count > 100_000 else {
+            throw NSError(
+                domain: "OvernodeUpdater",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Fichier de mise à jour incomplet ou corrompu (taille: \(fileData.count) octets)."]
+            )
+        }
+        
         onProgress(1.0)
         try fileData.write(to: destinationFile)
         return destinationFile
@@ -104,30 +131,109 @@ public final class UpdateService: @unchecked Sendable {
         let appBundlePath = Bundle.main.bundlePath
         let pid = ProcessInfo.processInfo.processIdentifier
         
+        let logPath = "/tmp/overnode_updater.log"
         let scriptPath = FileManager.default.temporaryDirectory.appendingPathComponent("overnode_updater_\(pid).sh")
         let script = """
         #!/bin/bash
-        set -e
-        # Wait for old app process to terminate
-        while kill -0 \(pid) 2>/dev/null; do
-            sleep 0.3
+        exec >> "\(logPath)" 2>&1
+        echo "================================================="
+        echo "🚀 Overnode Updater started at $(date)"
+        echo "Target App Bundle: \(appBundlePath)"
+        echo "Parent App PID: \(pid)"
+        echo "Archive: \(archiveURL.path)"
+        echo "================================================="
+
+        # 1. Wait for old app process to terminate
+        echo "Waiting for PID \(pid) to terminate..."
+        for i in {1..50}; do
+            if ! kill -0 \(pid) 2>/dev/null; then
+                echo "✓ Old application terminated."
+                break
+            fi
+            sleep 0.2
         done
-        
+        sleep 0.5
+
+        # 2. Extract archive (DMG or ZIP)
         TMP_EXTRACT=$(mktemp -d /tmp/overnode_unpack.XXXXXX)
-        ditto -x -k "\(archiveURL.path)" "$TMP_EXTRACT"
-        
+        ARCHIVE="\(archiveURL.path)"
+        FILE_TYPE=$(file -b "$ARCHIVE" 2>/dev/null || true)
+        echo "Unpacking into: $TMP_EXTRACT"
+        echo "Archive file type: $FILE_TYPE"
+
+        if [[ "$ARCHIVE" == *.dmg ]] || [[ "$FILE_TYPE" == *"disk image"* ]] || [[ "$FILE_TYPE" == *"zlib"* ]] || [[ "$FILE_TYPE" == *"Apple"* ]] || [[ "$FILE_TYPE" == *"UDIF"* ]]; then
+            echo "Mounting disk image: $ARCHIVE"
+            TMP_MOUNT=$(mktemp -d /tmp/overnode_mount.XXXXXX)
+            hdiutil attach -nobrowse -readonly "$ARCHIVE" -mountpoint "$TMP_MOUNT"
+            
+            FOUND_APP=$(find "$TMP_MOUNT" -maxdepth 2 -name "Overnode.app" -type d | head -n 1)
+            if [ -n "$FOUND_APP" ] && [ -d "$FOUND_APP" ]; then
+                echo "Found app in mount: $FOUND_APP"
+                cp -R "$FOUND_APP" "$TMP_EXTRACT/Overnode.app"
+            else
+                echo "ERROR: Overnode.app not found inside DMG mount!"
+            fi
+            hdiutil detach "$TMP_MOUNT" -force 2>/dev/null || true
+            rmdir "$TMP_MOUNT" 2>/dev/null || true
+        else
+            echo "Extracting zip archive with ditto..."
+            ditto -x -k "$ARCHIVE" "$TMP_EXTRACT"
+        fi
+
+        # 3. Locate and validate new app
         NEW_APP="$TMP_EXTRACT/Overnode.app"
         if [ ! -d "$NEW_APP" ]; then
             NEW_APP=$(find "$TMP_EXTRACT" -name "Overnode.app" -type d | head -n 1)
         fi
-        
-        if [ -n "$NEW_APP" ] && [ -d "$NEW_APP" ]; then
-            xattr -cr "$NEW_APP" 2>/dev/null || true
-            rm -rf "\(appBundlePath)"
-            cp -R "$NEW_APP" "\(appBundlePath)"
+
+        if [ -z "$NEW_APP" ] || [ ! -d "$NEW_APP" ]; then
+            echo "ERROR: Overnode.app was not found in $TMP_EXTRACT. Aborting."
             rm -rf "$TMP_EXTRACT" "\(archiveURL.path)"
-            open -n -a "\(appBundlePath)"
+            exit 1
         fi
+
+        EXEC_BIN=$(find "$NEW_APP/Contents/MacOS" -type f 2>/dev/null | head -n 1)
+        if [ -z "$EXEC_BIN" ] || [ ! -f "$EXEC_BIN" ]; then
+            echo "ERROR: No executable found inside $NEW_APP/Contents/MacOS. Aborting."
+            rm -rf "$TMP_EXTRACT" "\(archiveURL.path)"
+            exit 1
+        fi
+
+        chmod +x "$EXEC_BIN"
+        xattr -cr "$NEW_APP" 2>/dev/null || true
+        echo "✓ New app validated: $NEW_APP (binary: $EXEC_BIN)"
+
+        # 4. Safely swap old app bundle with new app bundle
+        BACKUP_APP="/tmp/Overnode_Backup_\(pid)"
+        rm -rf "$BACKUP_APP"
+        if [ -d "\(appBundlePath)" ]; then
+            echo "Backing up current app to $BACKUP_APP"
+            mv "\(appBundlePath)" "$BACKUP_APP"
+        fi
+
+        mkdir -p "$(dirname "\(appBundlePath)")"
+        echo "Installing new app to \(appBundlePath)..."
+        if cp -R "$NEW_APP" "\(appBundlePath)"; then
+            echo "✓ Installation successful. Cleaning backup..."
+            dot_clean "\(appBundlePath)" 2>/dev/null || true
+            xattr -cr "\(appBundlePath)" 2>/dev/null || true
+            rm -rf "$BACKUP_APP"
+        else
+            echo "ERROR: Failed to copy new app. Restoring previous version..."
+            if [ -d "$BACKUP_APP" ]; then
+                mv "$BACKUP_APP" "\(appBundlePath)"
+            fi
+            exit 1
+        fi
+
+        # Clean extraction files
+        rm -rf "$TMP_EXTRACT" "\(archiveURL.path)"
+
+        # 5. Refresh LaunchServices and relaunch app
+        touch "\(appBundlePath)"
+        echo "Relaunching application at: \(appBundlePath)..."
+        open -n "\(appBundlePath)"
+        echo "✓ Application relaunched successfully!"
         rm -f "$0"
         """
         
@@ -140,13 +246,15 @@ public final class UpdateService: @unchecked Sendable {
         chmodTask.waitUntilExit()
         
         let updateTask = Process()
-        updateTask.launchPath = "/bin/bash"
-        updateTask.arguments = [scriptPath.path]
+        updateTask.launchPath = "/usr/bin/nohup"
+        updateTask.arguments = ["/bin/bash", scriptPath.path]
+        updateTask.standardInput = FileHandle.nullDevice
+        updateTask.standardOutput = FileHandle.nullDevice
+        updateTask.standardError = FileHandle.nullDevice
         try updateTask.run()
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             NSApplication.shared.terminate(nil)
         }
     }
 }
-

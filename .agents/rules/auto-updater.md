@@ -26,5 +26,6 @@ Règles pour le système de mise à jour automatique, le site de gestion et la C
 - **Cycle de Vie Client macOS**:
   - Vérification automatique et silencieuse à l'ouverture de l'application.
   - Affichage de la modale Overnode avec notes de version et progression du téléchargement.
-  - Remplacement et redémarrage propre via script d'installation détaché.
+  - Remplacement et redémarrage propre via script d'installation détaché (nohup).
+  - Support universel des archives .dmg (montage hdiutil) et .zip (ditto) avec validation d'intégrité avant substitution.
 

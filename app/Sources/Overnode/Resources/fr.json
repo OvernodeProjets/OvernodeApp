@@ -324,5 +324,6 @@
   "settings_delete_confirm_msg": "Êtes-vous sûr de vouloir supprimer définitivement ce serveur ? Cette action est irréversible et toutes les données seront irrémédiablement perdues.",
   "settings_delete_confirm_btn": "Supprimer définitivement",
   "server_delete_button": "Supprimer le serveur",
-  "server_deleted_success": "Le serveur a été supprimé avec succès."
+  "server_deleted_success": "Le serveur a été supprimé avec succès.",
+  "update_retry": "Réessayer"
 }

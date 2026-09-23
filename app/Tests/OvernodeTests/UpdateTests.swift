@@ -72,6 +72,46 @@ final class UpdateTests: XCTestCase {
         XCTAssertFalse(vm.showModal)
     }
     
+    func testRetryTranslation() async {
+        let loc = await LocalizationManager.shared
+        await loc.setLanguage(.french)
+        let retryFr = await loc.string("update_retry")
+        XCTAssertEqual(retryFr, "Réessayer")
+        
+        await loc.setLanguage(.english)
+        let retryEn = await loc.string("update_retry")
+        XCTAssertEqual(retryEn, "Retry")
+        
+        await loc.setLanguage(.french)
+    }
+    
+    func testLiveUpdateCheckAndDownload() async throws {
+        let service = UpdateService.shared
+        let resp = try await service.checkForUpdates(version: "1.1.14")
+        XCTAssertTrue(resp.updateAvailable)
+        XCTAssertEqual(resp.latestVersion, "1.1.15")
+        
+        let fileURL = try await service.downloadUpdate(from: resp.downloadUrl) { _ in }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fileURL.path))
+        
+        let attr = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+        let size = attr[.size] as? Int64 ?? 0
+        XCTAssertGreaterThan(size, 1_000_000, "Downloaded DMG should be larger than 1MB")
+        
+        // Clean up downloaded file
+        try? FileManager.default.removeItem(at: fileURL)
+    }
+
+    func testDownloadFailsOnInvalidURL() async {
+        let service = UpdateService.shared
+        do {
+            _ = try await service.downloadUpdate(from: "https://invalid-non-existent-domain-overnode-test-999.com/file.dmg") { _ in }
+            XCTFail("Should have thrown an error for invalid domain")
+        } catch {
+            XCTAssertNotNil(error)
+        }
+    }
+
     func testUpdateTranslations() async {
         let loc = await LocalizationManager.shared
         await loc.setLanguage(.french)

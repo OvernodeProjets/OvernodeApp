@@ -31,15 +31,15 @@ app.use(
   })
 );
 
+// Health check (public, must be before auth/dashboard)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'OvernodeApp-Updater', time: new Date().toISOString() });
+});
+
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
 app.use('/', dashboardRoutes);
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'OvernodeApp-Updater', time: new Date().toISOString() });
-});
 
 // Error handling
 app.use((err, req, res, next) => {

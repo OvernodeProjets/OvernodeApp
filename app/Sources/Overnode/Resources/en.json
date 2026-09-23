@@ -324,5 +324,6 @@
   "settings_delete_confirm_msg": "Are you sure you want to permanently delete this server? This action is irreversible and all data will be permanently lost.",
   "settings_delete_confirm_btn": "Permanently Delete",
   "server_delete_button": "Delete Server",
-  "server_deleted_success": "The server has been deleted successfully."
+  "server_deleted_success": "The server has been deleted successfully.",
+  "update_retry": "Retry"
 }
