@@ -12,9 +12,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version de release (ex: 1.1.0)'
+        description: 'Version de release personnalisée (optionnel, ex: 1.2.0)'
         required: false
-        default: '1.1.0'
       create_release:
         description: 'Créer une release GitHub officielle'
         type: boolean
@@ -32,6 +31,25 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Unique Release Version & Tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+          elif [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+            TAG="v$VERSION"
+          else
+            # Chaque commit sur main génère une version unique non conflictuelle : v1.1.<run_number>
+            VERSION="1.1.${{ github.run_number }}"
+            TAG="v$VERSION"
+          fi
+          echo "==> Version unique résolue : $VERSION (Tag: $TAG)"
+          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
 
       - name: Select Xcode Version
         run: |
@@ -103,9 +121,9 @@ jobs:
           CUSTOM_SIGNING_IDENTITY: ${{ secrets.SIGNING_IDENTITY }}
         run: |
           SIGNING_IDENTITY="${CUSTOM_SIGNING_IDENTITY:-Developer ID Application: Overnode (app@overnode.fr)}"
-          echo "==> Generating production Overnode.app bundle..."
+          echo "==> Generating production Overnode.app bundle for v${{ env.RELEASE_VERSION }}..."
           cd app
-          ./build_app.sh
+          ./build_app.sh "${{ env.RELEASE_VERSION }}"
 
           APP_PATH="build/Overnode.app"
           
@@ -125,15 +143,7 @@ jobs:
 
       - name: Package Release Archive (.dmg & .zip) & Compute Checksums
         run: |
-          VERSION="${{ inputs.version }}"
-          if [ -z "$VERSION" ]; then
-            VERSION="${{ github.ref_name }}"
-            VERSION=${VERSION#v}
-          fi
-          if [ -z "$VERSION" ] || [ "$VERSION" = "main" ]; then
-            VERSION="1.1.0"
-          fi
-
+          VERSION="${{ env.RELEASE_VERSION }}"
           echo "==> Packaging version: v$VERSION"
           cd app/build
           
@@ -159,28 +169,30 @@ jobs:
           echo "ZIP_PATH=app/build/$ZIP_NAME" >> $GITHUB_ENV
           echo "DMG_PATH=app/build/$DMG_NAME" >> $GITHUB_ENV
           echo "CHECKSUM_PATH=app/build/checksums.sha256" >> $GITHUB_ENV
-          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Upload Artifacts (.dmg, .zip & checksums)
         uses: actions/upload-artifact@v4
         with:
-          name: Overnode-macOS-arm64
+          name: Overnode-v${{ env.RELEASE_VERSION }}-macOS-arm64
           path: |
             ${{ env.ZIP_PATH }}
             ${{ env.DMG_PATH }}
             ${{ env.CHECKSUM_PATH }}
 
-      - name: Create or Update GitHub Release
+      - name: Create Unique GitHub Release
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.RELEASE_VERSION }}
-          name: Overnode v${{ env.RELEASE_VERSION }} (Apple Silicon)
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Overnode ${{ env.RELEASE_TAG }} (Apple Silicon)
           body: |
-            ### Mise à jour Overnode v${{ env.RELEASE_VERSION }}
-            - Optimisé pour Apple Silicon (M1/M2/M3/M4)
-            - Signature Apple : app@overnode.fr
-            - Formats disponibles : Image disque (.dmg) et Archive (.zip)
-            - Auto-updater compatible OvernodeApp-Updater
+            ### Mise à jour Overnode ${{ env.RELEASE_TAG }}
+            - **Version :** ${{ env.RELEASE_VERSION }}
+            - **Commit :** ${{ github.sha }}
+            - **Auteur :** ${{ github.actor }}
+            - **Compatibilité :** macOS 14+ sur Apple Silicon (M1/M2/M3/M4)
+            - **Signature Apple :** app@overnode.fr
+            - **Formats :** Image disque (.dmg) et Archive (.zip)
           files: |
             ${{ env.ZIP_PATH }}
             ${{ env.DMG_PATH }}
