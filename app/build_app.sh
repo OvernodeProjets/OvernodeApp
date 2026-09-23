@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "$DIR"
 
-echo "==> Building Overnode for macOS (Apple Silicon)..."
+VERSION="${1:-1.1.0}"
+echo "==> Building Overnode v$VERSION for macOS (Apple Silicon)..."
 swift build -c release
 
 APP_NAME="Overnode"
@@ -24,29 +25,79 @@ mkdir -p "$RESOURCES_DIR"
 mkdir -p "$PLUGINS_DIR"
 mkdir -p "$WIDGET_MACOS"
 
-# Copy binary
-cp ".build/release/$APP_NAME" "$MACOS_DIR/$APP_NAME"
-chmod +x "$MACOS_DIR/$APP_NAME"
+# 1. Locate and copy main binary
+BIN_SOURCE=""
+for CANDIDATE in \
+    ".build/release/$APP_NAME" \
+    ".build/out/Products/Release/$APP_NAME" \
+    ".build/arm64-apple-macosx/release/$APP_NAME" \
+    $(find .build -name "$APP_NAME" -type f -perm +111 2>/dev/null | grep -i "release" | head -n 1); do
+    if [ -f "$CANDIDATE" ]; then
+        BIN_SOURCE="$CANDIDATE"
+        break
+    fi
+done
 
-# Copy Widget Extension binary & bundle
-if [ -f ".build/release/OvernodeWidgetExtension" ]; then
-    cp ".build/release/OvernodeWidgetExtension" "$WIDGET_MACOS/OvernodeWidgetExtension"
+if [ -n "$BIN_SOURCE" ] && [ -f "$BIN_SOURCE" ]; then
+    echo "==> Using main binary: $BIN_SOURCE"
+    cp "$BIN_SOURCE" "$MACOS_DIR/$APP_NAME"
+    chmod +x "$MACOS_DIR/$APP_NAME"
+else
+    echo "::error::Binary $APP_NAME not found in .build!"
+    exit 1
+fi
+
+# 2. Locate and copy resource bundle (CRITICAL: prevents static NSBundle.module crash)
+BUNDLE_SOURCE=""
+for CANDIDATE in \
+    ".build/release/Overnode_Overnode.bundle" \
+    ".build/out/Products/Release/Overnode_Overnode.bundle" \
+    ".build/arm64-apple-macosx/release/Overnode_Overnode.bundle" \
+    $(find .build -name "Overnode_Overnode.bundle" -type d 2>/dev/null | grep -i "release" | head -n 1) \
+    $(find .build -name "Overnode_Overnode.bundle" -type d 2>/dev/null | head -n 1); do
+    if [ -d "$CANDIDATE" ]; then
+        BUNDLE_SOURCE="$CANDIDATE"
+        break
+    fi
+done
+
+if [ -n "$BUNDLE_SOURCE" ] && [ -d "$BUNDLE_SOURCE" ]; then
+    echo "==> Copying resource bundle from $BUNDLE_SOURCE to $RESOURCES_DIR/"
+    cp -R "$BUNDLE_SOURCE" "$RESOURCES_DIR/"
+    # Also copy to MacOS dir as candidate fallback
+    cp -R "$BUNDLE_SOURCE" "$MACOS_DIR/"
+    # Copy raw assets to Resources
+    if [ -d "Sources/Overnode/Resources" ]; then
+        cp -R Sources/Overnode/Resources/* "$RESOURCES_DIR/" 2>/dev/null || true
+    fi
+else
+    echo "::error::Overnode_Overnode.bundle not found! Failing build to prevent crash at runtime."
+    exit 1
+fi
+
+# 3. Locate and copy Widget Extension
+WIDGET_SOURCE=""
+for CANDIDATE in \
+    ".build/release/OvernodeWidgetExtension" \
+    ".build/out/Products/Release/OvernodeWidgetExtension" \
+    ".build/arm64-apple-macosx/release/OvernodeWidgetExtension" \
+    $(find .build -name "OvernodeWidgetExtension" -type f -perm +111 2>/dev/null | grep -i "release" | head -n 1); do
+    if [ -f "$CANDIDATE" ]; then
+        WIDGET_SOURCE="$CANDIDATE"
+        break
+    fi
+done
+
+if [ -n "$WIDGET_SOURCE" ] && [ -f "$WIDGET_SOURCE" ]; then
+    echo "==> Using widget extension binary: $WIDGET_SOURCE"
+    cp "$WIDGET_SOURCE" "$WIDGET_MACOS/OvernodeWidgetExtension"
     chmod +x "$WIDGET_MACOS/OvernodeWidgetExtension"
-    
-    # Create Widget Info.plist
     cp "$DIR/widget-Info.plist" "$WIDGET_CONTENTS/Info.plist"
-    
-    # Sign widget extension with entitlements
-    codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
+    xattr -c -r "$WIDGET_APPEX" 2>/dev/null || true; codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
 fi
 
-# Copy resources
-if [ -d ".build/release/Overnode_Overnode.bundle" ]; then
-    cp -r ".build/release/Overnode_Overnode.bundle" "$RESOURCES_DIR/"
-fi
-
-# Create Info.plist
-cat << 'EOF' > "$CONTENTS_DIR/Info.plist"
+# 4. Create Info.plist with version
+cat << EOF > "$CONTENTS_DIR/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -64,7 +115,7 @@ cat << 'EOF' > "$CONTENTS_DIR/Info.plist"
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>$VERSION</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
@@ -86,22 +137,3 @@ cat << 'EOF' > "$CONTENTS_DIR/Info.plist"
     </array>
 </dict>
 </plist>
-EOF
-
-# Clear extended attributes before signing to prevent macOS detritus rejection
-xattr -cr "$BUNDLE_DIR"
-
-# Sign Widget Extension first with sandbox entitlements
-if [ -d "$WIDGET_APPEX" ]; then
-    codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
-fi
-
-# Sign Main App Bundle (preserving embedded appex signature)
-xattr -c -r "$BUNDLE_DIR" 2>/dev/null || true
-
-codesign --force --sign - "$BUNDLE_DIR"
-
-# Remove quarantine attribute if present
-xattr -d com.apple.quarantine "$BUNDLE_DIR" 2>/dev/null || true
-
-echo "==> Overnode.app successfully created and ready to launch at: $BUNDLE_DIR"
