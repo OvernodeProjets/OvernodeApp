@@ -1,6 +1,6 @@
 import Foundation
 
-public struct PlatformStatsResponse: Codable, Equatable {
+public struct PlatformStatsResponse: Codable, Equatable, Sendable {
     public let totalUsers: Int?
     public let totalServers: Int?
     public let totalNodes: Int?

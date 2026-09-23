@@ -1,6 +1,6 @@
 import Foundation
 
-public struct PasskeyOptionsResponse: Codable {
+public struct PasskeyOptionsResponse: Codable, Sendable {
     public let challenge: String
     public let rpId: String?
     public let timeout: Int?
@@ -14,13 +14,13 @@ public struct PasskeyOptionsResponse: Codable {
     }
 }
 
-public struct PasskeyVerifyPayload: Codable {
+public struct PasskeyVerifyPayload: Codable, Sendable {
     public let id: String
     public let rawId: String
     public let response: PasskeyResponseInner
     public let type: String
     
-    public struct PasskeyResponseInner: Codable {
+    public struct PasskeyResponseInner: Codable, Sendable {
         public let clientDataJSON: String
         public let authenticatorData: String
         public let signature: String
