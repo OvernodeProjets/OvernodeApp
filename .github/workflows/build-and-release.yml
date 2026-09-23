@@ -32,7 +32,11 @@ jobs:
 
       - name: Select Xcode Version
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer || true
+          ls -d /Applications/Xcode* 2>/dev/null || true
+          XCODE_16=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | tail -n 1)
+          if [ -n "$XCODE_16" ]; then
+            sudo xcode-select -s "$XCODE_16/Contents/Developer"
+          fi
           swift --version
 
       - name: Clean Extended Attributes & Caches
