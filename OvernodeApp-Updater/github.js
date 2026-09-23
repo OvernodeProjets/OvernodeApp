@@ -77,6 +77,9 @@ async function fetchGitHubReleases(token) {
           downloadUrl: chosenAsset ? chosenAsset.browser_download_url : (r.tarball_url || ''),
           dmgUrl: dmgAsset ? dmgAsset.browser_download_url : null,
           zipUrl: zipAsset ? zipAsset.browser_download_url : null,
+          assetId: chosenAsset ? chosenAsset.id : null,
+          dmgAssetId: dmgAsset ? dmgAsset.id : null,
+          zipAssetId: zipAsset ? zipAsset.id : null,
           assetName: chosenAsset ? chosenAsset.name : 'Archive',
           assetSize: chosenAsset ? chosenAsset.size : 0,
           htmlUrl: r.html_url,
@@ -96,7 +99,6 @@ async function fetchGitHubReleases(token) {
     // Check if we should derive a release from the latest commit
     const hasMatchingRelease = releasesList.some(r => r.body.includes(latestCommit.shortSha) || r.name.includes(latestCommit.shortSha));
     if (!hasMatchingRelease) {
-      // Find version from commit or increment
       const commitTitle = latestCommit.message.split('\n')[0];
       const derivedVersion = '1.1.0';
       releasesList.unshift({
@@ -118,30 +120,13 @@ async function fetchGitHubReleases(token) {
     }
   }
 
-  if (releasesList.length === 0) {
-    // Fallback if no network or API blocked
-    releasesList.push({
-      id: 'fallback-1',
-      tag: 'v1.1.0',
-      version: '1.1.0',
-      name: 'Overnode v1.1.0 (Apple Silicon arm64)',
-      body: '• Système d\'auto-mise à jour en temps réel\n• Optimisations des performances SwiftUI Apple Silicon',
-      publishedAt: new Date().toISOString(),
-      downloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.dmg`,
-      dmgUrl: `https://github.com/${GITHUB_REPO}/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.dmg`,
-      zipUrl: `https://github.com/${GITHUB_REPO}/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.zip`,
-      assetName: 'Overnode-v1.1.0-macOS-arm64.dmg',
-      assetSize: 15000000,
-      htmlUrl: `https://github.com/${GITHUB_REPO}`
-    });
-  }
-
   return releasesList;
 }
 
 module.exports = {
   GITHUB_REPO,
   GITHUB_TOKEN,
+  getHeaders,
   compareVersions,
   fetchLatestCommits,
   fetchGitHubReleases
