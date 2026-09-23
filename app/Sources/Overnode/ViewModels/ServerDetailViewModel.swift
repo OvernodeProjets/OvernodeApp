@@ -79,6 +79,7 @@ public final class ServerDetailViewModel: ObservableObject {
     @Published public var activityLogs: [ServerActivityLog] = []
     @Published public var startupVariables: [ServerStartupVariable] = []
     @Published public var serverRenameText: String = ""
+    @Published public var isDeleting: Bool = false
     
     private let serverService = ServerService.shared
     private let filesService = ServerFilesService.shared
@@ -566,6 +567,20 @@ public final class ServerDetailViewModel: ObservableObject {
             successMessage = "Server renamed successfully"
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+    
+    public func deleteServer() async -> Bool {
+        isDeleting = true
+        errorMessage = nil
+        do {
+            try await serverService.deleteServer(serverId: server.identifier)
+            isDeleting = false
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            isDeleting = false
+            return false
         }
     }
     

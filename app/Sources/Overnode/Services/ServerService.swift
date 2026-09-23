@@ -64,6 +64,17 @@ public final class ServerService: @unchecked Sendable {
         }
     }
     
+    // MARK: - Server Deletion
+    public func deleteServer(serverId: String) async throws {
+        if ProcessInfo.processInfo.environment["OVERNODE_DEMO"] == "1" {
+            return
+        }
+        try await client.requestEmpty(
+            endpoint: "/api/v5/servers/\(serverId)",
+            method: "DELETE"
+        )
+    }
+    
     // MARK: - Live Resources & Status
     public func fetchLiveResources(identifier: String) async throws -> (state: String, memoryMB: Double, cpuPercent: Double, diskMB: Double) {
         struct LiveResResponse: Decodable {

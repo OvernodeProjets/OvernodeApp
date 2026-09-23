@@ -93,6 +93,10 @@ public final class ServerConfigService: @unchecked Sendable {
         )
     }
     
+    public func deleteServer(serverId: String) async throws {
+        try await ServerService.shared.deleteServer(serverId: serverId)
+    }
+    
     public func reinstallServer(serverId: String) async throws {
         try await client.requestEmpty(
             endpoint: "/api/server/\(serverId)/reinstall",

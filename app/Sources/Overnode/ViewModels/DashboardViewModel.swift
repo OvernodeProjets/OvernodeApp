@@ -100,6 +100,43 @@ public final class DashboardViewModel: ObservableObject {
         }
     }
     
+    public func onServerDeleted(_ server: ServerInstance) {
+        self.servers.removeAll { $0.identifier == server.identifier || $0.id == server.id }
+        saveCachedServers(self.servers)
+        
+        if let cur = self.resources {
+            let updatedCurrent = ResourceBucket(
+                ram: max(0, cur.current.ram - server.memoryLimitMB),
+                disk: max(0, cur.current.disk - server.diskLimitMB),
+                cpu: max(0, cur.current.cpu - server.cpuLimitPercent),
+                servers: max(0, cur.current.servers - 1)
+            )
+            let updatedRemaining = ResourceBucket(
+                ram: cur.remaining.ram + server.memoryLimitMB,
+                disk: cur.remaining.disk + server.diskLimitMB,
+                cpu: cur.remaining.cpu + server.cpuLimitPercent,
+                servers: cur.remaining.servers + 1
+            )
+            self.resources = ResourcesResponse(
+                package: cur.package,
+                allowed: cur.allowed,
+                remaining: updatedRemaining,
+                current: updatedCurrent,
+                limits: cur.limits
+            )
+        }
+        
+        Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            self.loadDashboardData(force: true, isBackground: true)
+        }
+    }
+    
+    public func deleteServer(_ server: ServerInstance) async throws {
+        try await ServerService.shared.deleteServer(serverId: server.identifier)
+        onServerDeleted(server)
+    }
+    
     public func setInitialResourcesIfNeeded(_ res: ResourcesResponse?) {
         if self.resources == nil, let res = res {
             self.resources = res

@@ -316,5 +316,13 @@
   "update_section_title": "Mises à jour du logiciel",
   "update_arch_label": "Architecture",
   "update_version_label": "Version installée",
-  "update_btn_install": "Installer la version"
+  "update_btn_install": "Installer la version",
+  "settings_delete_title": "Supprimer le serveur",
+  "settings_delete_desc": "Supprime définitivement ce serveur et toutes ses données. Les ressources allouées seront restituées à votre compte.",
+  "settings_delete_button": "Supprimer le serveur",
+  "settings_delete_confirm_title": "Confirmation de Suppression",
+  "settings_delete_confirm_msg": "Êtes-vous sûr de vouloir supprimer définitivement ce serveur ? Cette action est irréversible et toutes les données seront irrémédiablement perdues.",
+  "settings_delete_confirm_btn": "Supprimer définitivement",
+  "server_delete_button": "Supprimer le serveur",
+  "server_deleted_success": "Le serveur a été supprimé avec succès."
 }

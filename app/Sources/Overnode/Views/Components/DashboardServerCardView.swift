@@ -4,10 +4,16 @@ public struct DashboardServerCardView: View {
     @ObservedObject var loc = LocalizationManager.shared
     let server: ServerInstance
     var onManage: ((ServerInstance) -> Void)?
+    var onDelete: ((ServerInstance) -> Void)?
     
-    public init(server: ServerInstance, onManage: ((ServerInstance) -> Void)? = nil) {
+    public init(
+        server: ServerInstance,
+        onManage: ((ServerInstance) -> Void)? = nil,
+        onDelete: ((ServerInstance) -> Void)? = nil
+    ) {
         self.server = server
         self.onManage = onManage
+        self.onDelete = onDelete
     }
     
     private var statusColor: Color {
@@ -196,5 +202,20 @@ public struct DashboardServerCardView: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(Color(red: 0.180, green: 0.200, blue: 0.216).opacity(0.5), lineWidth: 1)
         )
+        .contextMenu {
+            Button {
+                onManage?(server)
+            } label: {
+                Label(loc.string("server_manage_button"), systemImage: "slider.horizontal.3")
+            }
+            
+            Divider()
+            
+            Button(role: .destructive) {
+                onDelete?(server)
+            } label: {
+                Label(loc.string("settings_delete_button"), systemImage: "trash")
+            }
+        }
     }
 }

@@ -9,6 +9,8 @@ public struct DashboardView: View {
     @State private var selectedServer: ServerInstance?
     @State private var selectedServerTab: ServerTab = .console
     @State private var isShowingCreateServerModal: Bool = false
+    @State private var serverPendingDeletion: ServerInstance? = nil
+    @State private var showingCardDeleteConfirmation: Bool = false
     
     public init(authVM: AuthViewModel, initialTab: NavigationTab = .dashboard) {
         self.authVM = authVM
@@ -40,7 +42,13 @@ public struct DashboardView: View {
                         ServerDetailView(
                             vm: ServerDetailViewModel(server: server),
                             selectedTab: $selectedServerTab,
-                            onBack: { selectedServer = nil }
+                            onBack: { selectedServer = nil },
+                            onServerDeleted: {
+                                let deleted = server
+                                selectedServer = nil
+                                dashboardVM.onServerDeleted(deleted)
+                                authVM.checkSession()
+                            }
                         )
                     } else {
                         switch selectedTab {
@@ -93,6 +101,26 @@ public struct DashboardView: View {
                     authVM.checkSession()
                 }
             )
+        }
+        .confirmationDialog(
+            loc.string("settings_delete_confirm_title"),
+            isPresented: $showingCardDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(loc.string("settings_delete_confirm_btn"), role: .destructive) {
+                if let s = serverPendingDeletion {
+                    Task {
+                        try? await dashboardVM.deleteServer(s)
+                        authVM.checkSession()
+                        serverPendingDeletion = nil
+                    }
+                }
+            }
+            Button(loc.string("generic_cancel"), role: .cancel) {
+                serverPendingDeletion = nil
+            }
+        } message: {
+            Text(loc.string("settings_delete_confirm_msg"))
         }
     }
     
@@ -224,10 +252,17 @@ public struct DashboardView: View {
                             GridItem(.flexible(), spacing: 16)
                         ], spacing: 16) {
                             ForEach(dashboardVM.servers) { server in
-                                DashboardServerCardView(server: server) { s in
-                                    selectedServer = s
-                                    selectedServerTab = .console
-                                }
+                                DashboardServerCardView(
+                                    server: server,
+                                    onManage: { s in
+                                        selectedServer = s
+                                        selectedServerTab = .console
+                                    },
+                                    onDelete: { s in
+                                        serverPendingDeletion = s
+                                        showingCardDeleteConfirmation = true
+                                    }
+                                )
                             }
                         }
                     }
@@ -290,9 +325,16 @@ public struct DashboardView: View {
                         GridItem(.flexible(), spacing: 16)
                     ], spacing: 16) {
                         ForEach(dashboardVM.servers) { server in
-                            DashboardServerCardView(server: server) { s in
-                                selectedServer = s
-                            }
+                            DashboardServerCardView(
+                                server: server,
+                                onManage: { s in
+                                    selectedServer = s
+                                },
+                                onDelete: { s in
+                                    serverPendingDeletion = s
+                                    showingCardDeleteConfirmation = true
+                                }
+                            )
                         }
                     }
                 }

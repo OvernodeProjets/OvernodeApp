@@ -166,4 +166,109 @@ final class ServerManagementTests: XCTestCase {
         let res = try JSONDecoder().decode(InitResponse.self, from: json.data(using: .utf8)!)
         XCTAssertEqual(res.servers?.count, 1)
     }
+
+    @MainActor
+    func testServerDeletionTranslations() {
+        let loc = LocalizationManager.shared
+        
+        loc.setLanguage(.french)
+        XCTAssertEqual(loc.string("settings_delete_title"), "Supprimer le serveur")
+        XCTAssertEqual(loc.string("settings_delete_button"), "Supprimer le serveur")
+        XCTAssertEqual(loc.string("settings_delete_confirm_title"), "Confirmation de Suppression")
+        XCTAssertEqual(loc.string("settings_delete_confirm_btn"), "Supprimer définitivement")
+        XCTAssertEqual(loc.string("server_delete_button"), "Supprimer le serveur")
+        XCTAssertEqual(loc.string("server_deleted_success"), "Le serveur a été supprimé avec succès.")
+        
+        loc.setLanguage(.english)
+        XCTAssertEqual(loc.string("settings_delete_title"), "Delete Server")
+        XCTAssertEqual(loc.string("settings_delete_button"), "Delete Server")
+        XCTAssertEqual(loc.string("settings_delete_confirm_title"), "Confirm Server Deletion")
+        XCTAssertEqual(loc.string("settings_delete_confirm_btn"), "Permanently Delete")
+        XCTAssertEqual(loc.string("server_delete_button"), "Delete Server")
+        XCTAssertEqual(loc.string("server_deleted_success"), "The server has been deleted successfully.")
+    }
+
+    @MainActor
+    func testServerDetailViewModelDelete() async {
+        setenv("OVERNODE_DEMO", "1", 1)
+        let server = ServerInstance(
+            id: 99,
+            identifier: "del123",
+            name: "Server To Delete",
+            node: "Node 1",
+            suspended: false,
+            state: "running",
+            memoryUsedMB: 1024,
+            memoryLimitMB: 2048,
+            cpuUsedPercent: 10,
+            cpuLimitPercent: 100,
+            diskUsedMB: 2000,
+            diskLimitMB: 5000
+        )
+        let vm = ServerDetailViewModel(server: server)
+        XCTAssertFalse(vm.isDeleting)
+        let success = await vm.deleteServer()
+        XCTAssertTrue(success)
+        XCTAssertFalse(vm.isDeleting)
+        XCTAssertNil(vm.errorMessage)
+    }
+
+    @MainActor
+    func testDashboardViewModelOnServerDeleted() {
+        let server1 = ServerInstance(
+            id: 10,
+            identifier: "srv10",
+            name: "Server 10",
+            node: "Node 1",
+            suspended: false,
+            state: "running",
+            memoryUsedMB: 500,
+            memoryLimitMB: 2048,
+            cpuUsedPercent: 15,
+            cpuLimitPercent: 100,
+            diskUsedMB: 1000,
+            diskLimitMB: 4096
+        )
+        let server2 = ServerInstance(
+            id: 20,
+            identifier: "srv20",
+            name: "Server 20",
+            node: "Node 1",
+            suspended: false,
+            state: "offline",
+            memoryUsedMB: 0,
+            memoryLimitMB: 1024,
+            cpuUsedPercent: 0,
+            cpuLimitPercent: 50,
+            diskUsedMB: 500,
+            diskLimitMB: 2048
+        )
+        
+        let initialResources = ResourcesResponse(
+            package: "Titanium",
+            allowed: ResourceBucket(ram: 8192, disk: 20480, cpu: 400, servers: 5),
+            remaining: ResourceBucket(ram: 5120, disk: 14336, cpu: 250, servers: 3),
+            current: ResourceBucket(ram: 3072, disk: 6144, cpu: 150, servers: 2),
+            limits: ResourceBucket(ram: 8192, disk: 20480, cpu: 400, servers: 5)
+        )
+        
+        let dbVM = DashboardViewModel(initialResources: initialResources)
+        dbVM.servers = [server1, server2]
+        
+        dbVM.onServerDeleted(server1)
+        
+        XCTAssertEqual(dbVM.servers.count, 1)
+        XCTAssertEqual(dbVM.servers.first?.identifier, "srv20")
+        
+        XCTAssertEqual(dbVM.resources?.current.ram, 1024)
+        XCTAssertEqual(dbVM.resources?.current.disk, 2048)
+        XCTAssertEqual(dbVM.resources?.current.cpu, 50)
+        XCTAssertEqual(dbVM.resources?.current.servers, 1)
+        
+        XCTAssertEqual(dbVM.resources?.remaining.ram, 7168)
+        XCTAssertEqual(dbVM.resources?.remaining.disk, 18432)
+        XCTAssertEqual(dbVM.resources?.remaining.cpu, 350)
+        XCTAssertEqual(dbVM.resources?.remaining.servers, 4)
+    }
+
 }

@@ -3,10 +3,13 @@ import SwiftUI
 public struct ServerSettingsTabView: View {
     @ObservedObject var vm: ServerDetailViewModel
     @ObservedObject var loc = LocalizationManager.shared
+    var onServerDeleted: (() -> Void)?
     @State private var showingReinstallAlert = false
+    @State private var showingDeleteAlert = false
     
-    public init(vm: ServerDetailViewModel) {
+    public init(vm: ServerDetailViewModel, onServerDeleted: (() -> Void)? = nil) {
         self.vm = vm
+        self.onServerDeleted = onServerDeleted
     }
     
     public var body: some View {
@@ -56,7 +59,7 @@ public struct ServerSettingsTabView: View {
                         
                         VStack(spacing: 10) {
                             ForEach($vm.startupVariables) { $variable in
-                                VariableRowView(variable: $variable) { key, val in
+                                ServerStartupVariableRowView(variable: $variable) { key, val in
                                     Task { await vm.updateStartupVariable(key: key, value: val) }
                                 }
                             }
@@ -71,12 +74,13 @@ public struct ServerSettingsTabView: View {
                     )
                 }
                 
-                // Section 3: Danger Zone (Reinstall)
-                VStack(alignment: .leading, spacing: 14) {
+                // Section 3: Danger Zone (Reinstall & Delete)
+                VStack(alignment: .leading, spacing: 16) {
                     Text(loc.string("settings_danger_zone"))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Color(red: 0.95, green: 0.35, blue: 0.35))
                     
+                    // Reinstall
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(loc.string("settings_reinstall_title"))
@@ -102,6 +106,76 @@ public struct ServerSettingsTabView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                    .confirmationDialog(
+                        loc.string("settings_reinstall_confirm_title"),
+                        isPresented: $showingReinstallAlert,
+                        titleVisibility: .visible
+                    ) {
+                        Button(loc.string("settings_reinstall_confirm_btn"), role: .destructive) {
+                            Task { await vm.reinstallServer() }
+                        }
+                        Button(loc.string("generic_cancel"), role: .cancel) {}
+                    } message: {
+                        Text(loc.string("settings_reinstall_confirm_msg"))
+                    }
+                    
+                    Divider()
+                        .background(Color.red.opacity(0.18))
+                    
+                    // Delete Server
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(loc.string("settings_delete_title"))
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(OvernodeTheme.textPrimary)
+                            Text(loc.string("settings_delete_desc"))
+                                .font(.system(size: 11))
+                                .foregroundColor(OvernodeTheme.textSecondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Button(role: .destructive, action: {
+                            showingDeleteAlert = true
+                        }) {
+                            HStack(spacing: 6) {
+                                if vm.isDeleting {
+                                    ProgressView()
+                                        .scaleEffect(0.6)
+                                        .frame(width: 14, height: 14)
+                                } else {
+                                    Image(systemName: "trash.fill")
+                                        .font(.system(size: 11))
+                                }
+                                Text(loc.string("settings_delete_button"))
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundColor(Color.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(Color(red: 0.85, green: 0.15, blue: 0.15))
+                            .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(vm.isDeleting)
+                    }
+                    .confirmationDialog(
+                        loc.string("settings_delete_confirm_title"),
+                        isPresented: $showingDeleteAlert,
+                        titleVisibility: .visible
+                    ) {
+                        Button(loc.string("settings_delete_confirm_btn"), role: .destructive) {
+                            Task {
+                                let success = await vm.deleteServer()
+                                if success {
+                                    onServerDeleted?()
+                                }
+                            }
+                        }
+                        Button(loc.string("generic_cancel"), role: .cancel) {}
+                    } message: {
+                        Text(loc.string("settings_delete_confirm_msg"))
+                    }
                 }
                 .padding(18)
                 .background(OvernodeTheme.cardBackground)
@@ -113,53 +187,8 @@ public struct ServerSettingsTabView: View {
             }
             .padding(.bottom, 24)
         }
-        .confirmationDialog(
-            loc.string("settings_reinstall_confirm_title"),
-            isPresented: $showingReinstallAlert,
-            titleVisibility: .visible
-        ) {
-            Button(loc.string("settings_reinstall_confirm_btn"), role: .destructive) {
-                Task { await vm.reinstallServer() }
-            }
-            Button(loc.string("generic_cancel"), role: .cancel) {}
-        } message: {
-            Text(loc.string("settings_reinstall_confirm_msg"))
-        }
         .onAppear {
             Task { await vm.loadSettings() }
         }
     }
 }
-
-private struct VariableRowView: View {
-    @Binding var variable: ServerStartupVariable
-    let onSave: (String, String) -> Void
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(variable.name)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(OvernodeTheme.textPrimary)
-                Text(variable.envVariable)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(OvernodeTheme.textSecondary)
-            }
-            .frame(width: 160, alignment: .leading)
-            
-            TextField(variable.defaultValue ?? "", text: $variable.serverValue)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(size: 12, design: .monospaced))
-            
-            Button(action: {
-                onSave(variable.envVariable, variable.serverValue)
-            }) {
-                Image(systemName: "checkmark.circle")
-                    .foregroundColor(Color(red: 0.25, green: 0.78, blue: 0.50))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.vertical, 4)
-    }
-}
-

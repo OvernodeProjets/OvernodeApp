@@ -5,16 +5,19 @@ public struct ServerDetailView: View {
     @ObservedObject var loc = LocalizationManager.shared
     @Binding var selectedTab: ServerTab
     let onBack: () -> Void
+    let onServerDeleted: (() -> Void)?
     @State private var showingKillConfirmation = false
     
     public init(
         vm: ServerDetailViewModel,
         selectedTab: Binding<ServerTab>,
-        onBack: @escaping () -> Void
+        onBack: @escaping () -> Void,
+        onServerDeleted: (() -> Void)? = nil
     ) {
         self.vm = vm
         self._selectedTab = selectedTab
         self.onBack = onBack
+        self.onServerDeleted = onServerDeleted
     }
     
     private var statusColor: Color {
@@ -128,7 +131,7 @@ public struct ServerDetailView: View {
                     case .logs:
                         ServerLogsTabView(vm: vm)
                     case .settings:
-                        ServerSettingsTabView(vm: vm)
+                        ServerSettingsTabView(vm: vm, onServerDeleted: onServerDeleted)
                     }
                 }
                 .padding(24)
