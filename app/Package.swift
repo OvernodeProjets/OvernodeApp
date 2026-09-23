@@ -23,8 +23,8 @@ let package = Package(
             name: "Overnode",
             dependencies: [],
             path: "Sources/Overnode",
-            resources: [
-                .process("Resources")
+            exclude: [
+                "Resources"
             ]
         ),
         .executableTarget(
@@ -39,3 +39,4 @@ let package = Package(
         )
     ]
 )
+

@@ -47,34 +47,12 @@ else
     exit 1
 fi
 
-# 2. Locate and copy resource bundle (CRITICAL: prevents static NSBundle.module crash)
-BUNDLE_SOURCE=""
-for CANDIDATE in \
-    ".build/release/Overnode_Overnode.bundle" \
-    ".build/out/Products/Release/Overnode_Overnode.bundle" \
-    ".build/arm64-apple-macosx/release/Overnode_Overnode.bundle" \
-    $(find .build -name "Overnode_Overnode.bundle" -type d 2>/dev/null | grep -i "release" | head -n 1) \
-    $(find .build -name "Overnode_Overnode.bundle" -type d 2>/dev/null | head -n 1); do
-    if [ -d "$CANDIDATE" ]; then
-        BUNDLE_SOURCE="$CANDIDATE"
-        break
-    fi
-done
-
-if [ -n "$BUNDLE_SOURCE" ] && [ -d "$BUNDLE_SOURCE" ]; then
-    echo "==> Copying resource bundle from $BUNDLE_SOURCE to $RESOURCES_DIR/"
-    cp -R "$BUNDLE_SOURCE" "$RESOURCES_DIR/"
-    # Also copy to MacOS dir as candidate fallback
-    cp -R "$BUNDLE_SOURCE" "$MACOS_DIR/"
-    # Copy to Root of Overnode.app (CRITICAL: prevents static NSBundle.module fatalError)
-    cp -R "$BUNDLE_SOURCE" "$BUNDLE_DIR/"
-    # Copy raw assets to Resources
-    if [ -d "Sources/Overnode/Resources" ]; then
-        cp -R Sources/Overnode/Resources/* "$RESOURCES_DIR/" 2>/dev/null || true
-    fi
-else
-    echo "::error::Overnode_Overnode.bundle not found! Failing build to prevent crash at runtime."
-    exit 1
+# 2. Copy native resources directly to Contents/Resources/
+if [ -d "Sources/Overnode/Resources" ]; then
+    echo "==> Copying resources from Sources/Overnode/Resources to $RESOURCES_DIR/"
+    cp -R Sources/Overnode/Resources/* "$RESOURCES_DIR/"
+    mkdir -p "$RESOURCES_DIR/Overnode_Overnode.bundle"
+    cp -R Sources/Overnode/Resources/* "$RESOURCES_DIR/Overnode_Overnode.bundle/"
 fi
 
 # 3. Locate and copy Widget Extension

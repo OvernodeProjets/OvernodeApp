@@ -23,6 +23,45 @@ public enum AppLanguage: String, CaseIterable, Identifiable {
     }
 }
 
+public extension Bundle {
+    static func appResourceURL(named name: String, withExtension ext: String) -> URL? {
+        // 1. Direct inside Bundle.main (in .app Contents/Resources)
+        if let url = Bundle.main.url(forResource: name, withExtension: ext) {
+            return url
+        }
+        // 2. Explicit in Contents/Resources
+        if let resURL = Bundle.main.resourceURL?.appendingPathComponent("\(name).\(ext)"),
+           FileManager.default.fileExists(atPath: resURL.path) {
+            return resURL
+        }
+        // 3. Fallback inside app root directory or bundle subfolder
+        let candidates = [
+            Bundle.main.bundleURL.appendingPathComponent("\(name).\(ext)"),
+            Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/\(name).\(ext)"),
+            Bundle.main.bundleURL.appendingPathComponent("Overnode_Overnode.bundle/\(name).\(ext)"),
+            Bundle.main.resourceURL?.appendingPathComponent("Overnode_Overnode.bundle/\(name).\(ext)")
+        ]
+        for c in candidates {
+            if let url = c, FileManager.default.fileExists(atPath: url.path) {
+                return url
+            }
+        }
+        // 4. Development / test path fallback
+        let devPaths = [
+            "Sources/Overnode/Resources/\(name).\(ext)",
+            "app/Sources/Overnode/Resources/\(name).\(ext)",
+            "../Sources/Overnode/Resources/\(name).\(ext)"
+        ]
+        for p in devPaths {
+            let u = URL(fileURLWithPath: p)
+            if FileManager.default.fileExists(atPath: u.path) {
+                return u
+            }
+        }
+        return nil
+    }
+}
+
 @MainActor
 public final class LocalizationManager: ObservableObject {
     public static let shared = LocalizationManager()
@@ -55,7 +94,7 @@ public final class LocalizationManager: ObservableObject {
     }
     
     private func loadStrings(for language: AppLanguage) {
-        if let url = Bundle.module.url(forResource: language.rawValue, withExtension: "json"),
+        if let url = Bundle.appResourceURL(named: language.rawValue, withExtension: "json"),
            let data = try? Data(contentsOf: url),
            let dict = try? JSONDecoder().decode([String: String].self, from: data) {
             self.strings = dict
@@ -114,7 +153,22 @@ private enum FallbackStrings {
                 "lang_en": "English",
                 "links_console": "Ouvrir la console web",
                 "links_mantle": "Mantle VPS Cloud",
-                "links_website": "Site Overnode"
+                "links_website": "Site Overnode",
+                "update_badge": "Mise à jour disponible",
+                "update_title": "Nouvelle version d'Overnode",
+                "update_notes_title": "Nouveautés & Correctifs",
+                "update_default_notes": "Cette mise à jour apporte des améliorations de performance et de stabilité.",
+                "update_downloading": "Téléchargement de la mise à jour...",
+                "update_restarting": "Installation & redémarrage...",
+                "update_later": "Plus tard",
+                "update_now_button": "Mettre à jour",
+                "update_check_button": "Rechercher des mises à jour",
+                "update_checking": "Vérification en cours...",
+                "update_up_to_date": "Votre application est à jour",
+                "update_section_title": "Mises à jour du logiciel",
+                "update_arch_label": "Architecture",
+                "update_version_label": "Version installée",
+                "update_btn_install": "Installer la version"
             ]
         case .english:
             return [
@@ -160,7 +214,22 @@ private enum FallbackStrings {
                 "lang_en": "English",
                 "links_console": "Open Web Console",
                 "links_mantle": "Mantle VPS Cloud",
-                "links_website": "Overnode Website"
+                "links_website": "Overnode Website",
+                "update_badge": "Update available",
+                "update_title": "New version of Overnode",
+                "update_notes_title": "What's new & fixes",
+                "update_default_notes": "This update includes performance and stability improvements.",
+                "update_downloading": "Downloading update...",
+                "update_restarting": "Installing & restarting...",
+                "update_later": "Later",
+                "update_now_button": "Update Now",
+                "update_check_button": "Check for updates",
+                "update_checking": "Checking for updates...",
+                "update_up_to_date": "Your application is up to date",
+                "update_section_title": "Software Updates",
+                "update_arch_label": "Architecture",
+                "update_version_label": "Installed version",
+                "update_btn_install": "Install version"
             ]
         }
     }
@@ -172,3 +241,4 @@ public extension View {
         Text(LocalizationManager.shared.string(key))
     }
 }
+

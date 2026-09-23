@@ -20,7 +20,7 @@ public struct AuthView: View {
                     HStack(spacing: 4) {
                         ForEach(AppLanguage.allCases) { lang in
                             Button(action: { loc.setLanguage(lang) }) {
-                                Text(lang.flag + " " + lang.rawValue.uppercased())
+                                HStack(spacing: 4) { Text(lang.flag); Text(lang.rawValue.uppercased()) }
                                     .font(.system(size: 11, weight: .bold))
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
@@ -44,7 +44,7 @@ public struct AuthView: View {
                 // Central Card
                 VStack(spacing: 24) {
                     // Real Overnode Logo
-                    if let logoURL = Bundle.module.url(forResource: "overnode_logo", withExtension: "png"),
+                    if let logoURL = Bundle.appResourceURL(named: "overnode_logo", withExtension: "png"),
                        let nsImage = NSImage(contentsOf: logoURL) {
                         Image(nsImage: nsImage)
                             .resizable()

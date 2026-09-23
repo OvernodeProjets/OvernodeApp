@@ -13,7 +13,7 @@ public struct HeaderBarView: View {
         HStack(spacing: 16) {
             // Brand Logo
             HStack(spacing: 10) {
-                if let logoURL = Bundle.module.url(forResource: "overnode_logo", withExtension: "png"),
+                if let logoURL = Bundle.appResourceURL(named: "overnode_logo", withExtension: "png"),
                    let nsImage = NSImage(contentsOf: logoURL) {
                     Image(nsImage: nsImage)
                         .resizable()
