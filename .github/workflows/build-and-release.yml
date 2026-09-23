@@ -2,10 +2,10 @@ name: Build, Verify & Release Overnode macOS (Apple Silicon)
 
 on:
   push:
-    tags:
-      - 'v*'
     branches:
       - main
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
@@ -38,7 +38,7 @@ jobs:
       - name: Clean Extended Attributes & Caches
         run: |
           echo "==> Cleaning macOS extended attributes & detritus..."
-          xattr -cr app/Sources app/Tests app/Resources 2>/dev/null || true
+          xattr -cr app/Sources app/Tests 2>/dev/null || true
 
       - name: Run Swift Tests
         run: |
@@ -50,13 +50,9 @@ jobs:
         run: |
           echo "==> Pre-compiling Overnode for Apple Silicon..."
           cd app
-          swift build -c release --triple arm64-apple-macosx14.0
+          swift build -c release
 
-          BINARY_PATH=".build/arm64-apple-macosx14.0/release/Overnode"
-          if [ ! -f "$BINARY_PATH" ]; then
-            BINARY_PATH=".build/release/Overnode"
-          fi
-
+          BINARY_PATH=".build/release/Overnode"
           echo "==> Verifying binary architecture..."
           ARCH_INFO=$(file "$BINARY_PATH")
           echo "Binary details: $ARCH_INFO"
@@ -74,21 +70,22 @@ jobs:
         env:
           APPLE_CERT_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD || 'overnode-temporary-keychain-2026' }}
+          INPUT_KEYCHAIN_PWD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
+          KEYCHAIN_PWD="${INPUT_KEYCHAIN_PWD:-overnode-temporary-keychain-2026}"
           if [ -n "$APPLE_CERT_BASE64" ]; then
             echo "==> Setting up Apple Developer ID certificate for app@overnode.fr..."
             KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
-            security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+            security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
             security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-            security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+            security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
 
             CERT_PATH=$RUNNER_TEMP/certificate.p12
             echo "$APPLE_CERT_BASE64" | base64 --decode > "$CERT_PATH"
 
             security import "$CERT_PATH" -P "$APPLE_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
             security list-keychain-db -d user -s "$KEYCHAIN_PATH"
-            security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+            security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
             echo "✓ Keychain successfully prepared for code signing."
           else
             echo "ℹ No Apple signing secret provided; signing with local ad-hoc identity."
@@ -96,8 +93,9 @@ jobs:
 
       - name: Build Application Bundle & Sign
         env:
-          SIGNING_IDENTITY: ${{ secrets.SIGNING_IDENTITY || 'Developer ID Application: Overnode (app@overnode.fr)' }}
+          CUSTOM_SIGNING_IDENTITY: ${{ secrets.SIGNING_IDENTITY }}
         run: |
+          SIGNING_IDENTITY="${CUSTOM_SIGNING_IDENTITY:-Developer ID Application: Overnode (app@overnode.fr)}"
           echo "==> Generating production Overnode.app bundle..."
           cd app
           ./build_app.sh
@@ -120,7 +118,7 @@ jobs:
 
       - name: Package Release Archive & Compute Checksums
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${{ inputs.version }}"
           if [ -z "$VERSION" ]; then
             VERSION="${{ github.ref_name }}"
             VERSION=${VERSION#v}
@@ -150,7 +148,7 @@ jobs:
             ${{ env.CHECKSUM_PATH }}
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+        if: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.create_release == true }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.RELEASE_VERSION }}
