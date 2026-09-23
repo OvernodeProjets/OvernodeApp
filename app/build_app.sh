@@ -73,7 +73,8 @@ if [ -n "$WIDGET_SOURCE" ] && [ -f "$WIDGET_SOURCE" ]; then
     cp "$WIDGET_SOURCE" "$WIDGET_MACOS/OvernodeWidgetExtension"
     chmod +x "$WIDGET_MACOS/OvernodeWidgetExtension"
     cp "$DIR/widget-Info.plist" "$WIDGET_CONTENTS/Info.plist"
-    xattr -cr "$WIDGET_APPEX" 2>/dev/null || true; xattr -c "$WIDGET_APPEX" 2>/dev/null || true; codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
+    xattr -cr "$WIDGET_APPEX" 2>/dev/null || true
+    codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
 fi
 
 # 4. Create Info.plist with version
@@ -86,6 +87,10 @@ cat << EOF > "$CONTENTS_DIR/Info.plist"
     <string>fr</string>
     <key>CFBundleExecutable</key>
     <string>Overnode</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>fr.overnode.OvernodeApp</string>
     <key>CFBundleInfoDictionaryVersion</key>
@@ -117,3 +122,12 @@ cat << EOF > "$CONTENTS_DIR/Info.plist"
     </array>
 </dict>
 </plist>
+EOF
+
+# 5. Clean attributes & ad-hoc sign bundle
+xattr -cr "$BUNDLE_DIR" 2>/dev/null || true
+if [ -d "$WIDGET_APPEX" ]; then
+    codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
+fi
+codesign --force --sign - "$BUNDLE_DIR"
+echo "==> Successfully created and signed Overnode.app"

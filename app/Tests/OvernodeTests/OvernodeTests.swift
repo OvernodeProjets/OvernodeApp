@@ -123,4 +123,23 @@ final class OvernodeTests: XCTestCase {
         XCTAssertEqual(initResp.servers?.count, 1)
         XCTAssertEqual(initResp.servers?[0].attributes.node, "Node 2")
     }
+
+    func testApplicationIconAssets() {
+        let icnsURL = Bundle.appResourceURL(named: "AppIcon", withExtension: "icns")
+        XCTAssertNotNil(icnsURL, "AppIcon.icns must be found via Bundle.appResourceURL")
+        if let icnsURL = icnsURL {
+            let image = NSImage(contentsOf: icnsURL)
+            XCTAssertNotNil(image, "AppIcon.icns should be loadable as NSImage")
+            XCTAssertFalse(image?.representations.isEmpty ?? true, "AppIcon.icns must contain image representations")
+        }
+
+        let pngURL = Bundle.appResourceURL(named: "app_icon", withExtension: "png")
+        XCTAssertNotNil(pngURL, "app_icon.png must be found via Bundle.appResourceURL")
+        if let pngURL = pngURL {
+            let pngImage = NSImage(contentsOf: pngURL)
+            XCTAssertNotNil(pngImage, "app_icon.png should be loadable as NSImage")
+            XCTAssertGreaterThanOrEqual(pngImage?.representations.first?.pixelsWide ?? 0, 1024)
+            XCTAssertGreaterThanOrEqual(pngImage?.representations.first?.pixelsHigh ?? 0, 1024)
+        }
+    }
 }

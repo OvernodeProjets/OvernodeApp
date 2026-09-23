@@ -33,6 +33,12 @@ public struct OvernodeApp: App {
 
 public class AppDelegate: NSObject, NSApplicationDelegate {
     public func applicationDidFinishLaunching(_ notification: Notification) {
+        // Set application icon for Dock & AppKit
+        if let iconURL = Bundle.appResourceURL(named: "AppIcon", withExtension: "icns") ?? Bundle.appResourceURL(named: "app_icon", withExtension: "png"),
+           let iconImage = NSImage(contentsOf: iconURL) {
+            NSApplication.shared.applicationIconImage = iconImage
+        }
+
         if CommandLine.arguments.contains("--snapshot") {
             performSnapshot()
             return
