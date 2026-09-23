@@ -493,7 +493,7 @@
           </div>
         </div>
         <button type="button" class="btn-select" 
-          onclick="selectRelease('1.1.0', '<%= latestRelease ? latestRelease.downloadUrl : \'https://github.com/\' + repo + \'/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.dmg\' %>', '<%= encodeURIComponent(latestCommit.message) %>')">
+          onclick="selectRelease('1.1.0', '<%= latestRelease ? latestRelease.downloadUrl : 'https://github.com/' + repo + '/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.dmg' %>', '<%= encodeURIComponent(latestCommit.message) %>')">
           Utiliser ce commit pour Push
         </button>
       </div>
