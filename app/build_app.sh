@@ -66,6 +66,8 @@ if [ -n "$BUNDLE_SOURCE" ] && [ -d "$BUNDLE_SOURCE" ]; then
     cp -R "$BUNDLE_SOURCE" "$RESOURCES_DIR/"
     # Also copy to MacOS dir as candidate fallback
     cp -R "$BUNDLE_SOURCE" "$MACOS_DIR/"
+    # Copy to Root of Overnode.app (CRITICAL: prevents static NSBundle.module fatalError)
+    cp -R "$BUNDLE_SOURCE" "$BUNDLE_DIR/"
     # Copy raw assets to Resources
     if [ -d "Sources/Overnode/Resources" ]; then
         cp -R Sources/Overnode/Resources/* "$RESOURCES_DIR/" 2>/dev/null || true
@@ -93,7 +95,7 @@ if [ -n "$WIDGET_SOURCE" ] && [ -f "$WIDGET_SOURCE" ]; then
     cp "$WIDGET_SOURCE" "$WIDGET_MACOS/OvernodeWidgetExtension"
     chmod +x "$WIDGET_MACOS/OvernodeWidgetExtension"
     cp "$DIR/widget-Info.plist" "$WIDGET_CONTENTS/Info.plist"
-    xattr -c -r "$WIDGET_APPEX" 2>/dev/null || true; codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
+    xattr -cr "$WIDGET_APPEX" 2>/dev/null || true; xattr -c "$WIDGET_APPEX" 2>/dev/null || true; codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
 fi
 
 # 4. Create Info.plist with version
