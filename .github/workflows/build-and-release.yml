@@ -120,7 +120,7 @@ jobs:
           spctl --assess --type execute --verbose "$APP_PATH" || true
           echo "✓ Bundle successfully signed and verified."
 
-      - name: Package Release Archive & Compute Checksums
+      - name: Package Release Archive (.dmg & .zip) & Compute Checksums
         run: |
           VERSION="${{ inputs.version }}"
           if [ -z "$VERSION" ]; then
@@ -131,24 +131,40 @@ jobs:
             VERSION="1.1.0"
           fi
 
-          echo "Packaging version: v$VERSION"
+          echo "==> Packaging version: v$VERSION"
           cd app/build
+          
+          # 1. Create ZIP archive
           ZIP_NAME="Overnode-v${VERSION}-macOS-arm64.zip"
           ditto -c -k --sequesterRsrc --keepParent "Overnode.app" "$ZIP_NAME"
 
+          # 2. Create DMG Disk Image with Applications symlink
+          DMG_NAME="Overnode-v${VERSION}-macOS-arm64.dmg"
+          DMG_STAGING="dmg_staging"
+          rm -rf "$DMG_STAGING" "$DMG_NAME"
+          mkdir -p "$DMG_STAGING"
+          cp -R "Overnode.app" "$DMG_STAGING/"
+          ln -s /Applications "$DMG_STAGING/Applications"
+          hdiutil create -volname "Overnode" -srcfolder "$DMG_STAGING" -ov -format UDZO "$DMG_NAME"
+          rm -rf "$DMG_STAGING"
+
+          # 3. Compute Checksums
           shasum -a 256 "$ZIP_NAME" > "checksums.sha256"
+          shasum -a 256 "$DMG_NAME" >> "checksums.sha256"
           cat "checksums.sha256"
 
           echo "ZIP_PATH=app/build/$ZIP_NAME" >> $GITHUB_ENV
+          echo "DMG_PATH=app/build/$DMG_NAME" >> $GITHUB_ENV
           echo "CHECKSUM_PATH=app/build/checksums.sha256" >> $GITHUB_ENV
           echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Upload Artifacts
+      - name: Upload Artifacts (.dmg, .zip & checksums)
         uses: actions/upload-artifact@v4
         with:
           name: Overnode-macOS-arm64
           path: |
             ${{ env.ZIP_PATH }}
+            ${{ env.DMG_PATH }}
             ${{ env.CHECKSUM_PATH }}
 
       - name: Create GitHub Release
@@ -161,9 +177,11 @@ jobs:
             ### Mise à jour Overnode v${{ env.RELEASE_VERSION }}
             - Optimisé pour Apple Silicon (M1/M2/M3/M4)
             - Signature Apple : app@overnode.fr
+            - Formats disponibles : Image disque (.dmg) et Archive (.zip)
             - Auto-updater compatible OvernodeApp-Updater
           files: |
             ${{ env.ZIP_PATH }}
+            ${{ env.DMG_PATH }}
             ${{ env.CHECKSUM_PATH }}
           draft: false
           prerelease: false

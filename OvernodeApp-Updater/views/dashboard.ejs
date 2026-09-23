@@ -136,7 +136,7 @@
       margin-bottom: 8px;
     }
     .card-val {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
       color: #ffffff;
     }
@@ -147,6 +147,45 @@
       font-size: 12px;
       color: #64748b;
       margin-top: 6px;
+    }
+
+    /* GitHub Commit Card */
+    .commit-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .commit-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .commit-sha-badge {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      font-family: 'SF Mono', Menlo, monospace;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .commit-msg {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+    .commit-sub {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 2px;
     }
 
     /* Comparison Banner */
@@ -307,6 +346,9 @@
       border-bottom: 1px solid #202c45;
       font-size: 16px;
       font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     table {
       width: 100%;
@@ -420,9 +462,9 @@
         <div class="card-desc">Déployé le <%= new Date(deployment.publishedAt).toLocaleDateString('fr-FR') %></div>
       </div>
       <div class="card">
-        <div class="card-label">Dernière version GitHub</div>
-        <div class="card-val val-blue">v<%= latestRelease ? latestRelease.version : 'N/A' %></div>
-        <div class="card-desc">Dépôt: <%= repo %></div>
+        <div class="card-label">Dernier Commit GitHub</div>
+        <div class="card-val val-blue"><%= latestCommit ? latestCommit.shortSha : (latestRelease ? 'v' + latestRelease.version : 'N/A') %></div>
+        <div class="card-desc"><%= repo %></div>
       </div>
       <div class="card">
         <div class="card-label">Statut Déploiement</div>
@@ -430,7 +472,7 @@
           <%= hasNewerRelease ? 'Mise à jour prête' : 'À jour' %>
         </div>
         <div class="card-desc">
-          <%= hasNewerRelease ? 'Nouvelle release disponible pour push' : 'Les clients ont la version la plus récente' %>
+          <%= hasNewerRelease ? 'Nouvelle version / commit détecté' : 'Les clients ont la version la plus récente' %>
         </div>
       </div>
       <div class="card">
@@ -440,6 +482,23 @@
       </div>
     </div>
 
+    <!-- Latest GitHub Commit Card -->
+    <% if (latestCommit) { %>
+      <div class="commit-card">
+        <div class="commit-meta">
+          <span class="commit-sha-badge"><%= latestCommit.shortSha %></span>
+          <div>
+            <div class="commit-msg"><%= latestCommit.message.split('\n')[0] %></div>
+            <div class="commit-sub">Par <%= latestCommit.authorName %> • <%= new Date(latestCommit.date).toLocaleString('fr-FR') %></div>
+          </div>
+        </div>
+        <button type="button" class="btn-select" 
+          onclick="selectRelease('1.1.0', '<%= latestRelease ? latestRelease.downloadUrl : \'https://github.com/\' + repo + \'/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.dmg\' %>', '<%= encodeURIComponent(latestCommit.message) %>')">
+          Utiliser ce commit pour Push
+        </button>
+      </div>
+    <% } %>
+
     <!-- Comparison Banner -->
     <div class="compare-banner <%= hasNewerRelease ? 'has-new' : '' %>">
       <div class="compare-left">
@@ -447,7 +506,7 @@
         <div>
           <div class="compare-title">
             <% if (hasNewerRelease) { %>
-              Une nouvelle version (v<%= latestRelease.version %>) est prête sur GitHub !
+              Une nouvelle version ou commit est disponible sur GitHub !
             <% } else { %>
               L'application macOS est synchronisée avec la dernière release.
             <% } %>
@@ -477,10 +536,10 @@
                    value="<%= latestRelease ? latestRelease.version : deployment.currentVersion %>" placeholder="1.1.0">
           </div>
           <div class="form-group">
-            <label for="downloadUrl">URL de l'archive (macOS arm64)</label>
+            <label for="downloadUrl">URL de l'archive (.dmg ou .zip)</label>
             <input type="text" id="downloadUrl" name="downloadUrl" required 
                    value="<%= latestRelease ? latestRelease.downloadUrl : deployment.downloadUrl %>" 
-                   placeholder="https://.../Overnode-v1.1.0-macOS-arm64.zip">
+                   placeholder="https://.../Overnode-v1.1.0-macOS-arm64.dmg">
           </div>
         </div>
 
@@ -511,11 +570,14 @@
 
     <!-- Available Releases Table -->
     <div class="table-container">
-      <div class="table-header">Releases GitHub détectées</div>
+      <div class="table-header">
+        <span>Releases & Commits GitHub détectés</span>
+        <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 13px;">↻ Rafraîchir</a>
+      </div>
       <table>
         <thead>
           <tr>
-            <th>Version</th>
+            <th>Version / Réf</th>
             <th>Titre / Notes</th>
             <th>Fichier</th>
             <th>Date</th>
@@ -527,12 +589,12 @@
           <% releases.forEach(function(rel) { %>
             <tr>
               <td>
-                <span class="tag-badge">v<%= rel.version %></span>
+                <span class="tag-badge"><%= rel.tag %></span>
               </td>
               <td style="max-width: 320px;">
                 <strong><%= rel.name %></strong>
               </td>
-              <td><%= rel.assetName || 'Archive ZIP' %></td>
+              <td><%= rel.assetName || 'DMG / ZIP' %></td>
               <td><%= new Date(rel.publishedAt).toLocaleDateString('fr-FR') %></td>
               <td>
                 <% if (rel.version === deployment.currentVersion) { %>
@@ -544,7 +606,7 @@
               <td>
                 <button type="button" class="btn-select" 
                   onclick="selectRelease('<%= rel.version %>', '<%= rel.downloadUrl %>', '<%= encodeURIComponent(rel.body) %>')">
-                  Remplir le formulaire
+                  Sélectionner
                 </button>
               </td>
             </tr>

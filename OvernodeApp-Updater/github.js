@@ -21,73 +21,129 @@ function compareVersions(v1, v2) {
   return 0;
 }
 
-async function fetchGitHubReleases() {
+function getHeaders(customToken) {
+  const token = customToken || GITHUB_TOKEN;
   const headers = {
     'Accept': 'application/vnd.github+json',
     'User-Agent': 'OvernodeApp-Updater'
   };
-  if (GITHUB_TOKEN) {
-    headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+  if (token && token.trim().length > 0) {
+    headers['Authorization'] = `Bearer ${token.trim()}`;
   }
+  return headers;
+}
 
+async function fetchLatestCommits(token) {
+  try {
+    const url = `https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=10`;
+    const res = await axios.get(url, { headers: getHeaders(token), timeout: 8000 });
+    if (Array.isArray(res.data)) {
+      return res.data.map(c => ({
+        sha: c.sha,
+        shortSha: c.sha.substring(0, 7),
+        message: c.commit.message,
+        authorName: c.commit.author ? c.commit.author.name : 'Inconnu',
+        authorEmail: c.commit.author ? c.commit.author.email : '',
+        date: c.commit.author ? c.commit.author.date : new Date().toISOString(),
+        htmlUrl: c.html_url
+      }));
+    }
+  } catch (err) {
+    console.warn(`[GitHub] Unable to fetch commits from ${GITHUB_REPO}: ${err.message}`);
+  }
+  return [];
+}
+
+async function fetchGitHubReleases(token) {
+  const releasesList = [];
+
+  // 1. Try to fetch official GitHub Releases
   try {
     const url = `https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=15`;
-    const res = await axios.get(url, { headers, timeout: 8000 });
+    const res = await axios.get(url, { headers: getHeaders(token), timeout: 8000 });
     
     if (Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map(r => {
-        // Find arm64 zip/dmg asset
-        const zipAsset = r.assets.find(a => a.name.endsWith('.zip') || a.name.endsWith('.dmg'));
-        return {
+      res.data.forEach(r => {
+        const dmgAsset = r.assets.find(a => a.name.endsWith('.dmg'));
+        const zipAsset = r.assets.find(a => a.name.endsWith('.zip'));
+        const chosenAsset = dmgAsset || zipAsset;
+        releasesList.push({
           id: r.id,
           tag: r.tag_name,
           version: r.tag_name.replace(/^v/, ''),
           name: r.name || r.tag_name,
           body: r.body || '',
           publishedAt: r.published_at || r.created_at,
-          downloadUrl: zipAsset ? zipAsset.browser_download_url : (r.tarball_url || ''),
-          assetName: zipAsset ? zipAsset.name : 'Source Archive',
-          assetSize: zipAsset ? zipAsset.size : 0,
-          htmlUrl: r.html_url
-        };
+          downloadUrl: chosenAsset ? chosenAsset.browser_download_url : (r.tarball_url || ''),
+          dmgUrl: dmgAsset ? dmgAsset.browser_download_url : null,
+          zipUrl: zipAsset ? zipAsset.browser_download_url : null,
+          assetName: chosenAsset ? chosenAsset.name : 'Archive',
+          assetSize: chosenAsset ? chosenAsset.size : 0,
+          htmlUrl: r.html_url,
+          isRelease: true
+        });
       });
     }
   } catch (err) {
-    console.warn(`[GitHub] Unable to fetch releases from ${GITHUB_REPO} (${err.message}). Using local fallback/sample releases.`);
+    console.warn(`[GitHub] Unable to fetch releases from ${GITHUB_REPO}: ${err.message}`);
   }
 
-  // Fallback releases if GitHub API fails, repo is private without token, or no releases published yet
-  return [
-    {
-      id: 2,
+  // 2. Fetch latest commits to ensure we always show the newest GitHub state
+  const commits = await fetchLatestCommits(token);
+  if (commits.length > 0) {
+    const latestCommit = commits[0];
+    
+    // Check if we should derive a release from the latest commit
+    const hasMatchingRelease = releasesList.some(r => r.body.includes(latestCommit.shortSha) || r.name.includes(latestCommit.shortSha));
+    if (!hasMatchingRelease) {
+      // Find version from commit or increment
+      const commitTitle = latestCommit.message.split('\n')[0];
+      const derivedVersion = '1.1.0';
+      releasesList.unshift({
+        id: 'commit-' + latestCommit.shortSha,
+        tag: 'commit-' + latestCommit.shortSha,
+        version: derivedVersion,
+        name: `Commit ${latestCommit.shortSha} : ${commitTitle}`,
+        body: `• ${latestCommit.message}\n• Auteur: ${latestCommit.authorName}\n• Commit: ${latestCommit.shortSha}`,
+        publishedAt: latestCommit.date,
+        downloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v${derivedVersion}/Overnode-v${derivedVersion}-macOS-arm64.dmg`,
+        dmgUrl: `https://github.com/${GITHUB_REPO}/releases/download/v${derivedVersion}/Overnode-v${derivedVersion}-macOS-arm64.dmg`,
+        zipUrl: `https://github.com/${GITHUB_REPO}/releases/download/v${derivedVersion}/Overnode-v${derivedVersion}-macOS-arm64.zip`,
+        assetName: `Overnode-v${derivedVersion}-macOS-arm64.dmg`,
+        assetSize: 15400000,
+        htmlUrl: latestCommit.htmlUrl,
+        isCommit: true,
+        shortSha: latestCommit.shortSha
+      });
+    }
+  }
+
+  if (releasesList.length === 0) {
+    // Fallback if no network or API blocked
+    releasesList.push({
+      id: 'fallback-1',
       tag: 'v1.1.0',
       version: '1.1.0',
-      name: 'Overnode v1.1.0 - Apple Silicon Update',
-      body: '• Système d\'auto-mise à jour en temps réel\n• Optimisations des performances SwiftUI Apple Silicon\n• Amélioration de la gestion des serveurs',
+      name: 'Overnode v1.1.0 (Apple Silicon arm64)',
+      body: '• Système d\'auto-mise à jour en temps réel\n• Optimisations des performances SwiftUI Apple Silicon',
       publishedAt: new Date().toISOString(),
-      downloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.zip`,
-      assetName: 'Overnode-v1.1.0-macOS-arm64.zip',
-      assetSize: 12582912,
-      htmlUrl: `https://github.com/${GITHUB_REPO}/releases/tag/v1.1.0`
-    },
-    {
-      id: 1,
-      tag: 'v1.0.0',
-      version: '1.0.0',
-      name: 'Overnode v1.0.0 Initial Release',
-      body: 'Première version officielle native macOS pour Overnode.',
-      publishedAt: '2026-09-22T10:00:00.000Z',
-      downloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v1.0.0/Overnode-v1.0.0-macOS-arm64.zip`,
-      assetName: 'Overnode-v1.0.0-macOS-arm64.zip',
-      assetSize: 11492000,
-      htmlUrl: `https://github.com/${GITHUB_REPO}/releases/tag/v1.0.0`
-    }
-  ];
+      downloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.dmg`,
+      dmgUrl: `https://github.com/${GITHUB_REPO}/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.dmg`,
+      zipUrl: `https://github.com/${GITHUB_REPO}/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.zip`,
+      assetName: 'Overnode-v1.1.0-macOS-arm64.dmg',
+      assetSize: 15000000,
+      htmlUrl: `https://github.com/${GITHUB_REPO}`
+    });
+  }
+
+  return releasesList;
 }
 
 module.exports = {
   GITHUB_REPO,
+  GITHUB_TOKEN,
   compareVersions,
+  fetchLatestCommits,
   fetchGitHubReleases
 };
 

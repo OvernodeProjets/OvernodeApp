@@ -16,9 +16,14 @@ router.get('/', async (req, res) => {
   try {
     const deployment = db.getDeployment();
     const stats = db.getStats();
+    
+    // Fetch both commits and releases
+    const commits = await github.fetchLatestCommits();
     const releases = await github.fetchGitHubReleases();
 
     const latestRelease = releases[0] || null;
+    const latestCommit = commits[0] || null;
+    
     let comparison = 0;
     if (latestRelease) {
       comparison = github.compareVersions(latestRelease.version, deployment.currentVersion);
@@ -29,8 +34,10 @@ router.get('/', async (req, res) => {
       deployment,
       stats,
       releases,
+      commits,
       latestRelease,
-      hasNewerRelease: comparison > 0,
+      latestCommit,
+      hasNewerRelease: comparison > 0 || (latestCommit && latestCommit.shortSha && !deployment.releaseNotes.includes(latestCommit.shortSha)),
       repo: github.GITHUB_REPO,
       successMessage: req.query.success || null,
       errorMessage: req.query.error || null
