@@ -39,6 +39,9 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             NSApplication.shared.applicationIconImage = iconImage
         }
 
+        // Initialize Discord Rich Presence (runs continuously in background)
+        DiscordRPCService.shared.start()
+
         if CommandLine.arguments.contains("--snapshot") {
             performSnapshot()
             return
@@ -167,5 +170,8 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
     public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
     }
+    
+    public func applicationWillTerminate(_ notification: Notification) {
+        DiscordRPCService.shared.stop()
+    }
 }
-

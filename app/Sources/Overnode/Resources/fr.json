@@ -134,6 +134,10 @@
   "settings_reinstall_confirm_msg": "Êtes-vous sûr de vouloir réinstaller ce serveur ? Cette action est irréversible et supprimera toutes les données.",
   "settings_reinstall_confirm_btn": "Réinstaller définitivement",
   "settings_language_title": "Langue de l'application",
+  "settings_discord_rpc_title": "Discord Rich Presence",
+  "settings_discord_rpc_desc": "Affiche le statut Overnode App sur votre profil Discord avec le logo officiel et le lien overnode.fr.",
+  "settings_discord_rpc_connected": "Connecté à Discord",
+  "settings_discord_rpc_waiting": "En attente de Discord (application fermée ou occupée)",
   "servers_page_subtitle": "Gérez et supervisez l'ensemble de vos instances cloud.",
   "servers_none_found": "Aucun serveur actif dans votre compte.",
   "dashboard_platform_stats": "Statistiques de la Plateforme",
@@ -325,5 +329,6 @@
   "settings_delete_confirm_btn": "Supprimer définitivement",
   "server_delete_button": "Supprimer le serveur",
   "server_deleted_success": "Le serveur a été supprimé avec succès.",
-  "update_retry": "Réessayer"
+  "update_retry": "Réessayer",
+  "settings_discord_rpc_always_active": "Actif en continu avec l'application"
 }

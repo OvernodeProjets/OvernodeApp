@@ -467,6 +467,9 @@ public struct DashboardView: View {
                 .background(OvernodeTheme.cardBackground)
                 .cornerRadius(10)
                 
+                // Discord Rich Presence Card
+                DiscordRPCSettingsCardView()
+                
                 Spacer()
             }
             .padding(24)
@@ -526,4 +529,3 @@ private struct PlatformStatCard: View {
         )
     }
 }
-

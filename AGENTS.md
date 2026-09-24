@@ -25,13 +25,13 @@ The detailed rules live in `.agents/rules/`. Read the relevant file before actin
 - **i18n** - [.agents/rules/i18n.md](.agents/rules/i18n.md) - Conventions de traduction FR/EN et localisation
 - **UI & Content** - [.agents/rules/ui-rules.md](.agents/rules/ui-rules.md) - Règles d'interface, interdiction de mentionner console.overnode.fr sur l'UI, logos
 - **Server Management** - [.agents/rules/server-management.md](.agents/rules/server-management.md) - Règles et architecture de la gestion des serveurs
-- **Wallet, Store & Support** - [.agents/rules/wallet-store-support.md](.agents/rules/wallet-store-support.md) - Règles d architecture et flux pour le Wallet, la Boutique, le Support et l AFK
-- **Daily Reward & Widget** - [.agents/rules/daily-reward-widget.md](.agents/rules/daily-reward-widget.md) - Règles du module Daily Reward et du widget macOS
-
-## Universal Rules
+ - **Wallet, Store & Support** - [.agents/rules/wallet-store-support.md](.agents/rules/wallet-store-support.md) - Règles d architecture et flux pour le Wallet, la Boutique, le Support et l AFK
+ - **Daily Reward & Widget** - [.agents/rules/daily-reward-widget.md](.agents/rules/daily-reward-widget.md) - Règles du module Daily Reward et du widget macOS
+- **Discord Rich Presence** - [.agents/rules/discord-rpc.md](.agents/rules/discord-rpc.md) - Intégration Discord RPC, statut Overnode App et respect de la vie privée
+ 
+ ## Universal Rules
 
 - **CRITICAL**: Tout le code doit être modulaire, typé et découpé en fichiers ciblés (pas de fichiers monolithiques).
 - **CRITICAL**: Ne JAMAIS afficher `console.overnode.fr` à l'utilisateur dans l'interface. Utiliser "Console Cloud" ou "Overnode".
 - **CRITICAL**: Supporter nativement Apple Silicon avec UI ultra-fluide respectant la charte Overnode (Dark theme, accents dorés/bleus, police système SF Pro / Inter).
 - **CRITICAL**: Gérer l'authentification avec persistance sécurisée des sessions (cookies HTTP / Bearer) et écran natif de saisie TOTP pour le double facteur (2FA).
-
