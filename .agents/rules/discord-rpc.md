@@ -14,3 +14,4 @@ Règles pour l'intégration de Discord Rich Presence dans l'application macOS.
 - **Connexion non-bloquante**: Les communications IPC via socket Unix (`discord-ipc-*`) doivent être exécutées en tâche d'arrière-plan sans jamais bloquer le thread UI principal.
 - **Reconnexion résiliente**: Gérer l'absence de Discord au démarrage, les redémarrages de Discord et les fermetures de session proprement avec reconnexion automatique.
 - **Activité permanente**: Discord Rich Presence doit rester constamment actif quand l'application est ouverte et ne peut pas être désactivé par l'utilisateur.
+- **Silence dans l'interface**: Aucune carte, mention ou contrôle n'est visible dans l'interface utilisateur de l'application. Le service s'exécute de façon transparente et silencieuse en tâche d'arrière-plan.

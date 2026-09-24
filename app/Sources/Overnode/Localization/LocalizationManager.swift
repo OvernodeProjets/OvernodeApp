@@ -168,12 +168,7 @@ private enum FallbackStrings {
                 "update_section_title": "Mises à jour du logiciel",
                 "update_arch_label": "Architecture",
                 "update_version_label": "Version installée",
-                "update_btn_install": "Installer la version",
-                "settings_discord_rpc_title": "Discord Rich Presence",
-                "settings_discord_rpc_desc": "Affiche le statut Overnode App sur votre profil Discord avec le logo officiel et le lien overnode.fr.",
-                "settings_discord_rpc_connected": "Connecté à Discord",
-                "settings_discord_rpc_waiting": "En attente de Discord",
-                "settings_discord_rpc_always_active": "Actif en continu avec l'application"
+                "update_btn_install": "Installer la version"
             ]
         case .english:
             return [
@@ -234,12 +229,7 @@ private enum FallbackStrings {
                 "update_section_title": "Software Updates",
                 "update_arch_label": "Architecture",
                 "update_version_label": "Installed version",
-                "update_btn_install": "Install version",
-                "settings_discord_rpc_title": "Discord Rich Presence",
-                "settings_discord_rpc_desc": "Display Overnode App status on your Discord profile with the official logo and overnode.fr link.",
-                "settings_discord_rpc_connected": "Connected to Discord",
-                "settings_discord_rpc_waiting": "Waiting for Discord",
-                "settings_discord_rpc_always_active": "Always active while the app is open"
+                "update_btn_install": "Install version"
             ]
         }
     }
