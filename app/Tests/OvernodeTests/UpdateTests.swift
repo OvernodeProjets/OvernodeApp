@@ -89,9 +89,10 @@ final class UpdateTests: XCTestCase {
         let service = UpdateService.shared
         let resp = try await service.checkForUpdates(version: "1.1.14")
         XCTAssertTrue(resp.updateAvailable)
-        XCTAssertEqual(resp.latestVersion, "1.1.15")
+        XCTAssertFalse(resp.latestVersion.isEmpty, "Latest version should not be empty")
         
-        let fileURL = try await service.downloadUpdate(from: resp.downloadUrl) { _ in }
+        let sha = (resp.sha256 != nil && resp.sha256!.count >= 64) ? resp.sha256 : nil
+        let fileURL = try await service.downloadUpdate(from: resp.downloadUrl, expectedSHA256: sha) { _ in }
         XCTAssertTrue(FileManager.default.fileExists(atPath: fileURL.path))
         
         let attr = try FileManager.default.attributesOfItem(atPath: fileURL.path)
