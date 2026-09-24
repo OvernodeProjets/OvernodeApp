@@ -12,7 +12,14 @@ const apiRoutes = require('./routes/api');
 
 const app = express();
 const PORT = process.env.PORT || 3344;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'overnode-updater-secret-key-2026';
+
+// SECURITY: SESSION_SECRET must be set via environment variable — no hardcoded fallback
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET || SESSION_SECRET.trim().length < 16) {
+  console.error('[OvernodeApp-Updater] ❌ FATAL: SESSION_SECRET environment variable is missing or too short (min 16 chars).');
+  console.error('  Set it in your .env file or environment: SESSION_SECRET="your-random-secret-here"');
+  process.exit(1);
+}
 
 // View engine
 app.set('view engine', 'ejs');
@@ -55,4 +62,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-

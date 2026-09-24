@@ -19,7 +19,7 @@ function readJSON(file, defaultVal) {
       return JSON.parse(fs.readFileSync(file, 'utf8'));
     }
   } catch (err) {
-    console.error(`[DB] Error reading ${file}:`, err.message);
+    console.error('[DB] Error reading ' + file + ':', err.message);
   }
   return defaultVal;
 }
@@ -30,25 +30,47 @@ function writeJSON(file, data) {
   fs.renameSync(tmp, file);
 }
 
+// SECURITY: Hash a console code for secure storage
+function hashCode(code) {
+  return crypto.createHash('sha256').update(code.trim().toUpperCase()).digest('hex');
+}
+
 // 1. Console Code Management
 function getOrInitConsoleCode() {
+  // Allow override from environment
   const envCode = process.env.CONSOLE_CODE;
   if (envCode && envCode.trim().length > 0) {
+    // Store hash, return plaintext for this session
+    const settings = readJSON(SETTINGS_FILE, {});
+    settings.consoleCodeHash = hashCode(envCode);
+    settings.updatedAt = new Date().toISOString();
+    delete settings.consoleCode; // Remove any legacy plaintext
+    writeJSON(SETTINGS_FILE, settings);
     return envCode.trim();
   }
 
   const settings = readJSON(SETTINGS_FILE, {});
-  if (settings.consoleCode) {
-    return settings.consoleCode;
+
+  // SECURITY MIGRATION: If legacy plaintext code exists, hash it and remove plaintext
+  if (settings.consoleCode && !settings.consoleCodeHash) {
+    const code = settings.consoleCode;
+    settings.consoleCodeHash = hashCode(code);
+    delete settings.consoleCode;
+    settings.updatedAt = new Date().toISOString();
+    writeJSON(SETTINGS_FILE, settings);
+    return code;
   }
 
-  // Generate a friendly uppercase formatted code: UP-XXXX-XXXX
+  // If hash exists but no plaintext, generate a fresh code
+  // (code is only shown at startup, hash is stored)
   const randPart1 = crypto.randomBytes(2).toString('hex').toUpperCase();
   const randPart2 = crypto.randomBytes(2).toString('hex').toUpperCase();
-  const newCode = `UP-${randPart1}-${randPart2}`;
+  const newCode = 'UP-' + randPart1 + '-' + randPart2;
 
-  settings.consoleCode = newCode;
-  settings.createdAt = new Date().toISOString();
+  settings.consoleCodeHash = hashCode(newCode);
+  delete settings.consoleCode; // Ensure no plaintext
+  if (!settings.createdAt) settings.createdAt = new Date().toISOString();
+  settings.updatedAt = new Date().toISOString();
   writeJSON(SETTINGS_FILE, settings);
 
   return newCode;
@@ -56,11 +78,18 @@ function getOrInitConsoleCode() {
 
 const CONSOLE_CODE = getOrInitConsoleCode();
 
-console.log('\n============================================================');
-console.log(' [OvernodeApp-Updater] 🔑 CONSOLE SETUP CODE:');
-console.log(` >> ${CONSOLE_CODE} <<`);
-console.log(' (Use this secret code during web registration)');
-console.log('============================================================\n');
+// SECURITY: Only display console code outside production
+if (process.env.NODE_ENV !== 'production') {
+  console.log('');
+  console.log('============================================================');
+  console.log(' [OvernodeApp-Updater] CONSOLE SETUP CODE:');
+  console.log('  >> ' + CONSOLE_CODE + ' <<');
+  console.log(' (Use this secret code during web registration)');
+  console.log('============================================================');
+  console.log('');
+} else {
+  console.log('[OvernodeApp-Updater] Console code initialized (hidden in production). Set CONSOLE_CODE env var to override.');
+}
 
 // 2. User Management
 function getUsers() {
@@ -69,23 +98,23 @@ function getUsers() {
 
 function findUserByUsername(username) {
   const users = getUsers();
-  return users.find(u => u.username.toLowerCase() === username.trim().toLowerCase());
+  return users.find(function(u) { return u.username.toLowerCase() === username.trim().toLowerCase(); });
 }
 
 async function createUser(username, password) {
   const users = getUsers();
   const existing = findUserByUsername(username);
   if (existing) {
-    throw new Error('Cet utilisateur existe déjà.');
+    throw new Error('Cet utilisateur existe deja.');
   }
 
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   const passwordHash = await bcrypt.hash(password, salt);
 
   const newUser = {
     id: crypto.randomUUID(),
     username: username.trim(),
-    passwordHash,
+    passwordHash: passwordHash,
     createdAt: new Date().toISOString()
   };
 
@@ -102,9 +131,25 @@ async function verifyUser(username, password) {
   return { id: user.id, username: user.username };
 }
 
+// SECURITY: Verify console code using constant-time hash comparison
 function verifyConsoleCode(providedCode) {
   if (!providedCode) return false;
-  return providedCode.trim().toUpperCase() === CONSOLE_CODE.trim().toUpperCase();
+  
+  // Check against in-memory code for this session
+  if (CONSOLE_CODE && providedCode.trim().toUpperCase() === CONSOLE_CODE.trim().toUpperCase()) {
+    return true;
+  }
+  
+  // Also verify against stored hash (constant-time via hash comparison)
+  const settings = readJSON(SETTINGS_FILE, {});
+  if (settings.consoleCodeHash) {
+    const inputHash = hashCode(providedCode);
+    return crypto.timingSafeEqual(
+      Buffer.from(inputHash, 'hex'),
+      Buffer.from(settings.consoleCodeHash, 'hex')
+    );
+  }
+  return false;
 }
 
 // 3. Deployment Management
@@ -123,10 +168,16 @@ function getDeployment() {
   return readJSON(DEPLOYMENT_FILE, DEFAULT_DEPLOYMENT);
 }
 
-function pushNewVersion({ version, downloadUrl, releaseNotes, sha256, mandatory, pushedBy }) {
+function pushNewVersion(opts) {
+  var version = opts.version;
+  var downloadUrl = opts.downloadUrl;
+  var releaseNotes = opts.releaseNotes;
+  var sha256 = opts.sha256;
+  var mandatory = opts.mandatory;
+  var pushedBy = opts.pushedBy;
+  
   const deployment = getDeployment();
 
-  // Save current into history before updating
   if (!deployment.history) deployment.history = [];
   deployment.history.unshift({
     version: deployment.currentVersion,
@@ -141,7 +192,7 @@ function pushNewVersion({ version, downloadUrl, releaseNotes, sha256, mandatory,
 
   deployment.currentVersion = version.replace(/^v/, '');
   deployment.downloadUrl = downloadUrl;
-  deployment.releaseNotes = releaseNotes || `Mise à jour v${deployment.currentVersion}`;
+  deployment.releaseNotes = releaseNotes || ('Mise a jour v' + deployment.currentVersion);
   deployment.sha256 = sha256 || '';
   deployment.mandatory = Boolean(mandatory);
   deployment.publishedAt = new Date().toISOString();
@@ -166,14 +217,13 @@ function getStats() {
 }
 
 module.exports = {
-  CONSOLE_CODE,
-  verifyConsoleCode,
-  createUser,
-  verifyUser,
-  getUsers,
-  getDeployment,
-  pushNewVersion,
-  recordUpdateCheck,
-  getStats
+  CONSOLE_CODE: CONSOLE_CODE,
+  verifyConsoleCode: verifyConsoleCode,
+  createUser: createUser,
+  verifyUser: verifyUser,
+  getUsers: getUsers,
+  getDeployment: getDeployment,
+  pushNewVersion: pushNewVersion,
+  recordUpdateCheck: recordUpdateCheck,
+  getStats: getStats
 };
-

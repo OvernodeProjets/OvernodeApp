@@ -20,6 +20,26 @@ public final class APIClient: @unchecked Sendable {
         self.session = URLSession(configuration: config)
     }
     
+    /// Allowed cookie domains for Overnode API requests
+    private let allowedCookieDomains = ["overnode.fr", "discord.com"]
+    
+    private func overnodeCookies(for url: URL) -> [HTTPCookie] {
+        var cookies: [HTTPCookie] = []
+        // First add cookies matched by URL
+        if let urlCookies = HTTPCookieStorage.shared.cookies(for: url) {
+            cookies.append(contentsOf: urlCookies)
+        }
+        // Then add any remaining cookies whose domain is in the allow-list
+        if let all = HTTPCookieStorage.shared.cookies {
+            for c in all where !cookies.contains(where: { $0.name == c.name }) {
+                if allowedCookieDomains.contains(where: { c.domain.contains($0) }) {
+                    cookies.append(c)
+                }
+            }
+        }
+        return cookies
+    }
+    
     public func request<T: Decodable>(
         endpoint: String,
         method: String = "GET",
@@ -40,17 +60,7 @@ public final class APIClient: @unchecked Sendable {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
         
-        var cookiesToSend: [HTTPCookie] = []
-        if let forUrl = HTTPCookieStorage.shared.cookies(for: url) {
-            cookiesToSend.append(contentsOf: forUrl)
-        }
-        if let all = HTTPCookieStorage.shared.cookies {
-            for c in all {
-                if !cookiesToSend.contains(where: { $0.name == c.name }) {
-                    cookiesToSend.append(c)
-                }
-            }
-        }
+        let cookiesToSend = overnodeCookies(for: url)
         if !cookiesToSend.isEmpty {
             let cookieHeaders = HTTPCookie.requestHeaderFields(with: cookiesToSend)
             for (headerKey, headerVal) in cookieHeaders {
@@ -129,17 +139,7 @@ public final class APIClient: @unchecked Sendable {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
         
-        var cookiesToSend: [HTTPCookie] = []
-        if let forUrl = HTTPCookieStorage.shared.cookies(for: url) {
-            cookiesToSend.append(contentsOf: forUrl)
-        }
-        if let all = HTTPCookieStorage.shared.cookies {
-            for c in all {
-                if !cookiesToSend.contains(where: { $0.name == c.name }) {
-                    cookiesToSend.append(c)
-                }
-            }
-        }
+        let cookiesToSend = overnodeCookies(for: url)
         if !cookiesToSend.isEmpty {
             let cookieHeaders = HTTPCookie.requestHeaderFields(with: cookiesToSend)
             for (headerKey, headerVal) in cookieHeaders {

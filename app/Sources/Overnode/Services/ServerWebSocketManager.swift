@@ -21,6 +21,15 @@ public struct LivePteroStats: Codable, Sendable {
 public final class ServerWebSocketManager: @unchecked Sendable {
     public static let shared = ServerWebSocketManager()
     
+    /// Derive the WebSocket Origin dynamically from the API base URL
+    private var wsOrigin: String {
+        let base = APIClient.shared.baseURL
+        if let scheme = base.scheme, let host = base.host {
+            return "\(scheme)://\(host)"
+        }
+        return "https://console.overnode.fr"
+    }
+    
     private var webSocketTask: URLSessionWebSocketTask?
     private var isConnected: Bool = false
     private var currentServerId: String?
@@ -53,7 +62,7 @@ public final class ServerWebSocketManager: @unchecked Sendable {
             guard let url = URL(string: creds.data.socket) else { return }
             
             var request = URLRequest(url: url)
-            request.setValue("https://panel.overnode.fr", forHTTPHeaderField: "Origin")
+            request.setValue(wsOrigin, forHTTPHeaderField: "Origin")
             
             let session = URLSession(configuration: .default)
             let task = session.webSocketTask(with: request)
@@ -165,7 +174,7 @@ public final class ServerWebSocketManager: @unchecked Sendable {
         
         return await withCheckedContinuation { continuation in
             var request = URLRequest(url: url)
-            request.setValue("https://panel.overnode.fr", forHTTPHeaderField: "Origin")
+            request.setValue(APIClient.shared.baseURL.absoluteString, forHTTPHeaderField: "Origin")
             let session = URLSession(configuration: .default)
             let wsTask = session.webSocketTask(with: request)
             wsTask.resume()

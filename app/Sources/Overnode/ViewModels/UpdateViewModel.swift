@@ -70,7 +70,7 @@ public final class UpdateViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let fileURL = try await service.downloadUpdate(from: update.downloadUrl) { [weak self] p in
+            let fileURL = try await service.downloadUpdate(from: update.downloadUrl, expectedSHA256: update.sha256) { [weak self] p in
                 Task { @MainActor in
                     self?.downloadProgress = p
                     self?.state = .downloading(progress: p)
@@ -89,4 +89,3 @@ public final class UpdateViewModel: ObservableObject {
         showModal = false
     }
 }
-

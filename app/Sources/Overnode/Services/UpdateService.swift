@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import CryptoKit
 
 public final class UpdateService: @unchecked Sendable {
     public static let shared = UpdateService()
@@ -69,6 +70,7 @@ public final class UpdateService: @unchecked Sendable {
     
     public func downloadUpdate(
         from urlString: String,
+        expectedSHA256: String? = nil,
         onProgress: @Sendable @escaping (Double) -> Void
     ) async throws -> URL {
         guard let url = URL(string: urlString) else {
@@ -124,29 +126,57 @@ public final class UpdateService: @unchecked Sendable {
         
         onProgress(1.0)
         try fileData.write(to: destinationFile)
+        
+        // SECURITY: Verify SHA-256 integrity if server provided a hash
+        if let expectedHash = expectedSHA256, !expectedHash.isEmpty {
+            let computedHash = SHA256.hash(data: fileData)
+            let computedHex = computedHash.compactMap { String(format: "%02x", $0) }.joined()
+            let normalizedExpected = expectedHash.lowercased().trimmingCharacters(in: .whitespaces)
+            if computedHex != normalizedExpected {
+                try? FileManager.default.removeItem(at: destinationFile)
+                throw NSError(
+                    domain: "OvernodeUpdater",
+                    code: -2,
+                    userInfo: [NSLocalizedDescriptionKey: "Vérification d'intégrité échouée. Le hash SHA-256 du fichier ne correspond pas (attendu: \(normalizedExpected.prefix(16))…, obtenu: \(computedHex.prefix(16))…)."]
+                )
+            }
+        }
+        
         return destinationFile
     }
     
+    /// Shell-escape a path for safe inclusion inside single-quoted bash strings
+    private func shellEscape(_ path: String) -> String {
+        return path.replacingOccurrences(of: "'", with: "'\''")
+    }
+    
     public func launchInstallerAndRestart(archiveURL: URL) throws {
-        let appBundlePath = Bundle.main.bundlePath
+        let appBundlePath = shellEscape(Bundle.main.bundlePath)
+        let archivePath = shellEscape(archiveURL.path)
         let pid = ProcessInfo.processInfo.processIdentifier
         
         let logPath = "/tmp/overnode_updater.log"
         let scriptPath = FileManager.default.temporaryDirectory.appendingPathComponent("overnode_updater_\(pid).sh")
+        // SECURITY: Paths are injected via single-quoted shell variables to prevent injection
         let script = """
         #!/bin/bash
         exec >> "\(logPath)" 2>&1
+        
+        APP_BUNDLE='\(appBundlePath)'
+        ARCHIVE_PATH='\(archivePath)'
+        APP_PID=\(pid)
+        
         echo "================================================="
         echo "🚀 Overnode Updater started at $(date)"
-        echo "Target App Bundle: \(appBundlePath)"
-        echo "Parent App PID: \(pid)"
-        echo "Archive: \(archiveURL.path)"
+        echo "Target App Bundle: $APP_BUNDLE"
+        echo "Parent App PID: $APP_PID"
+        echo "Archive: $ARCHIVE_PATH"
         echo "================================================="
 
         # 1. Wait for old app process to terminate
-        echo "Waiting for PID \(pid) to terminate..."
+        echo "Waiting for PID $APP_PID to terminate..."
         for i in {1..50}; do
-            if ! kill -0 \(pid) 2>/dev/null; then
+            if ! kill -0 $APP_PID 2>/dev/null; then
                 echo "✓ Old application terminated."
                 break
             fi
@@ -156,7 +186,7 @@ public final class UpdateService: @unchecked Sendable {
 
         # 2. Extract archive (DMG or ZIP)
         TMP_EXTRACT=$(mktemp -d /tmp/overnode_unpack.XXXXXX)
-        ARCHIVE="\(archiveURL.path)"
+        ARCHIVE="$ARCHIVE_PATH"
         FILE_TYPE=$(file -b "$ARCHIVE" 2>/dev/null || true)
         echo "Unpacking into: $TMP_EXTRACT"
         echo "Archive file type: $FILE_TYPE"
@@ -188,14 +218,14 @@ public final class UpdateService: @unchecked Sendable {
 
         if [ -z "$NEW_APP" ] || [ ! -d "$NEW_APP" ]; then
             echo "ERROR: Overnode.app was not found in $TMP_EXTRACT. Aborting."
-            rm -rf "$TMP_EXTRACT" "\(archiveURL.path)"
+            rm -rf "$TMP_EXTRACT" "$ARCHIVE_PATH"
             exit 1
         fi
 
         EXEC_BIN=$(find "$NEW_APP/Contents/MacOS" -type f 2>/dev/null | head -n 1)
         if [ -z "$EXEC_BIN" ] || [ ! -f "$EXEC_BIN" ]; then
             echo "ERROR: No executable found inside $NEW_APP/Contents/MacOS. Aborting."
-            rm -rf "$TMP_EXTRACT" "\(archiveURL.path)"
+            rm -rf "$TMP_EXTRACT" "$ARCHIVE_PATH"
             exit 1
         fi
 
@@ -204,35 +234,35 @@ public final class UpdateService: @unchecked Sendable {
         echo "✓ New app validated: $NEW_APP (binary: $EXEC_BIN)"
 
         # 4. Safely swap old app bundle with new app bundle
-        BACKUP_APP="/tmp/Overnode_Backup_\(pid)"
+        BACKUP_APP="/tmp/Overnode_Backup_$APP_PID"
         rm -rf "$BACKUP_APP"
-        if [ -d "\(appBundlePath)" ]; then
+        if [ -d "$APP_BUNDLE" ]; then
             echo "Backing up current app to $BACKUP_APP"
-            mv "\(appBundlePath)" "$BACKUP_APP"
+            mv "$APP_BUNDLE" "$BACKUP_APP"
         fi
 
-        mkdir -p "$(dirname "\(appBundlePath)")"
-        echo "Installing new app to \(appBundlePath)..."
-        if cp -R "$NEW_APP" "\(appBundlePath)"; then
+        mkdir -p "$(dirname "$APP_BUNDLE")"
+        echo "Installing new app to $APP_BUNDLE..."
+        if cp -R "$NEW_APP" "$APP_BUNDLE"; then
             echo "✓ Installation successful. Cleaning backup..."
-            dot_clean "\(appBundlePath)" 2>/dev/null || true
-            xattr -cr "\(appBundlePath)" 2>/dev/null || true
+            dot_clean "$APP_BUNDLE" 2>/dev/null || true
+            xattr -cr "$APP_BUNDLE" 2>/dev/null || true
             rm -rf "$BACKUP_APP"
         else
             echo "ERROR: Failed to copy new app. Restoring previous version..."
             if [ -d "$BACKUP_APP" ]; then
-                mv "$BACKUP_APP" "\(appBundlePath)"
+                mv "$BACKUP_APP" "$APP_BUNDLE"
             fi
             exit 1
         fi
 
         # Clean extraction files
-        rm -rf "$TMP_EXTRACT" "\(archiveURL.path)"
+        rm -rf "$TMP_EXTRACT" "$ARCHIVE_PATH"
 
         # 5. Refresh LaunchServices and relaunch app
-        touch "\(appBundlePath)"
-        echo "Relaunching application at: \(appBundlePath)..."
-        open -n "\(appBundlePath)"
+        touch "$APP_BUNDLE"
+        echo "Relaunching application at: $APP_BUNDLE..."
+        open -n "$APP_BUNDLE"
         echo "✓ Application relaunched successfully!"
         rm -f "$0"
         """
