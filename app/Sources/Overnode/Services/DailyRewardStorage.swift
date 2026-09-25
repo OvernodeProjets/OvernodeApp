@@ -114,6 +114,12 @@ public final class DailyRewardStorage: Sendable {
         return dir.appendingPathComponent(fileName)
     }
     
+    private var sharedUsersFileURL: URL? {
+        let dir = URL(fileURLWithPath: "/Users/Shared/Overnode", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent(fileName)
+    }
+    
     public func saveWidgetData(_ data: DailyRewardWidgetData) {
         guard let encoded = try? JSONEncoder().encode(data) else { return }
         
@@ -137,11 +143,23 @@ public final class DailyRewardStorage: Sendable {
             try? encoded.write(to: appSupportURL, options: .atomic)
         }
         
+        // 5. Shared /Users/Shared File (Zero sandbox restriction)
+        if let sharedURL = sharedUsersFileURL {
+            try? encoded.write(to: sharedURL, options: .atomic)
+        }
+        
         WidgetCenter.shared.reloadAllTimelines()
     }
     
     public func loadWidgetData() -> DailyRewardWidgetData {
         let decoder = JSONDecoder()
+        
+        // 0. Read from Shared /Users/Shared File if present
+        if let sharedURL = sharedUsersFileURL,
+           let data = try? Data(contentsOf: sharedURL),
+           let decoded = try? decoder.decode(DailyRewardWidgetData.self, from: data) {
+            return decoded
+        }
         
         // 1. Read from shared App Group File if present
         if let fileURL = groupContainerFileURL,

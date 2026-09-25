@@ -10,5 +10,13 @@
     <array>
         <string>group.fr.overnode.OvernodeApp</string>
     </array>
+    <key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
+    <array>
+        <string>/Library/Application Support/Overnode/</string>
+    </array>
+    <key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+    <array>
+        <string>/Users/Shared/Overnode/</string>
+    </array>
 </dict>
 </plist>
