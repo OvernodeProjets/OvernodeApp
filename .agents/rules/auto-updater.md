@@ -4,7 +4,7 @@ Règles pour le système de mise à jour automatique, le site de gestion et la C
 
 ## When this applies
 
-- Travail sur les services de mise à jour dans `app/Sources/Overnode/Services/UpdateService.swift`.
+- Travail sur les services de mise à jour dans `app-mac/Sources/Overnode/Services/UpdateService.swift`.
 - Modification de l'interface de mise à jour (`UpdateModalView.swift`, `DashboardView.swift`).
 - Maintenance du portail d'administration `OvernodeApp-Updater/`.
 - Modification du workflow GitHub Actions `.github/workflows/build-and-release.yml`.

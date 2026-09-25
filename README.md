@@ -1,37 +1,62 @@
-# Overnode (macOS 27+ / Apple Silicon)
+# Overnode Desktop (macOS & Windows)
 
-Application native macOS pour l'écosystème cloud **Overnode**.
-Porte l'expérience de gestion cloud de [console.overnode.fr](https://console.overnode.fr) directement sur macOS dans une application moderne, ultra-rapide et optimisée Apple Silicon.
+Dépôt officiel des applications desktop natives pour l'écosystème cloud **Overnode**.
+Porte l'expérience de gestion cloud de la Console Cloud directement sur desktop avec performance native, sécurité matérielle, widgets et design moderne.
 
-## ✨ Fonctionnalités
+---
 
-- 🔐 **Authentification Hybride & Sécurisée** :
-  - **Discord OAuth2** avec redirection Web sécurisée via `ASWebAuthenticationSession`.
-  - **Passkeys (WebAuthn)** spécifiques à `console.overnode.fr` avec support biométrique Touch ID / Apple Security Keys (`AuthenticationServices`).
-- 📊 **Tableau de Bord des Ressources & Quotas** :
-  - Métriques d'utilisation en temps réel pour la RAM (GB), le Disque (GB), le processeur CPU (%) et le nombre de serveurs alloués.
-  - Jauges de progression visuelles avec alerte de saturation.
-- 🌐 **Système d'Internationalisation (i18n)** :
-  - Support natif complet du **Français (FR)** et de l'**Anglais (EN)**.
-  - Changement de langue dynamique instantané sans rechargement.
-- 🎨 **Design Système Overnode** :
-  - Thème sombre épuré, accents ambre/dorés Overnode, bordures subtiles et typographie optimisée.
-  - Fenêtre idéale (1100 × 740 px) intégrée nativement avec barre de titre masquée et coins arrondis macOS.
-- 📦 **Architecture Modulaire** :
-  - Organisation stricte en petits fichiers ciblés (Models, Services, ViewModels, Views, Theme, Localization).
+## 🗂️ Organisation du Dépôt
 
-## 🚀 Compilation & Exécution
+```
+OvernodeApp/
+├── app-mac/                 # Application native macOS (Swift 6 / SwiftUI / Apple Silicon)
+│   ├── README.md            # Guide de compilation et architecture macOS
+│   ├── SPECS.md             # Spécifications et intentions techniques macOS
+│   ├── Sources/             # Code source Swift (Overnode & WidgetKit)
+│   ├── Tests/               # Suite de tests unitaires automatisés
+│   └── build_app.sh         # Script de génération du bundle Overnode.app signé
+├── app-win/                 # Spécifications & Architecture Windows (C# 12 / .NET 9 / WinUI 3)
+│   ├── README.md            # Guide complet de l'application Windows
+│   ├── ARCHITECTURE.md      # Correspondances architecturales 1:1 Swift vs WinUI 3
+│   ├── SECURITY.md          # Guide de sécurité Windows (DPAPI, WebAuthn, Authenticode)
+│   └── WIDGETS.md           # Guide d'implémentation des widgets Windows 11
+├── app -> app-mac           # Lien symbolique de compatibilité descendante
+├── OvernodeApp-Updater/     # Portail web & API d'administration des mises à jour
+├── server-side/             # Backend Overnode (Heliactyl Next Toledo)
+├── docs/                    # Captures d'écran et documentation visuelle
+└── .agents/rules/           # Règles d'architecture et standards de développement
+```
 
-### Prérequis
-- macOS 14.0+ (Optimisé pour macOS 27 Golden Gate & Apple Silicon arm64)
-- Swift 6.0+ / Xcode 16+
+---
 
-### Commandes de Build
+## 🚀 Démarrage Rapide
+
+### Application macOS
 ```bash
-cd app
-# Compilation release
+# Se rendre dans le dossier macOS (ou via le raccourci `app`)
+cd app-mac
+
+# Lancer la suite de tests
+swift test
+
+# Compiler l'application macOS
 swift build -c release
 
 # Générer le bundle Overnode.app complet
 ./build_app.sh
 ```
+
+### Portail Auto-Updater
+```bash
+cd OvernodeApp-Updater
+npm install
+npm start
+```
+
+---
+
+## 🛡️ Règles & Conventions
+
+- **Règle UI Absolue** : Ne **jamais** afficher l'adresse `console.overnode.fr` à l'utilisateur dans l'interface graphique. Utiliser systématiquement **"Console Cloud"** ou **"Overnode"**.
+- **Authentification Sécurisée** : Persistance chiffrée des sessions (Keychain sur macOS, DPAPI sur Windows) et support natif du double facteur (2FA TOTP).
+- **Internationalisation (i18n)** : Support complet et dynamique du Français (FR) et de l'Anglais (EN).

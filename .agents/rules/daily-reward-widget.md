@@ -4,7 +4,7 @@ Règles de fonctionnement pour le module Daily Reward et l'extension Widget Appl
 
 ## When this applies
 
-- Modifications ou ajouts dans `app/Sources/Overnode/Views/DailyReward/`, les widgets WidgetKit dans `app/Sources/OvernodeWidget/`, ou les services et modèles de récompense quotidienne.
+- Modifications ou ajouts dans `app-mac/Sources/Overnode/Views/DailyReward/`, les widgets WidgetKit dans `app-mac/Sources/OvernodeWidget/`, ou les services et modèles de récompense quotidienne.
 
 ## Rules
 

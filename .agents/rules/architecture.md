@@ -4,7 +4,7 @@ Conventions d'architecture pour l'application macOS Overnode.
 
 ## When this applies
 
-- Création ou modification de composants, services, modèles ou vues dans le dossier `app/`.
+- Création ou modification de composants, services, modèles ou vues dans le dossier `app-mac/` (ou lien `app/`).
 
 ## Rules
 

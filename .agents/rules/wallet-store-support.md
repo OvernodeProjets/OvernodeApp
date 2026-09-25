@@ -4,7 +4,7 @@ Règles de fonctionnement pour les modules Wallet, Store (Boutique), Support et 
 
 ## When this applies
 
-- Modifications ou ajouts dans `app/Sources/Overnode/Views/Wallet/`, `Store/`, `Support/`, `AFK/` ou leurs modèles et services associés.
+- Modifications ou ajouts dans `app-mac/Sources/Overnode/Views/Wallet/`, `Store/`, `Support/`, `AFK/` ou leurs modèles et services associés.
 
 ## Rules
 
