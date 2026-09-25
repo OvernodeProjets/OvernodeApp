@@ -128,15 +128,15 @@ public struct DailyRewardWidgetEntryView: View {
     private var smallWidgetView: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header: Brand & Streak
-            HStack(alignment: .center, spacing: 6) {
-                HStack(spacing: 5) {
+            HStack(alignment: .center, spacing: 4) {
+                HStack(spacing: 4) {
                     Image(systemName: "gift.fill")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 10.5, weight: .bold))
                         .foregroundStyle(goldGradient)
                     Text("OVERNODE")
-                        .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                        .font(.system(size: 8.5, weight: .heavy, design: .rounded))
                         .foregroundColor(Color.white.opacity(0.90))
-                        .tracking(0.6)
+                        .tracking(0.5)
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                 }
@@ -144,17 +144,17 @@ public struct DailyRewardWidgetEntryView: View {
                 Spacer(minLength: 4)
                 
                 // Streak badge
-                HStack(spacing: 3) {
+                HStack(spacing: 2.5) {
                     Image(systemName: "flame.fill")
-                        .font(.system(size: 9.5))
+                        .font(.system(size: 9))
                         .foregroundColor(entry.data.currentStreak > 0 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color.white.opacity(0.4))
                     Text("\(entry.data.currentStreak)d")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .font(.system(size: 9.5, weight: .bold, design: .monospaced))
                         .foregroundColor(entry.data.currentStreak > 0 ? .white : Color.white.opacity(0.6))
                         .lineLimit(1)
                 }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2.5)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
                 .background(
                     entry.data.currentStreak > 0
                         ? Color(red: 1.0, green: 0.48, blue: 0.18).opacity(0.18)
@@ -273,7 +273,7 @@ public struct DailyRewardWidgetEntryView: View {
                 Spacer()
             }
         }
-        .padding(13)
+        .padding(12)
     }
     
     // MARK: - System Medium View

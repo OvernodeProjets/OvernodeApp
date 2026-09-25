@@ -53,6 +53,14 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
                try? task.run()
            }
        }
+
+       // Terminate any stale widget extension process so macOS relaunches the new binary
+       let killTask = Process()
+       killTask.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
+       killTask.arguments = ["OvernodeWidgetExtension"]
+       try? killTask.run()
+
+       WidgetCenter.shared.reloadAllTimelines()
        DailyRewardSyncManager.shared.startBackgroundSync()
 
        // Initialize Menu Bar Quick Actions (macOS status item)

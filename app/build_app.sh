@@ -170,5 +170,7 @@ if [ -d "/Applications/$APP_NAME.app" ]; then
     ditto "$FINAL_BUNDLE_DIR" "/Applications/$APP_NAME.app"
     # Register updated widget extension
     /usr/bin/pluginkit -a "/Applications/$APP_NAME.app/Contents/PlugIns/OvernodeWidgetExtension.appex" 2>/dev/null || true
-    echo "==> /Applications/$APP_NAME.app updated successfully"
+    # Restart widget and notification center daemons to immediately flush widget cache
+    killall -9 chronod NotificationCenter 2>/dev/null || true
+    echo "==> /Applications/$APP_NAME.app updated successfully (widget cache flushed)"
 fi
