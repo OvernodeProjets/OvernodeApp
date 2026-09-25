@@ -1,6 +1,66 @@
 import Foundation
 import WidgetKit
 
+public struct ServerWidgetRenewalInfo: Codable, Sendable, Equatable, Identifiable {
+    public var id: String { identifier }
+    public let identifier: String
+    public let name: String
+    public let nextRenewalAt: String?
+    public let remainingSeconds: TimeInterval?
+    public let formattedRemainingTime: String
+    public let canRenew: Bool
+    public let isExpired: Bool
+    
+    public init(
+        identifier: String,
+        name: String,
+        nextRenewalAt: String? = nil,
+        remainingSeconds: TimeInterval? = nil,
+        formattedRemainingTime: String,
+        canRenew: Bool = false,
+        isExpired: Bool = false
+    ) {
+        self.identifier = identifier
+        self.name = name
+        self.nextRenewalAt = nextRenewalAt
+        self.remainingSeconds = remainingSeconds
+        self.formattedRemainingTime = formattedRemainingTime
+        self.canRenew = canRenew
+        self.isExpired = isExpired
+    }
+    
+    public static func parseRemainingSeconds(from dateString: String?) -> TimeInterval? {
+        guard let dateString = dateString, !dateString.isEmpty else { return nil }
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var date = isoFormatter.date(from: dateString)
+        if date == nil {
+            isoFormatter.formatOptions = [.withInternetDateTime]
+            date = isoFormatter.date(from: dateString)
+        }
+        guard let target = date else { return nil }
+        return target.timeIntervalSinceNow
+    }
+    
+    public static func formatRemaining(seconds: TimeInterval?) -> String {
+        guard let sec = seconds else { return "Unlimited" }
+        if sec <= 0 { return "Expired" }
+        let total = Int(sec)
+        let days = total / 86400
+        let hours = (total % 86400) / 3600
+        let minutes = (total % 3600) / 60
+        if days > 0 {
+            return "\(days)d \(hours)h"
+        } else if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else if minutes > 0 {
+            return "\(minutes)m"
+        } else {
+            return "< 1m"
+        }
+    }
+}
+
 public struct DailyRewardWidgetData: Codable, Sendable, Equatable {
     public let isAuthenticated: Bool
     public let canClaim: Bool
@@ -12,6 +72,13 @@ public struct DailyRewardWidgetData: Codable, Sendable, Equatable {
     public let totalClaimed: Int
     public let streakProtection: Int
     public let lastUpdated: Date
+    public let servers: [ServerWidgetRenewalInfo]
+    
+    enum CodingKeys: String, CodingKey {
+        case isAuthenticated, canClaim, currentStreak, longestStreak
+        case lastClaimTimestamp, nextRewardAmount, coins, totalClaimed
+        case streakProtection, lastUpdated, servers
+    }
     
     public init(
         isAuthenticated: Bool = false,
@@ -23,7 +90,8 @@ public struct DailyRewardWidgetData: Codable, Sendable, Equatable {
         coins: Int = 0,
         totalClaimed: Int = 0,
         streakProtection: Int = 0,
-        lastUpdated: Date = Date()
+        lastUpdated: Date = Date(),
+        servers: [ServerWidgetRenewalInfo] = []
     ) {
         self.isAuthenticated = isAuthenticated
         self.canClaim = canClaim
@@ -35,6 +103,45 @@ public struct DailyRewardWidgetData: Codable, Sendable, Equatable {
         self.totalClaimed = totalClaimed
         self.streakProtection = streakProtection
         self.lastUpdated = lastUpdated
+        self.servers = servers
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.isAuthenticated = (try? c.decode(Bool.self, forKey: .isAuthenticated)) ?? false
+        self.canClaim = (try? c.decode(Bool.self, forKey: .canClaim)) ?? false
+        self.currentStreak = (try? c.decode(Int.self, forKey: .currentStreak)) ?? 0
+        self.longestStreak = (try? c.decode(Int.self, forKey: .longestStreak)) ?? 0
+        self.lastClaimTimestamp = (try? c.decode(Int64.self, forKey: .lastClaimTimestamp)) ?? 0
+        self.nextRewardAmount = (try? c.decode(Int.self, forKey: .nextRewardAmount)) ?? 25
+        self.coins = (try? c.decode(Int.self, forKey: .coins)) ?? 0
+        self.totalClaimed = (try? c.decode(Int.self, forKey: .totalClaimed)) ?? 0
+        self.streakProtection = (try? c.decode(Int.self, forKey: .streakProtection)) ?? 0
+        self.lastUpdated = (try? c.decode(Date.self, forKey: .lastUpdated)) ?? Date()
+        self.servers = (try? c.decode([ServerWidgetRenewalInfo].self, forKey: .servers)) ?? []
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(isAuthenticated, forKey: .isAuthenticated)
+        try c.encode(canClaim, forKey: .canClaim)
+        try c.encode(currentStreak, forKey: .currentStreak)
+        try c.encode(longestStreak, forKey: .longestStreak)
+        try c.encode(lastClaimTimestamp, forKey: .lastClaimTimestamp)
+        try c.encode(nextRewardAmount, forKey: .nextRewardAmount)
+        try c.encode(coins, forKey: .coins)
+        try c.encode(totalClaimed, forKey: .totalClaimed)
+        try c.encode(streakProtection, forKey: .streakProtection)
+        try c.encode(lastUpdated, forKey: .lastUpdated)
+        try c.encode(servers, forKey: .servers)
+    }
+    
+    public var nextExpiringServer: ServerWidgetRenewalInfo? {
+        let active = servers.filter { !$0.isExpired }
+        if !active.isEmpty {
+            return active.sorted { ($0.remainingSeconds ?? .infinity) < ($1.remainingSeconds ?? .infinity) }.first
+        }
+        return servers.first
     }
     
     /// Real-time computed eligibility verifying session, previous claims today, and server flag

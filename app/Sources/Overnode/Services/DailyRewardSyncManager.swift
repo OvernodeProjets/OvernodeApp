@@ -44,6 +44,49 @@ public final class DailyRewardSyncManager: ObservableObject {
             
             do {
                 let status = try await DailyRewardService.shared.fetchStatus()
+                
+                // Fetch servers and their renewal statuses in parallel
+                var serverRenewals: [ServerWidgetRenewalInfo] = []
+                var serverList = await AuthService.shared.fetchServersStatus()
+                if serverList.isEmpty {
+                    if let data = UserDefaults.standard.data(forKey: "overnode_cached_servers"),
+                       let cached = try? JSONDecoder().decode([ServerInstance].self, from: data) {
+                        serverList = cached
+                    }
+                }
+                
+                if !serverList.isEmpty {
+                    await withTaskGroup(of: ServerWidgetRenewalInfo?.self) { group in
+                        for server in serverList.prefix(6) {
+                            group.addTask {
+                                if let renewal = await ServerService.shared.fetchRenewalStatus(serverId: server.identifier) {
+                                    let remSec = ServerWidgetRenewalInfo.parseRemainingSeconds(from: renewal.nextRenewalAt)
+                                    let formattedTime = ServerWidgetRenewalInfo.formatRemaining(seconds: remSec)
+                                    return ServerWidgetRenewalInfo(
+                                        identifier: server.identifier,
+                                        name: server.name,
+                                        nextRenewalAt: renewal.nextRenewalAt,
+                                        remainingSeconds: remSec,
+                                        formattedRemainingTime: formattedTime,
+                                        canRenew: renewal.canRenew ?? false,
+                                        isExpired: renewal.isExpired ?? (remSec != nil && remSec! <= 0)
+                                    )
+                                }
+                                return nil
+                            }
+                        }
+                        
+                        for await item in group {
+                            if let item = item {
+                                serverRenewals.append(item)
+                            }
+                        }
+                    }
+                    
+                    // Sort servers by urgency: expiring soonest first
+                    serverRenewals.sort { ($0.remainingSeconds ?? .infinity) < ($1.remainingSeconds ?? .infinity) }
+                }
+                
                 let widgetData = DailyRewardWidgetData(
                     isAuthenticated: true,
                     canClaim: status.canClaim,
@@ -54,7 +97,8 @@ public final class DailyRewardSyncManager: ObservableObject {
                     coins: status.totalCoinsEarned,
                     totalClaimed: status.totalClaimed,
                     streakProtection: status.streakProtection,
-                    lastUpdated: Date()
+                    lastUpdated: Date(),
+                    servers: serverRenewals
                 )
                 DailyRewardStorage.shared.saveWidgetData(widgetData)
             } catch {
@@ -78,7 +122,8 @@ public final class DailyRewardSyncManager: ObservableObject {
             coins: 0,
             totalClaimed: 0,
             streakProtection: 0,
-            lastUpdated: Date()
+            lastUpdated: Date(),
+            servers: []
         )
         DailyRewardStorage.shared.saveWidgetData(unauthData)
     }
