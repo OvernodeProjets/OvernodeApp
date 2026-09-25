@@ -100,7 +100,6 @@ public struct DailyRewardWidgetEntryView: View {
         ZStack {
             backgroundGradient
             
-            // Subtle radial gold glow on top-leading edge
             RadialGradient(
                 colors: [
                     Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.12),
@@ -120,20 +119,6 @@ public struct DailyRewardWidgetEntryView: View {
                 smallWidgetView
             }
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.12),
-                            Color.white.opacity(0.03)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
         .containerBackground(for: .widget) {
             backgroundGradient
         }
@@ -143,45 +128,40 @@ public struct DailyRewardWidgetEntryView: View {
     private var smallWidgetView: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header: Brand & Streak
-            HStack(alignment: .center) {
+            HStack(alignment: .center, spacing: 6) {
                 HStack(spacing: 5) {
                     Image(systemName: "gift.fill")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(goldGradient)
                     Text("OVERNODE")
-                        .font(.system(size: 9, weight: .heavy, design: .rounded))
+                        .font(.system(size: 9.5, weight: .heavy, design: .rounded))
                         .foregroundColor(Color.white.opacity(0.90))
-                        .tracking(1.0)
+                        .tracking(0.6)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 
-                Spacer()
+                Spacer(minLength: 4)
                 
                 // Streak badge
                 HStack(spacing: 3) {
                     Image(systemName: "flame.fill")
-                        .font(.system(size: 9))
+                        .font(.system(size: 9.5))
                         .foregroundColor(entry.data.currentStreak > 0 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color.white.opacity(0.4))
                     Text("\(entry.data.currentStreak)d")
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .foregroundColor(entry.data.currentStreak > 0 ? .white : Color.white.opacity(0.6))
+                        .lineLimit(1)
                 }
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2.5)
                 .background(
                     entry.data.currentStreak > 0
-                        ? Color(red: 1.0, green: 0.48, blue: 0.18).opacity(0.15)
+                        ? Color(red: 1.0, green: 0.48, blue: 0.18).opacity(0.18)
                         : Color.white.opacity(0.06)
                 )
                 .cornerRadius(5)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .stroke(
-                            entry.data.currentStreak > 0
-                                ? Color(red: 1.0, green: 0.48, blue: 0.18).opacity(0.3)
-                                : Color.white.opacity(0.08),
-                            lineWidth: 0.8
-                        )
-                )
+                .fixedSize(horizontal: true, vertical: false)
             }
             
             Spacer(minLength: 6)
@@ -235,7 +215,7 @@ public struct DailyRewardWidgetEntryView: View {
                         .tracking(0.8)
                     
                     Text(entry.data.formattedRemainingTime)
-                        .font(.system(size: 21, weight: .heavy, design: .monospaced))
+                        .font(.system(size: 23, weight: .black, design: .rounded))
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
@@ -494,5 +474,6 @@ public struct OvernodeDailyRewardWidget: Widget {
         .configurationDisplayName("Daily Reward")
         .description("Track your daily reward streak and countdown until your next bonus coins in hours and minutes.")
         .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
     }
 }
