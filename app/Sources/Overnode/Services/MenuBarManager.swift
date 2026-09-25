@@ -57,9 +57,12 @@ public final class MenuBarManager: NSObject {
     }
     
     private func createMenuBarIcon() -> NSImage? {
-        if let iconURL = Bundle.appResourceURL(named: "overnode_icon", withExtension: "png"),
+        // Exclusively use statusbar_icon.png for macOS Menu Bar Status Item
+        if let iconURL = Bundle.appResourceURL(named: "statusbar_icon", withExtension: "png") ?? Bundle.appResourceURL(named: "overnode_icon", withExtension: "png"),
            let originalImage = NSImage(contentsOf: iconURL) {
-            let targetSize = NSSize(width: 18, height: 13)
+            let targetHeight: CGFloat = 14
+            let targetWidth: CGFloat = originalImage.size.height > 0 ? targetHeight * (originalImage.size.width / originalImage.size.height) : 18
+            let targetSize = NSSize(width: round(targetWidth), height: targetHeight)
             let resized = NSImage(size: targetSize)
             resized.lockFocus()
             originalImage.draw(
