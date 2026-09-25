@@ -53,11 +53,15 @@ public final class DailyRewardViewModel: ObservableObject {
             
             if let st = statusRes {
                 let widgetData = DailyRewardWidgetData(
+                    isAuthenticated: true,
                     canClaim: st.canClaim,
                     currentStreak: st.currentStreak,
+                    longestStreak: st.longestStreak,
                     lastClaimTimestamp: st.lastClaimTimestamp,
                     nextRewardAmount: st.nextReward?.amount ?? 25,
                     coins: st.totalCoinsEarned,
+                    totalClaimed: st.totalClaimed,
+                    streakProtection: st.streakProtection,
                     lastUpdated: Date()
                 )
                 DailyRewardStorage.shared.saveWidgetData(widgetData)

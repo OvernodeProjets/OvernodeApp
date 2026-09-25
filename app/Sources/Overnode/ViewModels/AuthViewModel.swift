@@ -41,9 +41,11 @@ public final class AuthViewModel: ObservableObject {
                         coins: initData.coins ?? 0
                     )
                     self.isAuthenticated = true
+                    DailyRewardSyncManager.shared.sync()
                 } else {
                     self.isAuthenticated = false
                     self.currentUser = nil
+                    DailyRewardSyncManager.shared.onLogout()
                 }
             } catch {
                 // If /api/v5/init fails, fallback to checking /api/v5/state
@@ -56,13 +58,16 @@ public final class AuthViewModel: ObservableObject {
                         if let coins = try? await authService.fetchCoins() {
                             self.currentUser?.coins = coins
                         }
+                        DailyRewardSyncManager.shared.sync()
                     } else {
                         self.isAuthenticated = false
                         self.currentUser = nil
+                        DailyRewardSyncManager.shared.onLogout()
                     }
                 } catch {
                     self.isAuthenticated = false
                     self.currentUser = nil
+                    DailyRewardSyncManager.shared.onLogout()
                 }
             }
             self.isLoading = false
@@ -90,6 +95,7 @@ public final class AuthViewModel: ObservableObject {
         self.activeWebAuthURL = nil
         self.isPasskeyMode = false
         self.isLoading = false
+        DailyRewardSyncManager.shared.sync()
     }
     
     public func logout() {
@@ -99,5 +105,6 @@ public final class AuthViewModel: ObservableObject {
         initialResources = nil
         activeWebAuthURL = nil
         isPasskeyMode = false
+        DailyRewardSyncManager.shared.onLogout()
     }
 }

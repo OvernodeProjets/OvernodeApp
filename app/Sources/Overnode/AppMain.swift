@@ -53,9 +53,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
                try? task.run()
            }
        }
-       let initialWidgetData = DailyRewardStorage.shared.loadWidgetData()
-       DailyRewardStorage.shared.saveWidgetData(initialWidgetData)
-       WidgetCenter.shared.reloadAllTimelines()
+       DailyRewardSyncManager.shared.startBackgroundSync()
 
        // Initialize Menu Bar Quick Actions (macOS status item)
         Task { @MainActor in

@@ -146,9 +146,9 @@ fi
 
 # 2. Sign main app bundle SECOND (WITHOUT --deep so nested extension signature & entitlements are preserved!)
 if [ "$SIGNING_IDENTITY" = "-" ]; then
-    codesign --force --sign - "$BUNDLE_DIR"
+    codesign --force --sign - --entitlements "$DIR/app.entitlements" "$BUNDLE_DIR"
 else
-    codesign --force --options runtime --sign "$SIGNING_IDENTITY" "$BUNDLE_DIR"
+    codesign --force --options runtime --sign "$SIGNING_IDENTITY" --entitlements "$DIR/app.entitlements" "$BUNDLE_DIR"
 fi
 
 # 3. Verify signature integrity
@@ -162,3 +162,13 @@ rm -rf "$FINAL_BUNDLE_DIR"
 ditto "$BUNDLE_DIR" "$FINAL_BUNDLE_DIR"
 rm -rf "$TEMP_BUILD"
 echo "==> Application bundle ready at $FINAL_BUNDLE_DIR"
+
+# 7. Update /Applications/Overnode.app if it exists
+if [ -d "/Applications/$APP_NAME.app" ]; then
+    echo "==> Updating /Applications/$APP_NAME.app..."
+    rm -rf "/Applications/$APP_NAME.app"
+    ditto "$FINAL_BUNDLE_DIR" "/Applications/$APP_NAME.app"
+    # Register updated widget extension
+    /usr/bin/pluginkit -a "/Applications/$APP_NAME.app/Contents/PlugIns/OvernodeWidgetExtension.appex" 2>/dev/null || true
+    echo "==> /Applications/$APP_NAME.app updated successfully"
+fi
