@@ -1,7 +1,8 @@
 import SwiftUI
 
 public struct ServerDetailView: View {
-    @ObservedObject var vm: ServerDetailViewModel
+    let server: ServerInstance
+    @StateObject private var vm: ServerDetailViewModel
     @ObservedObject var loc = LocalizationManager.shared
     @Binding var selectedTab: ServerTab
     let onBack: () -> Void
@@ -9,12 +10,26 @@ public struct ServerDetailView: View {
     @State private var showingKillConfirmation = false
     
     public init(
+        server: ServerInstance,
+        selectedTab: Binding<ServerTab>,
+        onBack: @escaping () -> Void,
+        onServerDeleted: (() -> Void)? = nil
+    ) {
+        self.server = server
+        self._vm = StateObject(wrappedValue: ServerDetailViewModel(server: server, initialTab: selectedTab.wrappedValue))
+        self._selectedTab = selectedTab
+        self.onBack = onBack
+        self.onServerDeleted = onServerDeleted
+    }
+    
+    public init(
         vm: ServerDetailViewModel,
         selectedTab: Binding<ServerTab>,
         onBack: @escaping () -> Void,
         onServerDeleted: (() -> Void)? = nil
     ) {
-        self.vm = vm
+        self.server = vm.server
+        self._vm = StateObject(wrappedValue: vm)
         self._selectedTab = selectedTab
         self.onBack = onBack
         self.onServerDeleted = onServerDeleted
@@ -142,6 +157,9 @@ public struct ServerDetailView: View {
         .onChange(of: selectedTab) { _, newTab in
             vm.selectedTab = newTab
             vm.loadCurrentTabData()
+        }
+        .onChange(of: server) { _, newServer in
+            vm.updateServer(newServer)
         }
         .confirmationDialog(
             loc.string("power_kill_confirm_title"),

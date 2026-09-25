@@ -271,4 +271,94 @@ final class ServerManagementTests: XCTestCase {
         XCTAssertEqual(dbVM.resources?.remaining.servers, 4)
     }
 
+    @MainActor
+    func testServerDetailViewModelWithInitialTab() {
+        let server = ServerInstance(
+            id: 1,
+            identifier: "tab_test",
+            name: "Tab Server",
+            memoryLimitMB: 2048,
+            cpuLimitPercent: 100,
+            diskLimitMB: 4096
+        )
+        let vmFiles = ServerDetailViewModel(server: server, initialTab: .files)
+        XCTAssertEqual(vmFiles.selectedTab, .files)
+        
+        let vmRenewal = ServerDetailViewModel(server: server, initialTab: .renewal)
+        XCTAssertEqual(vmRenewal.selectedTab, .renewal)
+    }
+
+    @MainActor
+    func testServerDetailViewModelUpdateServerPreservesLiveStats() {
+        let initialServer = ServerInstance(
+            id: 1,
+            identifier: "stats_test",
+            name: "Initial Name",
+            state: "running",
+            memoryUsedMB: 512,
+            memoryLimitMB: 1024,
+            cpuUsedPercent: 42.5,
+            cpuLimitPercent: 100,
+            diskUsedMB: 2000,
+            diskLimitMB: 4096
+        )
+        let vm = ServerDetailViewModel(server: initialServer)
+        XCTAssertEqual(vm.server.memoryUsedMB, 512)
+        XCTAssertEqual(vm.server.cpuUsedPercent, 42.5)
+        XCTAssertEqual(vm.server.state, "running")
+        
+        let updatedServer = ServerInstance(
+            id: 1,
+            identifier: "stats_test",
+            name: "Updated Name",
+            state: "offline",
+            memoryUsedMB: 0,
+            memoryLimitMB: 2048,
+            cpuUsedPercent: 0,
+            cpuLimitPercent: 200,
+            diskUsedMB: 0,
+            diskLimitMB: 8192
+        )
+        vm.updateServer(updatedServer)
+        
+        XCTAssertEqual(vm.server.name, "Updated Name")
+        XCTAssertEqual(vm.server.memoryLimitMB, 2048)
+        XCTAssertEqual(vm.server.cpuLimitPercent, 200)
+        XCTAssertEqual(vm.server.diskLimitMB, 8192)
+        XCTAssertEqual(vm.server.memoryUsedMB, 512)
+        XCTAssertEqual(vm.server.cpuUsedPercent, 42.5)
+        XCTAssertEqual(vm.server.diskUsedMB, 2000)
+        XCTAssertEqual(vm.server.state, "running")
+    }
+
+    func testServerRenewalStatusNumericDurationDecoding() throws {
+        let json = """
+        {
+            "isActive": true,
+            "nextRenewalAt": "2026-10-15T12:00:00Z",
+            "timeRemaining": 172800,
+            "availableIn": 3600,
+            "canRenew": false
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let status = try JSONDecoder().decode(ServerRenewalStatus.self, from: data)
+        XCTAssertEqual(status.timeRemaining, "2j 0h")
+        XCTAssertEqual(status.availableIn, "1h 0min")
+    }
+
+    func testServerRenewalStatusCalculatedFallbacks() {
+        let futureDate = ISO8601DateFormatter().string(from: Date().addingTimeInterval(3600 * 48))
+        let status = ServerRenewalStatus(
+            isActive: true,
+            nextRenewalAt: futureDate,
+            canRenew: false,
+            timeRemaining: nil,
+            availableIn: nil
+        )
+        XCTAssertNotNil(status.calculatedTimeRemaining)
+        XCTAssertTrue(status.calculatedTimeRemaining?.contains("j") == true || status.calculatedTimeRemaining?.contains("h") == true)
+        XCTAssertNotNil(status.calculatedAvailableIn)
+    }
+
 }

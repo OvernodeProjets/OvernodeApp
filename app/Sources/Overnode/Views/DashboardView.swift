@@ -40,7 +40,7 @@ public struct DashboardView: View {
                 Group {
                     if let server = selectedServer {
                         ServerDetailView(
-                            vm: ServerDetailViewModel(server: server),
+                            server: server,
                             selectedTab: $selectedServerTab,
                             onBack: { selectedServer = nil },
                             onServerDeleted: {
@@ -50,6 +50,7 @@ public struct DashboardView: View {
                                 authVM.checkSession()
                             }
                         )
+                        .id(server.identifier)
                     } else {
                         switch selectedTab {
                         case .dashboard:
@@ -128,6 +129,10 @@ public struct DashboardView: View {
         }
         .onChange(of: dashboardVM.servers) { _, newServers in
             MenuBarManager.shared.updateServers(newServers)
+            if let current = selectedServer,
+               let updated = newServers.first(where: { $0.identifier == current.identifier || $0.id == current.id }) {
+                selectedServer = updated
+            }
         }
     }
     

@@ -85,8 +85,9 @@ public final class ServerDetailViewModel: ObservableObject {
     private let filesService = ServerFilesService.shared
     private let configService = ServerConfigService.shared
     
-    public init(server: ServerInstance) {
+    public init(server: ServerInstance, initialTab: ServerTab = .console) {
         self.server = server
+        self.selectedTab = initialTab
         self.packageRamMB = server.memoryLimitMB
         self.packageDiskMB = server.diskLimitMB
         self.packageCpuPercent = server.cpuLimitPercent
@@ -144,6 +145,21 @@ public final class ServerDetailViewModel: ObservableObject {
         }
         
         loadCurrentTabData()
+    }
+    
+    deinit {
+        ServerWebSocketManager.shared.disconnect()
+    }
+    
+    public func updateServer(_ updated: ServerInstance) {
+        var copy = updated
+        copy.memoryUsedMB = self.server.memoryUsedMB
+        copy.cpuUsedPercent = self.server.cpuUsedPercent
+        copy.diskUsedMB = self.server.diskUsedMB
+        if !self.server.state.isEmpty {
+            copy.state = self.server.state
+        }
+        self.server = copy
     }
     
     public func appendConsoleLine(_ line: String) {
@@ -278,9 +294,12 @@ public final class ServerDetailViewModel: ObservableObject {
     }
     
     // MARK: - Renewal
-    public func loadRenewal() async {
+    public func loadRenewal(force: Bool = false) async {
+        if isLoading && !force { return }
         isLoading = true
-        renewalStatus = await serverService.fetchRenewalStatus(serverId: server.identifier)
+        if let newStatus = await serverService.fetchRenewalStatus(serverId: server.identifier) {
+            self.renewalStatus = newStatus
+        }
         isLoading = false
     }
     
@@ -317,14 +336,16 @@ public final class ServerDetailViewModel: ObservableObject {
     }
     
     // MARK: - Files
-    public func loadFiles(directory: String? = nil) async {
+    public func loadFiles(directory: String? = nil, force: Bool = false) async {
         if let dir = directory {
             currentDirectory = dir
         }
+        if isFileLoading && !force { return }
         isFileLoading = true
         errorMessage = nil
         do {
-            files = try await filesService.listFiles(serverId: server.identifier, directory: currentDirectory)
+            let loaded = try await filesService.listFiles(serverId: server.identifier, directory: currentDirectory)
+            self.files = loaded
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -386,11 +407,14 @@ public final class ServerDetailViewModel: ObservableObject {
     }
     
     // MARK: - Subdomains & Subusers
-    public func loadSubdomains() async {
+    public func loadSubdomains(force: Bool = false) async {
+        if isLoading && !force { return }
         isLoading = true
         do {
-            subdomains = try await configService.fetchSubdomains(serverId: server.identifier)
-            availableDomains = try await configService.fetchAvailableDomains()
+            let loadedSubdomains = try await configService.fetchSubdomains(serverId: server.identifier)
+            let loadedDomains = try await configService.fetchAvailableDomains()
+            self.subdomains = loadedSubdomains
+            self.availableDomains = loadedDomains
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -417,10 +441,12 @@ public final class ServerDetailViewModel: ObservableObject {
         }
     }
     
-    public func loadSubusers() async {
+    public func loadSubusers(force: Bool = false) async {
+        if isLoading && !force { return }
         isLoading = true
         do {
-            subusers = try await configService.fetchSubusers(serverId: server.identifier)
+            let loadedUsers = try await configService.fetchSubusers(serverId: server.identifier)
+            self.subusers = loadedUsers
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -496,10 +522,12 @@ public final class ServerDetailViewModel: ObservableObject {
     }
     
     // MARK: - Plugins
-    public func loadPlugins() async {
+    public func loadPlugins(force: Bool = false) async {
+        if isLoading && !force { return }
         isLoading = true
         do {
-            installedPlugins = try await configService.fetchInstalledPlugins(serverId: server.identifier)
+            let loadedPlugins = try await configService.fetchInstalledPlugins(serverId: server.identifier)
+            self.installedPlugins = loadedPlugins
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -541,20 +569,24 @@ public final class ServerDetailViewModel: ObservableObject {
     }
     
     // MARK: - Logs & Settings
-    public func loadLogs() async {
+    public func loadLogs(force: Bool = false) async {
+        if isLoading && !force { return }
         isLoading = true
         do {
-            activityLogs = try await configService.fetchLogs(serverId: server.identifier)
+            let loadedLogs = try await configService.fetchLogs(serverId: server.identifier)
+            self.activityLogs = loadedLogs
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
     }
     
-    public func loadSettings() async {
+    public func loadSettings(force: Bool = false) async {
+        if isLoading && !force { return }
         isLoading = true
         do {
-            startupVariables = try await configService.fetchVariables(serverId: server.identifier)
+            let loadedVars = try await configService.fetchVariables(serverId: server.identifier)
+            self.startupVariables = loadedVars
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -23,10 +23,23 @@ public struct ServerRenewalTabView: View {
                     
                     Spacer()
                     
-                    if vm.isLoading {
+                    if vm.isLoading && vm.renewalStatus == nil {
                         ProgressView()
                             .scaleEffect(0.8)
                     }
+                    
+                    Button(action: {
+                        Task { await vm.loadRenewal(force: true) }
+                    }) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12))
+                            .foregroundColor(OvernodeTheme.textSecondary)
+                            .padding(7)
+                            .background(Color(red: 0.125, green: 0.133, blue: 0.161))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(vm.isLoading)
                 }
                 
                 Text(loc.string("renewal_subtitle"))
@@ -56,7 +69,7 @@ public struct ServerRenewalTabView: View {
                 
                 RenewalStatCard(
                     title: loc.string("renewal_remaining_time"),
-                    value: vm.renewalStatus?.timeRemaining ?? "—",
+                    value: vm.renewalStatus?.calculatedTimeRemaining ?? vm.renewalStatus?.timeRemaining ?? "—",
                     icon: "clock.arrow.circlepath",
                     color: (vm.renewalStatus?.isExpired == true) ? Color.red : OvernodeTheme.accentGold
                 )
@@ -133,7 +146,7 @@ public struct ServerRenewalTabView: View {
                     .padding(10)
                     .background(Color.red.opacity(0.1))
                     .cornerRadius(6)
-                } else if vm.renewalStatus?.canRenew == false, let avail = vm.renewalStatus?.availableIn {
+                } else if vm.renewalStatus?.canRenew == false, let avail = vm.renewalStatus?.calculatedAvailableIn ?? vm.renewalStatus?.availableIn {
                     HStack(spacing: 8) {
                         Image(systemName: "clock")
                             .foregroundColor(OvernodeTheme.accentGold)
@@ -161,16 +174,46 @@ public struct ServerRenewalTabView: View {
         }
     }
     
-    private func formatDate(_ isoString: String?) -> String? {
-        guard let iso = isoString, !iso.isEmpty else { return nil }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        var date = formatter.date(from: iso)
-        if date == nil {
-            formatter.formatOptions = [.withInternetDateTime]
-            date = formatter.date(from: iso)
+    private func formatDate(_ rawString: String?) -> String? {
+        guard let raw = rawString?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return nil }
+        
+        // 1. Try ISO8601 with fractional seconds
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var parsedDate = isoFormatter.date(from: raw)
+        
+        // 2. Try ISO8601 standard
+        if parsedDate == nil {
+            isoFormatter.formatOptions = [.withInternetDateTime]
+            parsedDate = isoFormatter.date(from: raw)
         }
-        guard let d = date else { return iso }
+        
+        // 3. Try standard SQL / custom date formats
+        if parsedDate == nil {
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "en_US_POSIX")
+            let formats = [
+                "yyyy-MM-dd'T'HH:mm:ssZ",
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy-MM-dd HH:mm:ss.SSS",
+                "yyyy-MM-dd"
+            ]
+            for fmt in formats {
+                df.dateFormat = fmt
+                if let d = df.date(from: raw) {
+                    parsedDate = d
+                    break
+                }
+            }
+        }
+        
+        // 4. Try Unix timestamp
+        if parsedDate == nil, let timestamp = Double(raw) {
+            let timeInterval = timestamp > 10_000_000_000 ? timestamp / 1000.0 : timestamp
+            parsedDate = Date(timeIntervalSince1970: timeInterval)
+        }
+        
+        guard let d = parsedDate else { return raw }
         let out = DateFormatter()
         out.dateStyle = .medium
         out.timeStyle = .short
@@ -215,4 +258,3 @@ private struct RenewalStatCard: View {
         )
     }
 }
-

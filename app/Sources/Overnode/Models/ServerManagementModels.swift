@@ -85,34 +85,128 @@ public struct ServerRenewalStatus: Codable, Equatable, Sendable {
         self.isExpired = try? c.decode(Bool.self, forKey: .isExpired)
         self.renewalCount = try? c.decode(Int.self, forKey: .renewalCount)
         
-        if let str = try? c.decode(String.self, forKey: .timeRemaining) {
-            self.timeRemaining = str
-        } else if let dur = try? c.decode(RenewalDurationObject.self, forKey: .timeRemaining) {
-            self.timeRemaining = dur.formatted
-        } else {
-            self.timeRemaining = nil
+       if let str = try? c.decode(String.self, forKey: .timeRemaining) {
+           self.timeRemaining = str
+       } else if let dur = try? c.decode(RenewalDurationObject.self, forKey: .timeRemaining) {
+           self.timeRemaining = dur.formatted
+        } else if let num = try? c.decode(Double.self, forKey: .timeRemaining) {
+            let totalSec = num > 10_000_000 ? Int(num / 1000.0) : Int(num)
+            let days = totalSec / 86400
+            let hours = (totalSec % 86400) / 3600
+            let minutes = (totalSec % 3600) / 60
+            if days > 0 {
+                self.timeRemaining = "\(days)j \(hours)h"
+            } else if hours > 0 {
+                self.timeRemaining = "\(hours)h \(minutes)min"
+            } else if minutes > 0 {
+                self.timeRemaining = "\(minutes) min"
+            } else {
+                self.timeRemaining = "Moins d'une minute"
+            }
+       } else {
+           self.timeRemaining = nil
+       }
+       
+       if let str = try? c.decode(String.self, forKey: .availableIn) {
+           self.availableIn = str
+       } else if let dur = try? c.decode(RenewalDurationObject.self, forKey: .availableIn) {
+           self.availableIn = dur.formatted
+        } else if let num = try? c.decode(Double.self, forKey: .availableIn) {
+            let totalSec = num > 10_000_000 ? Int(num / 1000.0) : Int(num)
+            let days = totalSec / 86400
+            let hours = (totalSec % 86400) / 3600
+            let minutes = (totalSec % 3600) / 60
+            if days > 0 {
+                self.availableIn = "\(days)j \(hours)h"
+            } else if hours > 0 {
+                self.availableIn = "\(hours)h \(minutes)min"
+            } else if minutes > 0 {
+                self.availableIn = "\(minutes) min"
+            } else {
+                self.availableIn = "Moins d'une minute"
+            }
+       } else {
+           self.availableIn = nil
+       }
+   }
+   
+   public func encode(to encoder: Encoder) throws {
+       var c = encoder.container(keyedBy: CodingKeys.self)
+       try c.encodeIfPresent(isActive, forKey: .isActive)
+       try c.encodeIfPresent(nextRenewalAt, forKey: .nextRenewalAt)
+       try c.encodeIfPresent(lastRenewedAt, forKey: .lastRenewedAt)
+       try c.encodeIfPresent(canRenew, forKey: .canRenew)
+       try c.encodeIfPresent(requiresRenewal, forKey: .requiresRenewal)
+       try c.encodeIfPresent(isExpired, forKey: .isExpired)
+       try c.encodeIfPresent(timeRemaining, forKey: .timeRemaining)
+       try c.encodeIfPresent(renewalCount, forKey: .renewalCount)
+       try c.encodeIfPresent(availableIn, forKey: .availableIn)
+   }
+
+    public var calculatedTimeRemaining: String? {
+        if let explicit = timeRemaining, !explicit.isEmpty {
+            return explicit
         }
+        guard let nextAt = nextRenewalAt, !nextAt.isEmpty else { return nil }
         
-        if let str = try? c.decode(String.self, forKey: .availableIn) {
-            self.availableIn = str
-        } else if let dur = try? c.decode(RenewalDurationObject.self, forKey: .availableIn) {
-            self.availableIn = dur.formatted
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var targetDate = isoFormatter.date(from: nextAt)
+        if targetDate == nil {
+            isoFormatter.formatOptions = [.withInternetDateTime]
+            targetDate = isoFormatter.date(from: nextAt)
+        }
+        guard let target = targetDate else { return nil }
+        let diff = target.timeIntervalSinceNow
+        if diff <= 0 {
+            return "Expiré"
+        }
+        let totalSec = Int(diff)
+        let days = totalSec / 86400
+        let hours = (totalSec % 86400) / 3600
+        let minutes = (totalSec % 3600) / 60
+        if days > 0 {
+            return "\(days)j \(hours)h"
+        } else if hours > 0 {
+            return "\(hours)h \(minutes)min"
+        } else if minutes > 0 {
+            return "\(minutes) min"
         } else {
-            self.availableIn = nil
+            return "Moins d'une minute"
         }
     }
-    
-    public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encodeIfPresent(isActive, forKey: .isActive)
-        try c.encodeIfPresent(nextRenewalAt, forKey: .nextRenewalAt)
-        try c.encodeIfPresent(lastRenewedAt, forKey: .lastRenewedAt)
-        try c.encodeIfPresent(canRenew, forKey: .canRenew)
-        try c.encodeIfPresent(requiresRenewal, forKey: .requiresRenewal)
-        try c.encodeIfPresent(isExpired, forKey: .isExpired)
-        try c.encodeIfPresent(timeRemaining, forKey: .timeRemaining)
-        try c.encodeIfPresent(renewalCount, forKey: .renewalCount)
-        try c.encodeIfPresent(availableIn, forKey: .availableIn)
+
+    public var calculatedAvailableIn: String? {
+        if let explicit = availableIn, !explicit.isEmpty {
+            return explicit
+        }
+        guard canRenew == false else { return nil }
+        guard let nextAt = nextRenewalAt, !nextAt.isEmpty else { return nil }
+        
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var targetDate = isoFormatter.date(from: nextAt)
+        if targetDate == nil {
+            isoFormatter.formatOptions = [.withInternetDateTime]
+            targetDate = isoFormatter.date(from: nextAt)
+        }
+        guard let target = targetDate else { return nil }
+        let renewWindowSec: TimeInterval = 24 * 3600
+        let remainingSec = target.timeIntervalSinceNow
+        let availableInSec = remainingSec - renewWindowSec
+        guard availableInSec > 0 else { return nil }
+        
+        let totalSec = Int(availableInSec)
+        let days = totalSec / 86400
+        let hours = (totalSec % 86400) / 3600
+        let minutes = (totalSec % 3600) / 60
+        if days > 0 {
+            return "\(days)j \(hours)h"
+        } else if hours > 0 {
+            return "\(hours)h \(minutes)min"
+        } else {
+            return "\(minutes) min"
+        }
     }
 }
 
