@@ -21,6 +21,14 @@ public final class MenuBarManager: NSObject {
     public func setup() {
         if statusItem != nil { return }
         
+        // Guard against headless test environments where WindowServer/CGSConnection is unavailable
+        let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || NSClassFromString("XCTestCase") != nil
+            || ProcessInfo.processInfo.arguments.contains("-XCTest")
+        if isTesting {
+            return
+        }
+        
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         
         if let button = statusItem?.button {

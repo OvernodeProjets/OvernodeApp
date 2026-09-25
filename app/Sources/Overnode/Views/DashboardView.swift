@@ -126,7 +126,7 @@ public struct DashboardView: View {
             selectedServer = nil
             selectedTab = .settings
         }
-        .onChange(of: dashboardVM.servers) { newServers in
+        .onChange(of: dashboardVM.servers) { _, newServers in
             MenuBarManager.shared.updateServers(newServers)
         }
     }
