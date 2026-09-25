@@ -10,6 +10,14 @@ public struct ServerWidgetRenewalInfo: Codable, Sendable, Equatable, Identifiabl
     public let formattedRemainingTime: String
     public let canRenew: Bool
     public let isExpired: Bool
+    public let availableIn: String?
+    public let availableInSeconds: TimeInterval?
+    public let formattedAvailableIn: String
+    
+    enum CodingKeys: String, CodingKey {
+        case identifier, name, nextRenewalAt, remainingSeconds, formattedRemainingTime
+        case canRenew, isExpired, availableIn, availableInSeconds, formattedAvailableIn
+    }
     
     public init(
         identifier: String,
@@ -18,7 +26,10 @@ public struct ServerWidgetRenewalInfo: Codable, Sendable, Equatable, Identifiabl
         remainingSeconds: TimeInterval? = nil,
         formattedRemainingTime: String,
         canRenew: Bool = false,
-        isExpired: Bool = false
+        isExpired: Bool = false,
+        availableIn: String? = nil,
+        availableInSeconds: TimeInterval? = nil,
+        formattedAvailableIn: String? = nil
     ) {
         self.identifier = identifier
         self.name = name
@@ -27,6 +38,23 @@ public struct ServerWidgetRenewalInfo: Codable, Sendable, Equatable, Identifiabl
         self.formattedRemainingTime = formattedRemainingTime
         self.canRenew = canRenew
         self.isExpired = isExpired
+        self.availableIn = availableIn
+        self.availableInSeconds = availableInSeconds
+        self.formattedAvailableIn = formattedAvailableIn ?? (canRenew ? "Ready now" : (isExpired ? "Expired" : formattedRemainingTime))
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.identifier = try c.decode(String.self, forKey: .identifier)
+        self.name = try c.decode(String.self, forKey: .name)
+        self.nextRenewalAt = try? c.decode(String.self, forKey: .nextRenewalAt)
+        self.remainingSeconds = try? c.decode(TimeInterval.self, forKey: .remainingSeconds)
+        self.formattedRemainingTime = (try? c.decode(String.self, forKey: .formattedRemainingTime)) ?? "Unlimited"
+        self.canRenew = (try? c.decode(Bool.self, forKey: .canRenew)) ?? false
+        self.isExpired = (try? c.decode(Bool.self, forKey: .isExpired)) ?? false
+        self.availableIn = try? c.decode(String.self, forKey: .availableIn)
+        self.availableInSeconds = try? c.decode(TimeInterval.self, forKey: .availableInSeconds)
+        self.formattedAvailableIn = (try? c.decode(String.self, forKey: .formattedAvailableIn)) ?? (self.canRenew ? "Ready now" : (self.isExpired ? "Expired" : self.formattedRemainingTime))
     }
     
     public static func parseRemainingSeconds(from dateString: String?) -> TimeInterval? {
@@ -45,6 +73,92 @@ public struct ServerWidgetRenewalInfo: Codable, Sendable, Equatable, Identifiabl
     public static func formatRemaining(seconds: TimeInterval?) -> String {
         guard let sec = seconds else { return "Unlimited" }
         if sec <= 0 { return "Expired" }
+        let total = Int(sec)
+        let days = total / 86400
+        let hours = (total % 86400) / 3600
+        let minutes = (total % 3600) / 60
+        if days > 0 {
+            return "\(days)d \(hours)h"
+        } else if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else if minutes > 0 {
+            return "\(minutes)m"
+        } else {
+            return "< 1m"
+        }
+    }
+    
+    public static func parseAvailableInSeconds(
+        canRenew: Bool,
+        isExpired: Bool,
+        availableInString: String?,
+        nextRenewalAt: String?
+    ) -> TimeInterval? {
+        if isExpired { return -1 }
+        if canRenew { return 0 }
+        
+        if let raw = availableInString?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty {
+            if let num = Double(raw) {
+                let sec = num > 10_000_000 ? num / 1000.0 : num
+                return max(0, sec)
+            }
+            var parsedSeconds: Double = 0
+            var matched = false
+            
+            // Days (d or j)
+            if let match = raw.range(of: #"(\d+)\s*(?:d|j)"#, options: .regularExpression) {
+                let dStr = String(raw[match]).filter { $0.isNumber }
+                if let d = Double(dStr) { parsedSeconds += d * 86400; matched = true }
+            }
+            // Hours (h)
+            if let match = raw.range(of: #"(\d+)\s*h"#, options: .regularExpression) {
+                let hStr = String(raw[match]).filter { $0.isNumber }
+                if let h = Double(hStr) { parsedSeconds += h * 3600; matched = true }
+            }
+            // Minutes (m or min)
+            if let match = raw.range(of: #"(\d+)\s*(?:min|m)\b"#, options: .regularExpression) {
+                let mStr = String(raw[match]).filter { $0.isNumber }
+                if let m = Double(mStr) { parsedSeconds += m * 60; matched = true }
+            }
+            
+            if matched {
+                return max(0, parsedSeconds)
+            }
+        }
+        
+        // Fallback: Calculate from nextRenewalAt (renewal window is 24h before expiration)
+        if let rem = parseRemainingSeconds(from: nextRenewalAt) {
+            let avail = rem - (24 * 3600)
+            return max(0, avail)
+        }
+        
+        return nil
+    }
+    
+    public static func formatAvailableIn(
+        seconds: TimeInterval?,
+        canRenew: Bool = false,
+        isExpired: Bool = false,
+        rawString: String? = nil
+    ) -> String {
+        if isExpired { return "Expired" }
+        if canRenew || (seconds != nil && seconds! <= 0) {
+            return "Ready now"
+        }
+        
+        if let raw = rawString?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty {
+            var norm = raw.replacingOccurrences(of: "min", with: "m")
+                .replacingOccurrences(of: "j ", with: "d ")
+                .replacingOccurrences(of: "j", with: "d")
+                .replacingOccurrences(of: "Moins d'une minute", with: "< 1m")
+            norm = norm.replacingOccurrences(of: "Available in ", with: "")
+                .replacingOccurrences(of: "Disponible dans ", with: "")
+            if !norm.isEmpty && norm.contains(where: { $0.isNumber }) {
+                return norm
+            }
+        }
+        
+        guard let sec = seconds else { return "Soon" }
         let total = Int(sec)
         let days = total / 86400
         let hours = (total % 86400) / 3600
@@ -134,6 +248,19 @@ public struct DailyRewardWidgetData: Codable, Sendable, Equatable {
         try c.encode(streakProtection, forKey: .streakProtection)
         try c.encode(lastUpdated, forKey: .lastUpdated)
         try c.encode(servers, forKey: .servers)
+    }
+    
+    public var nextRenewalServer: ServerWidgetRenewalInfo? {
+        guard !servers.isEmpty else { return nil }
+        let ready = servers.filter { $0.canRenew && !$0.isExpired }
+        if let soonestReady = ready.min(by: { ($0.remainingSeconds ?? .infinity) < ($1.remainingSeconds ?? .infinity) }) {
+            return soonestReady
+        }
+        let pending = servers.filter { !$0.isExpired }
+        if let soonestPending = pending.min(by: { ($0.availableInSeconds ?? .infinity) < ($1.availableInSeconds ?? .infinity) }) {
+            return soonestPending
+        }
+        return servers.first
     }
     
     public var nextExpiringServer: ServerWidgetRenewalInfo? {

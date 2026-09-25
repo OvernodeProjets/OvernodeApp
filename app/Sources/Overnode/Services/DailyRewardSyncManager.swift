@@ -62,14 +62,33 @@ public final class DailyRewardSyncManager: ObservableObject {
                                 if let renewal = await ServerService.shared.fetchRenewalStatus(serverId: server.identifier) {
                                     let remSec = ServerWidgetRenewalInfo.parseRemainingSeconds(from: renewal.nextRenewalAt)
                                     let formattedTime = ServerWidgetRenewalInfo.formatRemaining(seconds: remSec)
+                                    let canRenew = renewal.canRenew ?? false
+                                    let isExpired = renewal.isExpired ?? (remSec != nil && remSec! <= 0)
+                                    let rawAvail = renewal.availableIn ?? renewal.calculatedAvailableIn
+                                    let availSec = ServerWidgetRenewalInfo.parseAvailableInSeconds(
+                                        canRenew: canRenew,
+                                        isExpired: isExpired,
+                                        availableInString: rawAvail,
+                                        nextRenewalAt: renewal.nextRenewalAt
+                                    )
+                                    let formattedAvail = ServerWidgetRenewalInfo.formatAvailableIn(
+                                        seconds: availSec,
+                                        canRenew: canRenew,
+                                        isExpired: isExpired,
+                                        rawString: rawAvail
+                                    )
+                                    
                                     return ServerWidgetRenewalInfo(
                                         identifier: server.identifier,
                                         name: server.name,
                                         nextRenewalAt: renewal.nextRenewalAt,
                                         remainingSeconds: remSec,
                                         formattedRemainingTime: formattedTime,
-                                        canRenew: renewal.canRenew ?? false,
-                                        isExpired: renewal.isExpired ?? (remSec != nil && remSec! <= 0)
+                                        canRenew: canRenew,
+                                        isExpired: isExpired,
+                                        availableIn: rawAvail,
+                                        availableInSeconds: availSec,
+                                        formattedAvailableIn: formattedAvail
                                     )
                                 }
                                 return nil
@@ -83,8 +102,19 @@ public final class DailyRewardSyncManager: ObservableObject {
                         }
                     }
                     
-                    // Sort servers by urgency: expiring soonest first
-                    serverRenewals.sort { ($0.remainingSeconds ?? .infinity) < ($1.remainingSeconds ?? .infinity) }
+                    // Sort servers: expired first, then ready to renew (canRenew == true), then soonest to become renewable
+                    serverRenewals.sort { s1, s2 in
+                        if s1.isExpired != s2.isExpired {
+                            return s1.isExpired
+                        }
+                        if s1.canRenew != s2.canRenew {
+                            return s1.canRenew
+                        }
+                        if s1.canRenew {
+                            return (s1.remainingSeconds ?? .infinity) < (s2.remainingSeconds ?? .infinity)
+                        }
+                        return (s1.availableInSeconds ?? .infinity) < (s2.availableInSeconds ?? .infinity)
+                    }
                 }
                 
                 let widgetData = DailyRewardWidgetData(

@@ -23,29 +23,38 @@ public struct ServerRenewalTimelineProvider: TimelineProvider {
             ServerWidgetRenewalInfo(
                 identifier: "srv-mc-prod",
                 name: "Production MC",
-                nextRenewalAt: "2026-10-01T00:00:00Z",
-                remainingSeconds: 223200,
-                formattedRemainingTime: "2d 14h",
-                canRenew: true,
-                isExpired: false
+                nextRenewalAt: "2026-09-27T12:00:00Z",
+                remainingSeconds: 144000,
+                formattedRemainingTime: "1d 16h",
+                canRenew: false,
+                isExpired: false,
+                availableIn: "23h 58m",
+                availableInSeconds: 86280,
+                formattedAvailableIn: "23h 58m"
             ),
             ServerWidgetRenewalInfo(
                 identifier: "srv-bungee",
                 name: "Bungee Proxy",
-                nextRenewalAt: "2026-09-26T18:00:00Z",
-                remainingSeconds: 66600,
-                formattedRemainingTime: "18h 30m",
+                nextRenewalAt: "2026-09-26T08:00:00Z",
+                remainingSeconds: 43200,
+                formattedRemainingTime: "12h left",
                 canRenew: true,
-                isExpired: false
+                isExpired: false,
+                availableIn: nil,
+                availableInSeconds: 0,
+                formattedAvailableIn: "Ready now"
             ),
             ServerWidgetRenewalInfo(
                 identifier: "srv-bot",
                 name: "Discord Bot Node",
                 nextRenewalAt: "2026-10-12T00:00:00Z",
                 remainingSeconds: 1036800,
-                formattedRemainingTime: "12d",
+                formattedRemainingTime: "12d left",
                 canRenew: false,
-                isExpired: false
+                isExpired: false,
+                availableIn: "11d",
+                availableInSeconds: 950400,
+                formattedAvailableIn: "11d"
             )
         ]
     }
@@ -187,7 +196,7 @@ public struct ServerRenewalWidgetEntryView: View {
                 }
             }
             
-            Spacer(minLength: 6)
+            Spacer(minLength: 5)
             
             // Content
             if !entry.data.isAuthenticated {
@@ -205,11 +214,12 @@ public struct ServerRenewalWidgetEntryView: View {
                         .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
                         .lineLimit(1)
                 }
-            } else if let nextServer = entry.data.nextExpiringServer {
+            } else if let nextServer = entry.data.nextRenewalServer {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("NEXT RENEWAL")
+                    // Tag indicating readiness or countdown until renewal opens
+                    Text(renewalTagTitle(for: nextServer))
                         .font(.system(size: 8, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
+                        .foregroundColor(renewalTagColor(for: nextServer))
                         .tracking(0.8)
                     
                     Text(nextServer.name)
@@ -217,19 +227,24 @@ public struct ServerRenewalWidgetEntryView: View {
                         .foregroundColor(.white)
                         .lineLimit(1)
                     
-                    Text(nextServer.formattedRemainingTime)
-                        .font(.system(size: 23, weight: .black, design: .rounded))
+                    // The Big Countdown / Status Text:
+                    // If not yet available: shows availableIn (e.g. "23h 58m")
+                    // If available now: shows "Ready now"
+                    // If expired: shows "Expired"
+                    Text(mainHeroText(for: nextServer))
+                        .font(.system(size: 22, weight: .black, design: .rounded))
                         .foregroundColor(urgencyColor(for: nextServer))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.85)
+                        .minimumScaleFactor(0.80)
                     
                     HStack(spacing: 4) {
                         Circle()
                             .fill(urgencyColor(for: nextServer))
                             .frame(width: 5, height: 5)
-                        Text(statusLabel(for: nextServer))
+                        Text(statusSubLabel(for: nextServer))
                             .font(.system(size: 8.5, weight: .semibold))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                            .foregroundColor(Color(red: 0.65, green: 0.70, blue: 0.78))
+                            .lineLimit(1)
                     }
                 }
             } else {
@@ -247,7 +262,7 @@ public struct ServerRenewalWidgetEntryView: View {
                 }
             }
             
-            Spacer(minLength: 6)
+            Spacer(minLength: 5)
             
             // Footer
             HStack(spacing: 4) {
@@ -258,6 +273,13 @@ public struct ServerRenewalWidgetEntryView: View {
                     Text("Sign in to sync")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
+                } else if let nextServer = entry.data.nextRenewalServer, nextServer.canRenew {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 8.5))
+                        .foregroundColor(Color(red: 0.25, green: 0.82, blue: 0.50))
+                    Text("Renew in Overnode")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(Color(red: 0.25, green: 0.82, blue: 0.50))
                 } else if entry.data.servers.count > 1 {
                     Image(systemName: "server.rack")
                         .font(.system(size: 8))
@@ -265,13 +287,13 @@ public struct ServerRenewalWidgetEntryView: View {
                     Text("+\(entry.data.servers.count - 1) other server\(entry.data.servers.count - 1 > 1 ? "s" : "")")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.65))
-                } else if entry.data.nextExpiringServer != nil {
-                    Image(systemName: "arrow.triangle.2.circlepath")
+                } else if let nextServer = entry.data.nextRenewalServer {
+                    Image(systemName: "clock")
                         .font(.system(size: 8))
                         .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                    Text("Renew in Overnode")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
+                    Text("Expires in \(nextServer.formattedRemainingTime)")
+                        .font(.system(size: 8.5, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.70))
                 } else {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 8.5))
@@ -289,7 +311,7 @@ public struct ServerRenewalWidgetEntryView: View {
     // MARK: - Medium Widget View
     private var mediumWidgetView: some View {
         HStack(spacing: 12) {
-            // Left Column: Next Expiring Hero
+            // Left Column: Next Renewable Hero
             VStack(alignment: .leading, spacing: 0) {
                 // Header
                 HStack(spacing: 5) {
@@ -317,16 +339,16 @@ public struct ServerRenewalWidgetEntryView: View {
                         Text("Sign In Required")
                             .font(.system(size: 17, weight: .black, design: .rounded))
                             .foregroundColor(.white)
-                        Text("Log in to Overnode to monitor server expiration.")
+                        Text("Log in to Overnode to monitor server renewal.")
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
                             .lineLimit(2)
                     }
-                } else if let nextServer = entry.data.nextExpiringServer {
+                } else if let nextServer = entry.data.nextRenewalServer {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("NEXT EXPIRING")
+                        Text(renewalTagTitle(for: nextServer))
                             .font(.system(size: 8, weight: .heavy, design: .rounded))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                            .foregroundColor(renewalTagColor(for: nextServer))
                             .tracking(0.8)
                         
                         Text(nextServer.name)
@@ -334,7 +356,7 @@ public struct ServerRenewalWidgetEntryView: View {
                             .foregroundColor(.white)
                             .lineLimit(1)
                         
-                        Text(nextServer.formattedRemainingTime)
+                        Text(mainHeroText(for: nextServer))
                             .font(.system(size: 22, weight: .black, design: .rounded))
                             .foregroundColor(urgencyColor(for: nextServer))
                             .lineLimit(1)
@@ -344,9 +366,10 @@ public struct ServerRenewalWidgetEntryView: View {
                             Circle()
                                 .fill(urgencyColor(for: nextServer))
                                 .frame(width: 5, height: 5)
-                            Text(statusLabel(for: nextServer))
-                                .font(.system(size: 9.5, weight: .semibold))
-                                .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                            Text(statusSubLabel(for: nextServer))
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundColor(Color(red: 0.65, green: 0.70, blue: 0.78))
+                                .lineLimit(1)
                         }
                     }
                 } else {
@@ -370,6 +393,13 @@ public struct ServerRenewalWidgetEntryView: View {
                             .font(.system(size: 9))
                         Text("Open Overnode")
                             .font(.system(size: 9.5, weight: .semibold))
+                    } else if let nextServer = entry.data.nextRenewalServer, nextServer.canRenew {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.system(size: 9))
+                            .foregroundColor(Color(red: 0.25, green: 0.82, blue: 0.50))
+                        Text("Action: Ready to Renew")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color(red: 0.25, green: 0.82, blue: 0.50))
                     } else if entry.data.servers.isEmpty {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 9))
@@ -453,11 +483,12 @@ public struct ServerRenewalWidgetEntryView: View {
                                 }
                                 
                                 HStack(spacing: 4) {
-                                    Image(systemName: "clock.fill")
+                                    Image(systemName: server.canRenew ? "checkmark.circle.fill" : "clock.fill")
                                         .font(.system(size: 7.5))
                                         .foregroundColor(urgencyColor(for: server))
-                                    Text(server.formattedRemainingTime)
-                                        .font(.system(size: 11, weight: .black, design: .rounded))
+                                    
+                                    Text(server.canRenew ? "Ready now" : "In \(server.formattedAvailableIn)")
+                                        .font(.system(size: 10.5, weight: .black, design: .rounded))
                                         .foregroundColor(urgencyColor(for: server))
                                         .lineLimit(1)
                                     
@@ -471,6 +502,10 @@ public struct ServerRenewalWidgetEntryView: View {
                                             .padding(.vertical, 1)
                                             .background(Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.12))
                                             .cornerRadius(3)
+                                    } else {
+                                        Text(server.formattedRemainingTime)
+                                            .font(.system(size: 7.5, weight: .medium, design: .monospaced))
+                                            .foregroundColor(Color.white.opacity(0.45))
                                     }
                                 }
                             }
@@ -503,28 +538,61 @@ public struct ServerRenewalWidgetEntryView: View {
     }
     
     // MARK: - Helpers
+    private func renewalTagTitle(for server: ServerWidgetRenewalInfo) -> String {
+        if server.isExpired {
+            return "RENEWAL EXPIRED"
+        }
+        if server.canRenew {
+            return "READY TO RENEW"
+        }
+        return "RENEWABLE IN"
+    }
+    
+    private func renewalTagColor(for server: ServerWidgetRenewalInfo) -> Color {
+        if server.isExpired {
+            return Color.red
+        }
+        if server.canRenew {
+            return Color(red: 0.25, green: 0.82, blue: 0.50) // Green
+        }
+        return Color(red: 0.85, green: 0.67, blue: 0.22) // Gold
+    }
+    
+    private func mainHeroText(for server: ServerWidgetRenewalInfo) -> String {
+        if server.isExpired {
+            return "Expired"
+        }
+        if server.canRenew {
+            return "Ready now"
+        }
+        return server.formattedAvailableIn
+    }
+    
+    private func statusSubLabel(for server: ServerWidgetRenewalInfo) -> String {
+        if server.isExpired {
+            return "Server suspended"
+        }
+        if server.canRenew {
+            return "Expires in \(server.formattedRemainingTime)"
+        }
+        return "Expires in \(server.formattedRemainingTime)"
+    }
+    
     private func urgencyColor(for server: ServerWidgetRenewalInfo) -> Color {
         if server.isExpired {
             return Color.red
         }
-        if let remaining = server.remainingSeconds {
-            if remaining < 86400 {
-                return Color(red: 1.0, green: 0.48, blue: 0.18) // Amber / Orange
-            } else if remaining < 86400 * 3 {
+        if server.canRenew {
+            return Color(red: 0.25, green: 0.82, blue: 0.50) // Emerald / Ready
+        }
+        if let avail = server.availableInSeconds {
+            if avail < 86400 {
+                return Color(red: 1.0, green: 0.52, blue: 0.20) // Amber: available in < 24h!
+            } else if avail < 86400 * 3 {
                 return Color(red: 0.95, green: 0.82, blue: 0.35) // Gold
             }
         }
-        return Color(red: 0.22, green: 0.82, blue: 0.50) // Emerald / Green
-    }
-    
-    private func statusLabel(for server: ServerWidgetRenewalInfo) -> String {
-        if server.isExpired {
-            return "Expired"
-        }
-        if let remaining = server.remainingSeconds, remaining < 86400 {
-            return "Expiring soon"
-        }
-        return "Active"
+        return Color(red: 0.40, green: 0.70, blue: 1.0) // Soft Blue / Scheduled
     }
 }
 

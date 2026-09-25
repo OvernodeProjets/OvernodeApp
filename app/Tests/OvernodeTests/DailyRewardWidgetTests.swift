@@ -185,4 +185,69 @@ final class DailyRewardWidgetTests: XCTestCase {
         XCTAssertEqual(decoded.servers, [])
         XCTAssertNil(decoded.nextExpiringServer)
     }
+    
+    func testServerWidgetRenewalInfoAvailableInFormattingAndParsing() {
+        // Parsing test for "23h 58min"
+        let sec1 = ServerWidgetRenewalInfo.parseAvailableInSeconds(
+            canRenew: false,
+            isExpired: false,
+            availableInString: "23h 58min",
+            nextRenewalAt: nil
+        )
+        XCTAssertEqual(sec1, 23 * 3600 + 58 * 60)
+        
+        // Parsing test for "1j 4h" (french)
+        let sec2 = ServerWidgetRenewalInfo.parseAvailableInSeconds(
+            canRenew: false,
+            isExpired: false,
+            availableInString: "1j 4h",
+            nextRenewalAt: nil
+        )
+        XCTAssertEqual(sec2, 86400 + 4 * 3600)
+        
+        // Ready now when canRenew is true
+        let secReady = ServerWidgetRenewalInfo.parseAvailableInSeconds(
+            canRenew: true,
+            isExpired: false,
+            availableInString: "10h",
+            nextRenewalAt: nil
+        )
+        XCTAssertEqual(secReady, 0)
+        
+        // Formatting tests
+        XCTAssertEqual(ServerWidgetRenewalInfo.formatAvailableIn(seconds: 0, canRenew: true, isExpired: false), "Ready now")
+        XCTAssertEqual(ServerWidgetRenewalInfo.formatAvailableIn(seconds: nil, canRenew: false, isExpired: true), "Expired")
+        XCTAssertEqual(ServerWidgetRenewalInfo.formatAvailableIn(seconds: 86280, canRenew: false, isExpired: false, rawString: "23h 58min"), "23h 58m")
+        XCTAssertEqual(ServerWidgetRenewalInfo.formatAvailableIn(seconds: 86400 + 4 * 3600, canRenew: false, isExpired: false, rawString: "1j 4h"), "1d 4h")
+    }
+    
+    func testServerWidgetRenewalInfoNextRenewalSelection() {
+        let serverPending = ServerWidgetRenewalInfo(
+            identifier: "srv-pending",
+            name: "Server Pending",
+            remainingSeconds: 400000,
+            formattedRemainingTime: "4d 15h",
+            canRenew: false,
+            availableIn: "23h 58min",
+            availableInSeconds: 86280,
+            formattedAvailableIn: "23h 58m"
+        )
+        let serverReady = ServerWidgetRenewalInfo(
+            identifier: "srv-ready",
+            name: "Server Ready",
+            remainingSeconds: 43200,
+            formattedRemainingTime: "12h 00m",
+            canRenew: true,
+            availableIn: nil,
+            availableInSeconds: 0,
+            formattedAvailableIn: "Ready now"
+        )
+        
+        // Server ready is prioritized because renewal is open right now
+        let data = DailyRewardWidgetData(
+            isAuthenticated: true,
+            servers: [serverPending, serverReady]
+        )
+        XCTAssertEqual(data.nextRenewalServer?.identifier, "srv-ready")
+    }
 }
