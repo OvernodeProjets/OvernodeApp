@@ -30,7 +30,13 @@ let package = Package(
         .executableTarget(
             name: "OvernodeWidget",
             dependencies: [],
-            path: "Sources/OvernodeWidget"
+            path: "Sources/OvernodeWidget",
+            linkerSettings: [
+                .unsafeFlags([
+                    "-Xlinker", "-e",
+                    "-Xlinker", "_NSExtensionMain"
+                ])
+            ]
         ),
         .testTarget(
             name: "OvernodeTests",
@@ -39,4 +45,3 @@ let package = Package(
         )
     ]
 )
-

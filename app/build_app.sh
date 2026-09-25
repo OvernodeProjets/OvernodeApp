@@ -9,7 +9,9 @@ echo "==> Building Overnode v$VERSION for macOS (Apple Silicon)..."
 swift build -c release
 
 APP_NAME="Overnode"
-BUNDLE_DIR="$DIR/build/$APP_NAME.app"
+FINAL_BUNDLE_DIR="$DIR/build/$APP_NAME.app"
+TEMP_BUILD="$(mktemp -d)"
+BUNDLE_DIR="$TEMP_BUILD/$APP_NAME.app"
 CONTENTS_DIR="$BUNDLE_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
@@ -18,8 +20,8 @@ WIDGET_APPEX="$PLUGINS_DIR/OvernodeWidgetExtension.appex"
 WIDGET_CONTENTS="$WIDGET_APPEX/Contents"
 WIDGET_MACOS="$WIDGET_CONTENTS/MacOS"
 
-echo "==> Creating Application Bundle: $BUNDLE_DIR"
-rm -rf "$BUNDLE_DIR"
+echo "==> Creating Application Bundle (temp: $TEMP_BUILD)..."
+rm -rf "$FINAL_BUNDLE_DIR"
 mkdir -p "$MACOS_DIR"
 mkdir -p "$RESOURCES_DIR"
 mkdir -p "$PLUGINS_DIR"
@@ -50,12 +52,14 @@ fi
 # 2. Copy native resources directly to Contents/Resources/
 if [ -d "Sources/Overnode/Resources" ]; then
     echo "==> Copying resources from Sources/Overnode/Resources to $RESOURCES_DIR/"
+    xattr -cr Sources/Overnode/Resources 2>/dev/null || true
     cp -R Sources/Overnode/Resources/* "$RESOURCES_DIR/"
     mkdir -p "$RESOURCES_DIR/Overnode_Overnode.bundle"
     cp -R Sources/Overnode/Resources/* "$RESOURCES_DIR/Overnode_Overnode.bundle/"
+    xattr -cr "$RESOURCES_DIR" 2>/dev/null || true
 fi
 
-# 3. Locate and copy Widget Extension
+# 3. Locate and copy Widget Extension binary (built by SPM as MH_EXECUTE with _NSExtensionMain entry)
 WIDGET_SOURCE=""
 for CANDIDATE in \
     ".build/release/OvernodeWidgetExtension" \
@@ -73,8 +77,8 @@ if [ -n "$WIDGET_SOURCE" ] && [ -f "$WIDGET_SOURCE" ]; then
     cp "$WIDGET_SOURCE" "$WIDGET_MACOS/OvernodeWidgetExtension"
     chmod +x "$WIDGET_MACOS/OvernodeWidgetExtension"
     cp "$DIR/widget-Info.plist" "$WIDGET_CONTENTS/Info.plist"
-    xattr -cr "$WIDGET_APPEX" 2>/dev/null || true
-    codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
+else
+    echo "WARNING: Widget extension binary not found, skipping widget"
 fi
 
 # 4. Create Info.plist with version
@@ -127,10 +131,21 @@ EOF
 # 5. Clean attributes & ad-hoc sign bundle
 dot_clean "$BUNDLE_DIR" 2>/dev/null || true
 xattr -cr "$BUNDLE_DIR" 2>/dev/null || true
+find "$BUNDLE_DIR" -exec xattr -c {} \; 2>/dev/null || true
+
+# Sign the main app bundle first
+codesign --force --sign - "$BUNDLE_DIR"
+
+# Sign widget extension LAST so its entitlements are not stripped
 if [ -d "$WIDGET_APPEX" ]; then
+    xattr -cr "$WIDGET_APPEX" 2>/dev/null || true
     codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
 fi
-dot_clean "$BUNDLE_DIR" 2>/dev/null || true
-xattr -cr "$BUNDLE_DIR" 2>/dev/null || true
-codesign --force --sign - "$BUNDLE_DIR"
+
 echo "==> Successfully created and signed Overnode.app"
+
+# 6. Move to final location
+mkdir -p "$DIR/build"
+mv "$BUNDLE_DIR" "$FINAL_BUNDLE_DIR"
+rm -rf "$TEMP_BUILD"
+echo "==> Application bundle ready at $FINAL_BUNDLE_DIR"

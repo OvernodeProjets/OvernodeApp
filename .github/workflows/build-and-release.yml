@@ -25,7 +25,7 @@ permissions:
 jobs:
   validate-and-build:
     name: Verify Apple Silicon & Build App
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 30
 
     steps:
@@ -201,4 +201,3 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
