@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 public struct DailyRewardWidgetData: Codable, Sendable, Equatable {
     public let canClaim: Bool
@@ -75,6 +76,7 @@ public final class DailyRewardStorage: Sendable {
         if let encoded = try? JSONEncoder().encode(data) {
             userDefaults.set(encoded, forKey: key)
             userDefaults.synchronize()
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
     
@@ -93,4 +95,3 @@ public final class DailyRewardStorage: Sendable {
         )
     }
 }
-

@@ -120,25 +120,37 @@ jobs:
         env:
           CUSTOM_SIGNING_IDENTITY: ${{ secrets.SIGNING_IDENTITY }}
         run: |
-          SIGNING_IDENTITY="${CUSTOM_SIGNING_IDENTITY:-Developer ID Application: Overnode (app@overnode.fr)}"
-          echo "==> Generating production Overnode.app bundle for v${{ env.RELEASE_VERSION }}..."
-          cd app
-          ./build_app.sh "${{ env.RELEASE_VERSION }}"
-
-          APP_PATH="build/Overnode.app"
-          
           # Check if Apple certificate identity is available in keychain
           if security find-identity -v -p codesigning | grep -q "app@overnode.fr"; then
-            echo "==> Signing bundle with Apple ID identity ($SIGNING_IDENTITY)..."
-            codesign --force --deep --options runtime --sign "$SIGNING_IDENTITY" "$APP_PATH"
+            SIGNING_IDENTITY="${CUSTOM_SIGNING_IDENTITY:-Developer ID Application: Overnode (app@overnode.fr)}"
+            echo "==> Using Apple ID signing identity: $SIGNING_IDENTITY"
           else
-            echo "==> Signing with ad-hoc identity for general distribution..."
-            codesign --force --deep --sign - "$APP_PATH"
+            SIGNING_IDENTITY="-"
+            echo "==> Using ad-hoc signing identity (-)"
           fi
+
+          echo "==> Generating production Overnode.app bundle for v${{ env.RELEASE_VERSION }}..."
+          cd app
+          ./build_app.sh "${{ env.RELEASE_VERSION }}" "$SIGNING_IDENTITY"
+
+          APP_PATH="build/Overnode.app"
+          WIDGET_PATH="$APP_PATH/Contents/PlugIns/OvernodeWidgetExtension.appex"
 
           echo "==> Verifying signature integrity..."
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-          spctl --assess --type execute --verbose "$APP_PATH" || true
+
+          echo "==> Verifying widget extension sandbox entitlements..."
+          WIDGET_ENT=$(codesign -d --entitlements - "$WIDGET_PATH" 2>&1 || true)
+          echo "Widget entitlements: $WIDGET_ENT"
+          if [[ "$WIDGET_ENT" != *"com.apple.security.app-sandbox"* ]]; then
+            echo "::error::OvernodeWidgetExtension is missing com.apple.security.app-sandbox entitlement!"
+            exit 1
+          fi
+          echo "✓ Verified: Widget extension is properly sandboxed."
+
+          if [ "$SIGNING_IDENTITY" != "-" ]; then
+            spctl --assess --type execute --verbose "$APP_PATH" || true
+          fi
           echo "✓ Bundle successfully signed and verified."
 
       - name: Package Release Archive (.dmg & .zip) & Compute Checksums
@@ -156,7 +168,7 @@ jobs:
           DMG_STAGING="dmg_staging"
           rm -rf "$DMG_STAGING" "$DMG_NAME"
           mkdir -p "$DMG_STAGING"
-          cp -R "Overnode.app" "$DMG_STAGING/"
+          ditto "Overnode.app" "$DMG_STAGING/Overnode.app"
           ln -s /Applications "$DMG_STAGING/Applications"
           hdiutil create -volname "Overnode" -srcfolder "$DMG_STAGING" -ov -format UDZO "$DMG_NAME"
           rm -rf "$DMG_STAGING"

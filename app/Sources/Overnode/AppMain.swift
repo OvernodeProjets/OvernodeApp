@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import WidgetKit
 
 @main
 public struct OvernodeApp: App {
@@ -42,7 +43,21 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
        // Initialize Discord Rich Presence (runs continuously in background)
        DiscordRPCService.shared.start()
 
-        // Initialize Menu Bar Quick Actions (macOS status item)
+       // Register widget extension with PlugInKit & reload WidgetKit timelines
+       if let pluginsURL = Bundle.main.builtInPlugInsURL {
+           let widgetURL = pluginsURL.appendingPathComponent("OvernodeWidgetExtension.appex")
+           if FileManager.default.fileExists(atPath: widgetURL.path) {
+               let task = Process()
+               task.executableURL = URL(fileURLWithPath: "/usr/bin/pluginkit")
+               task.arguments = ["-a", widgetURL.path]
+               try? task.run()
+           }
+       }
+       let initialWidgetData = DailyRewardStorage.shared.loadWidgetData()
+       DailyRewardStorage.shared.saveWidgetData(initialWidgetData)
+       WidgetCenter.shared.reloadAllTimelines()
+
+       // Initialize Menu Bar Quick Actions (macOS status item)
         Task { @MainActor in
             MenuBarManager.shared.setup()
         }

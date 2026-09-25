@@ -5,6 +5,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "$DIR"
 
 VERSION="${1:-1.1.0}"
+SIGNING_IDENTITY="${2:-${SIGNING_IDENTITY:--}}"
 echo "==> Building Overnode v$VERSION for macOS (Apple Silicon)..."
 swift build -c release
 
@@ -76,7 +77,7 @@ if [ -n "$WIDGET_SOURCE" ] && [ -f "$WIDGET_SOURCE" ]; then
     echo "==> Using widget extension binary: $WIDGET_SOURCE"
     cp "$WIDGET_SOURCE" "$WIDGET_MACOS/OvernodeWidgetExtension"
     chmod +x "$WIDGET_MACOS/OvernodeWidgetExtension"
-    cp "$DIR/widget-Info.plist" "$WIDGET_CONTENTS/Info.plist"
+    sed "s/<string>1.0.0<\/string>/<string>$VERSION<\/string>/g" "$DIR/widget-Info.plist" > "$WIDGET_CONTENTS/Info.plist"
 else
     echo "WARNING: Widget extension binary not found, skipping widget"
 fi
@@ -133,19 +134,31 @@ dot_clean "$BUNDLE_DIR" 2>/dev/null || true
 xattr -cr "$BUNDLE_DIR" 2>/dev/null || true
 find "$BUNDLE_DIR" -exec xattr -c {} \; 2>/dev/null || true
 
-# Sign the main app bundle first
-codesign --force --sign - "$BUNDLE_DIR"
-
-# Sign widget extension LAST so its entitlements are not stripped
+# 1. Sign widget extension FIRST with its own entitlements (inside-out signing)
 if [ -d "$WIDGET_APPEX" ]; then
     xattr -cr "$WIDGET_APPEX" 2>/dev/null || true
-    codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
+    if [ "$SIGNING_IDENTITY" = "-" ]; then
+        codesign --force --sign - --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
+    else
+        codesign --force --options runtime --sign "$SIGNING_IDENTITY" --entitlements "$DIR/widget.entitlements" "$WIDGET_APPEX"
+    fi
 fi
+
+# 2. Sign main app bundle SECOND (WITHOUT --deep so nested extension signature & entitlements are preserved!)
+if [ "$SIGNING_IDENTITY" = "-" ]; then
+    codesign --force --sign - "$BUNDLE_DIR"
+else
+    codesign --force --options runtime --sign "$SIGNING_IDENTITY" "$BUNDLE_DIR"
+fi
+
+# 3. Verify signature integrity
+codesign --verify --deep --strict --verbose=2 "$BUNDLE_DIR"
 
 echo "==> Successfully created and signed Overnode.app"
 
 # 6. Move to final location
 mkdir -p "$DIR/build"
-mv "$BUNDLE_DIR" "$FINAL_BUNDLE_DIR"
+rm -rf "$FINAL_BUNDLE_DIR"
+ditto "$BUNDLE_DIR" "$FINAL_BUNDLE_DIR"
 rm -rf "$TEMP_BUILD"
 echo "==> Application bundle ready at $FINAL_BUNDLE_DIR"
