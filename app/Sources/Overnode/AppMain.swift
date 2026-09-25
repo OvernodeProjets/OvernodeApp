@@ -39,8 +39,13 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             NSApplication.shared.applicationIconImage = iconImage
         }
 
-        // Initialize Discord Rich Presence (runs continuously in background)
-        DiscordRPCService.shared.start()
+       // Initialize Discord Rich Presence (runs continuously in background)
+       DiscordRPCService.shared.start()
+
+        // Initialize Menu Bar Quick Actions (macOS status item)
+        Task { @MainActor in
+            MenuBarManager.shared.setup()
+        }
 
         if CommandLine.arguments.contains("--snapshot") {
             performSnapshot()
@@ -167,7 +172,17 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+   public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+       return false
+   }
+   
+    public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            for window in sender.windows where !(window is NSPanel) && window.canBecomeKey {
+                window.makeKeyAndOrderFront(nil)
+                return true
+            }
+        }
         return true
     }
     

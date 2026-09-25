@@ -28,6 +28,7 @@ The detailed rules live in `.agents/rules/`. Read the relevant file before actin
  - **Wallet, Store & Support** - [.agents/rules/wallet-store-support.md](.agents/rules/wallet-store-support.md) - Règles d architecture et flux pour le Wallet, la Boutique, le Support et l AFK
  - **Daily Reward & Widget** - [.agents/rules/daily-reward-widget.md](.agents/rules/daily-reward-widget.md) - Règles du module Daily Reward et du widget macOS
 - **Discord Rich Presence** - [.agents/rules/discord-rpc.md](.agents/rules/discord-rpc.md) - Intégration Discord RPC, statut Overnode App et respect de la vie privée
+- **Menu Bar & Quick Actions** - [.agents/rules/menu-bar.md](.agents/rules/menu-bar.md) - Menu Bar macOS, présence en arrière-plan et contrôle rapide du serveur
  
  ## Universal Rules
 

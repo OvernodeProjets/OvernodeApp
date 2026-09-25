@@ -119,8 +119,15 @@ public struct DashboardView: View {
             Button(loc.string("generic_cancel"), role: .cancel) {
                 serverPendingDeletion = nil
             }
-        } message: {
-            Text(loc.string("settings_delete_confirm_msg"))
+       } message: {
+           Text(loc.string("settings_delete_confirm_msg"))
+       }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("overnode_navigate_to_settings"))) { _ in
+            selectedServer = nil
+            selectedTab = .settings
+        }
+        .onChange(of: dashboardVM.servers) { newServers in
+            MenuBarManager.shared.updateServers(newServers)
         }
     }
     
@@ -354,39 +361,42 @@ public struct DashboardView: View {
                     .foregroundColor(OvernodeTheme.textPrimary)
                     .padding(.top, 4)
                 
-                // Language Switcher Card
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(loc.string("settings_language_title"))
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(OvernodeTheme.textPrimary)
-                    
-                    HStack(spacing: 12) {
-                        ForEach(AppLanguage.allCases) { lang in
-                            Button(action: {
-                                loc.setLanguage(lang)
-                            }) {
-                                HStack(spacing: 8) {
-                                    Text(lang.flag)
-                                    Text(lang.displayName)
-                                        .font(.system(size: 13, weight: loc.currentLanguage == lang ? .semibold : .regular))
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(loc.currentLanguage == lang ? OvernodeTheme.accentGold.opacity(0.15) : Color.white.opacity(0.04))
-                                .foregroundColor(loc.currentLanguage == lang ? OvernodeTheme.accentGold : OvernodeTheme.textPrimary)
-                                .cornerRadius(8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(loc.currentLanguage == lang ? OvernodeTheme.accentGold : Color.white.opacity(0.08), lineWidth: 1)
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                .padding(18)
-                .background(OvernodeTheme.cardBackground)
-                .cornerRadius(10)
+               // Language Switcher Card
+               VStack(alignment: .leading, spacing: 16) {
+                   Text(loc.string("settings_language_title"))
+                       .font(.system(size: 15, weight: .semibold))
+                       .foregroundColor(OvernodeTheme.textPrimary)
+                   
+                   HStack(spacing: 12) {
+                       ForEach(AppLanguage.allCases) { lang in
+                           Button(action: {
+                               loc.setLanguage(lang)
+                           }) {
+                               HStack(spacing: 8) {
+                                   Text(lang.flag)
+                                   Text(lang.displayName)
+                                       .font(.system(size: 13, weight: loc.currentLanguage == lang ? .semibold : .regular))
+                               }
+                               .padding(.horizontal, 16)
+                               .padding(.vertical, 8)
+                               .background(loc.currentLanguage == lang ? OvernodeTheme.accentGold.opacity(0.15) : Color.white.opacity(0.04))
+                               .foregroundColor(loc.currentLanguage == lang ? OvernodeTheme.accentGold : OvernodeTheme.textPrimary)
+                               .cornerRadius(8)
+                               .overlay(
+                                   RoundedRectangle(cornerRadius: 8)
+                                       .stroke(loc.currentLanguage == lang ? OvernodeTheme.accentGold : Color.white.opacity(0.08), lineWidth: 1)
+                               )
+                           }
+                           .buttonStyle(.plain)
+                       }
+                   }
+               }
+               .padding(18)
+               .background(OvernodeTheme.cardBackground)
+               .cornerRadius(10)
+               
+                // Menu Bar Quick Action Card
+                QuickActionSettingsCardView(servers: dashboardVM.servers)
                 
                 // Software Updates Card
                 VStack(alignment: .leading, spacing: 16) {
