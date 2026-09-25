@@ -57,7 +57,21 @@ public struct DailyRewardTimelineProvider: TimelineProvider {
     }
     
     public func getSnapshot(in context: Context, completion: @escaping (DailyRewardWidgetEntry) -> Void) {
-        let data = DailyRewardStorage.shared.loadWidgetData()
+        var data = DailyRewardStorage.shared.loadWidgetData()
+        if context.isPreview && !data.isAuthenticated {
+            data = DailyRewardWidgetData(
+                isAuthenticated: true,
+                canClaim: false,
+                currentStreak: 7,
+                longestStreak: 14,
+                lastClaimTimestamp: Int64(Date().timeIntervalSince1970 * 1000),
+                nextRewardAmount: 50,
+                coins: 1450,
+                totalClaimed: 24,
+                streakProtection: 1,
+                lastUpdated: Date()
+            )
+        }
         let entry = DailyRewardWidgetEntry(date: Date(), data: data)
         completion(entry)
     }
@@ -253,7 +267,7 @@ public struct DailyRewardWidgetEntryView: View {
             
             Spacer(minLength: 6)
             
-            // Footer: Action / Status / Server Renewal
+            // Footer: Action / Status
             if !entry.data.isAuthenticated {
                 HStack(spacing: 4) {
                     Image(systemName: "person.badge.key.fill")
@@ -264,37 +278,6 @@ public struct DailyRewardWidgetEntryView: View {
                         .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
                         .lineLimit(1)
                 }
-            } else if let nextServer = entry.data.nextExpiringServer {
-                // Next Expiring Server Renewal Pill
-                HStack(spacing: 4) {
-                    Image(systemName: "server.rack")
-                        .font(.system(size: 8))
-                        .foregroundColor(nextServer.isExpired ? Color.red : (nextServer.remainingSeconds ?? 999999 < 86400 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color(red: 0.85, green: 0.67, blue: 0.22)))
-                    
-                    Text(nextServer.name)
-                        .font(.system(size: 8.5, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.88))
-                        .lineLimit(1)
-                    
-                    Spacer(minLength: 2)
-                    
-                    Text(nextServer.formattedRemainingTime)
-                        .font(.system(size: 8.5, weight: .heavy, design: .rounded))
-                        .foregroundColor(nextServer.isExpired ? Color.red : (nextServer.remainingSeconds ?? 999999 < 86400 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color(red: 0.85, green: 0.67, blue: 0.22)))
-                        .lineLimit(1)
-                }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3.5)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white.opacity(0.04))
-                .cornerRadius(5)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .stroke(
-                            (nextServer.isExpired ? Color.red : (nextServer.remainingSeconds ?? 999999 < 86400 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color(red: 0.85, green: 0.67, blue: 0.22))).opacity(0.25),
-                            lineWidth: 0.6
-                        )
-                )
             } else if entry.data.effectiveCanClaim {
                 HStack(spacing: 4) {
                     Image(systemName: "circle.circle.fill")
@@ -440,152 +423,70 @@ public struct DailyRewardWidgetEntryView: View {
                 .frame(width: 1)
                 .padding(.vertical, 4)
             
-            // Right Column: Server Renewals (if present) or Streak & Reward Cards
-            if !entry.data.servers.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
+            // Right Column: Streak Card & Reward Card
+            VStack(spacing: 8) {
+                // Streak Card
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("CURRENT STREAK")
+                        .font(.system(size: 7.5, weight: .heavy, design: .rounded))
+                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                        .tracking(0.5)
+                    
                     HStack(spacing: 4) {
-                        Image(systemName: "server.rack")
-                            .font(.system(size: 8.5, weight: .bold))
-                            .foregroundStyle(goldGradient)
-                        Text("SERVERS RENEWAL")
-                            .font(.system(size: 7.5, weight: .heavy, design: .rounded))
-                            .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                            .tracking(0.5)
-                        Spacer()
-                        Text("\(entry.data.servers.count)")
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundColor(Color.white.opacity(0.6))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color.white.opacity(0.08))
-                            .cornerRadius(3)
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(entry.data.currentStreak > 0 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color.white.opacity(0.4))
+                        Text("\(entry.data.currentStreak) days")
+                            .font(.system(size: 13, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
                     }
                     
-                    VStack(spacing: 5) {
-                        ForEach(entry.data.servers.prefix(2)) { server in
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 4) {
-                                    Text(server.name)
-                                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                                        .foregroundColor(.white)
-                                        .lineLimit(1)
-                                    Spacer(minLength: 2)
-                                    Circle()
-                                        .fill(server.isExpired ? Color.red : (server.remainingSeconds ?? 999999 < 86400 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color(red: 0.22, green: 0.82, blue: 0.50)))
-                                        .frame(width: 5, height: 5)
-                                }
-                                
-                                HStack(spacing: 4) {
-                                    Image(systemName: "clock.fill")
-                                        .font(.system(size: 7.5))
-                                        .foregroundColor(server.isExpired ? Color.red : (server.remainingSeconds ?? 999999 < 86400 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color(red: 0.85, green: 0.67, blue: 0.22)))
-                                    Text(server.formattedRemainingTime)
-                                        .font(.system(size: 11, weight: .black, design: .rounded))
-                                        .foregroundColor(server.isExpired ? Color.red : (server.remainingSeconds ?? 999999 < 86400 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color(red: 0.85, green: 0.67, blue: 0.22)))
-                                        .lineLimit(1)
-                                    
-                                    Spacer(minLength: 2)
-                                    
-                                    if server.canRenew {
-                                        Text("Renew")
-                                            .font(.system(size: 7.5, weight: .bold))
-                                            .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                                            .padding(.horizontal, 4)
-                                            .padding(.vertical, 1)
-                                            .background(Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.12))
-                                            .cornerRadius(3)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white.opacity(0.04))
-                            .cornerRadius(7)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 7)
-                                    .stroke(
-                                        (server.isExpired ? Color.red : (server.remainingSeconds ?? 999999 < 86400 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color.white)).opacity(0.08),
-                                        lineWidth: 0.7
-                                    )
-                            )
-                        }
-                    }
-                    
-                    if entry.data.servers.count > 2 {
-                        Text("+\(entry.data.servers.count - 2) more servers")
-                            .font(.system(size: 7.5, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.40))
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
+                    Text(entry.data.longestStreak > 0 ? "Best: \(entry.data.longestStreak)d" : "Daily check-in")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
                 }
-                .frame(width: 130)
-            } else {
-                // Streak Card & Reward Card (when no servers configured)
-                VStack(spacing: 8) {
-                    // Streak Card
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("CURRENT STREAK")
-                            .font(.system(size: 7.5, weight: .heavy, design: .rounded))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
-                            .tracking(0.5)
-                        
-                        HStack(spacing: 4) {
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 11))
-                                .foregroundColor(entry.data.currentStreak > 0 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color.white.opacity(0.4))
-                            Text("\(entry.data.currentStreak) days")
-                                .font(.system(size: 13, weight: .black, design: .rounded))
-                                .foregroundColor(.white)
-                        }
-                        
-                        Text(entry.data.longestStreak > 0 ? "Best: \(entry.data.longestStreak)d" : "Daily check-in")
-                            .font(.system(size: 8, weight: .medium))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
-                    }
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white.opacity(0.04))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
-                    )
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.white.opacity(0.04))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
+                )
+                
+                // Reward Card
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.data.effectiveCanClaim ? "REWARD WAITING" : "NEXT REWARD")
+                        .font(.system(size: 7.5, weight: .heavy, design: .rounded))
+                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
+                        .tracking(0.5)
                     
-                    // Reward Card
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.data.effectiveCanClaim ? "REWARD WAITING" : "NEXT REWARD")
-                            .font(.system(size: 7.5, weight: .heavy, design: .rounded))
+                    HStack(spacing: 4) {
+                        Image(systemName: "circle.circle.fill")
+                            .font(.system(size: 10))
                             .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                            .tracking(0.5)
-                        
-                        HStack(spacing: 4) {
-                            Image(systemName: "circle.circle.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                            Text("+\(entry.data.nextRewardAmount) coins")
-                                .font(.system(size: 12, weight: .black, design: .rounded))
-                                .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                                .lineLimit(1)
-                        }
-                        
-                        Text(entry.data.coins > 0 ? "\(entry.data.coins) in wallet" : "Daily bonus")
-                            .font(.system(size: 8, weight: .medium))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                        Text("+\(entry.data.nextRewardAmount) coins")
+                            .font(.system(size: 12, weight: .black, design: .rounded))
+                            .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
+                            .lineLimit(1)
                     }
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white.opacity(0.08))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.20), lineWidth: 0.8)
-                    )
+                    
+                    Text(entry.data.coins > 0 ? "\(entry.data.coins) in wallet" : "Daily bonus")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
                 }
-                .frame(width: 114)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.white.opacity(0.08))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.20), lineWidth: 0.8)
+                )
             }
+            .frame(width: 114)
         }
         .padding(13)
     }

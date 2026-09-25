@@ -13,14 +13,13 @@ Règles de fonctionnement pour le module Daily Reward et l'extension Widget Appl
   - La réclamation d'une récompense doit instantanément mettre à jour le solde de l'utilisateur et déclencher l'actualisation globale du Dashboard.
   - Le serveur Overnode ne doit en aucun cas être modifié.
 - **Apple WidgetKit Extension**:
-  - Le widget est configuré exclusivement en **anglais** ("Daily Reward", "Ready to Claim", "Next Reward in", "SERVERS RENEWAL", "NEXT RENEWAL", etc.).
-  - Le temps restant avant minuit / la prochaine récompense est affiché d'abord en **heures**, puis en **minutes** (ex: "5h 24m remaining", ou "Ready to Claim!" quand disponible).
-  - Support des formats de widget macOS (.systemSmall, .systemMedium).
-  - Utilisation de la charte graphique Overnode : fond sombre (#14161c), accents dorés (#D4AF37) et typographie SF Pro / Monospaced pour les timers.
+  - Deux widgets natifs distincts sont exposés via `OvernodeWidgetBundle` :
+    1. **`OvernodeDailyRewardWidget` ("Daily Reward")** : suivi des séries, bonus de pièces et compte à rebours avant la prochaine réclamation (.systemSmall et .systemMedium).
+    2. **`OvernodeServerRenewalWidget` ("Server Renewals")** : suivi de l'expiration et du renouvellement des serveurs cloud (.systemSmall affiche le prochain serveur à expirer en grand format, .systemMedium affiche la timeline et la liste des serveurs).
+  - Les deux widgets sont configurés exclusivement en **anglais** ("Daily Reward", "Server Renewals", "NEXT RENEWAL", "SERVERS TIMELINE", "Renew", etc.).
+  - Le temps restant est affiché d'abord en **jours/heures**, puis en **heures/minutes** (ex: "2d 14h", "5h 24m", ou "< 1m", "Expired").
+  - Support des formats macOS (.systemSmall, .systemMedium).
+  - Utilisation de la charte graphique Overnode : fond sombre (#14161c), accents dorés (#D4AF37), alertes ambre (#FF7A2F), vert émeraude (#10B981) et rouge (#EF4444).
   - Stockage partagé inter-processus via pont universel `/Users/Shared/Overnode/daily_reward_widget.json` et `/Library/Application Support/Overnode/` avec entitlements sandbox explicites (`temporary-exception.files.home-relative-path.read-write` et `absolute-path.read-write`).
-- **Server Renewal Integration**:
-  - Le petit widget (.systemSmall) affiche le prochain serveur arrivant à expiration (`nextExpiringServer`) sous forme de pill compact en bas (`[Rack] [Nom] [Temps]`), avec code couleur (rouge si expiré, ambre si < 24h, gris/doré sinon).
-  - Le widget moyen (.systemMedium) intègre un panneau droit dédié `SERVERS RENEWAL` affichant jusqu'à 2-3 serveurs avec indicateur d'état, nom tronqué, temps restant (ex: "2d 4h", "10h 30m", "< 1m", "Expired") et bouton badge "Renew".
-  - Synchronisation automatique orchestrée par `DailyRewardSyncManager` interrogeant `AuthService.shared.fetchServersStatus()` et `ServerService.shared.fetchRenewalStatus(serverId:)` en parallèle via `withTaskGroup`.
 - **CRITICAL UI**: Ne jamais mentionner `console.overnode.fr` dans l'UI du widget ou de l'application.
 

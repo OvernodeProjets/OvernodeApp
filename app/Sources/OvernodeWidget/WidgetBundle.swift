@@ -5,6 +5,7 @@ import SwiftUI
 struct OvernodeWidgetBundle: WidgetBundle {
     var body: some Widget {
         OvernodeDailyRewardWidget()
+        OvernodeServerRenewalWidget()
     }
 }
 
