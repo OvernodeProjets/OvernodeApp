@@ -9,36 +9,39 @@ public struct CreateServerHeaderView: View {
     }
     
     public var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             ZStack {
-                Circle()
-                    .fill(OvernodeTheme.accentGold.opacity(0.15))
-                    .frame(width: 32, height: 32)
-                Image(systemName: "server.rack.badge.plus")
-                    .font(.system(size: 14))
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(OvernodeTheme.accentGold.opacity(0.16))
+                    .frame(width: 38, height: 38)
+                Image(systemName: "server.rack")
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(OvernodeTheme.accentGold)
             }
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(loc.string("create_server_title"))
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 17, weight: .bold))
                     .foregroundColor(OvernodeTheme.textPrimary)
                 Text(loc.string("create_server_subtitle"))
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundColor(OvernodeTheme.textSecondary)
             }
             
             Spacer()
             
             Button(action: onDismiss) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(OvernodeTheme.textMuted)
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(OvernodeTheme.textSecondary)
+                    .frame(width: 28, height: 28)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(Circle())
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
         .background(OvernodeTheme.cardBackground)
         .overlay(
             Rectangle()
@@ -48,4 +51,3 @@ public struct CreateServerHeaderView: View {
         )
     }
 }
-

@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 @testable import Overnode
 
 final class ServerDeploymentTests: XCTestCase {
@@ -108,6 +109,116 @@ final class ServerDeploymentTests: XCTestCase {
         XCTAssertEqual(loc.string("create_server_button"), "Créer un serveur")
         XCTAssertEqual(loc.string("create_server_title"), "Créer un serveur")
         XCTAssertFalse(loc.string("create_server_resources_title").isEmpty)
+        XCTAssertEqual(loc.string("create_server_location_status_online"), "En ligne")
+        XCTAssertEqual(loc.string("create_server_preset_min"), "Min")
+        XCTAssertEqual(loc.string("create_server_preset_max"), "Max")
+    }
+    
+    @MainActor
+    func testLocationHelperFormatting() {
+        let frLoc = ServerLocation(id: "1", name: "fr")
+        let frInfo = LocationHelper.format(location: frLoc)
+        XCTAssertEqual(frInfo.flag, "🇫🇷")
+        XCTAssertEqual(frInfo.countryName, "France")
+        
+        let usLoc = ServerLocation(id: "2", name: "us")
+        let usInfo = LocationHelper.format(location: usLoc)
+        XCTAssertEqual(usInfo.flag, "🇺🇸")
+        
+        let deLoc = ServerLocation(id: "3", name: "de")
+        let deInfo = LocationHelper.format(location: deLoc)
+        XCTAssertEqual(deInfo.flag, "🇩🇪")
+        
+        let customLoc = ServerLocation(id: "99", name: "Singapore")
+        let customInfo = LocationHelper.format(location: customLoc)
+        XCTAssertEqual(customInfo.flag, "🌐")
+        XCTAssertEqual(customInfo.countryName, "Singapore")
+    }
+    
+    @MainActor
+    func testLocationHelperNodeFormattingAndMatching() {
+        let nodeMrs = ServerNode(id: 10, name: "fr.mrs.1", locationId: "1")
+        let nodeInfo = LocationHelper.format(node: nodeMrs)
+        XCTAssertEqual(nodeInfo.displayName, "fr.mrs.1")
+        XCTAssertEqual(nodeInfo.city, "Marseille")
+        XCTAssertEqual(nodeInfo.tag, "Game Anti-DDoS")
+        
+        let frLoc = ServerLocation(id: "1", name: "fr")
+        let usLoc = ServerLocation(id: "2", name: "us")
+        
+        XCTAssertTrue(LocationHelper.isMatch(node: nodeMrs, location: frLoc))
+        XCTAssertFalse(LocationHelper.isMatch(node: nodeMrs, location: usLoc))
+    }
+    
+    @MainActor
+    func testRenderServerCreationSnapshot() async throws {
+        setenv("OVERNODE_DEMO", "1", 1)
+        defer { unsetenv("OVERNODE_DEMO") }
+        let vm = CreateServerViewModel()
+        vm.serverName = "Mon Serveur Minecraft"
+        
+        for _ in 0..<30 {
+            if vm.options != nil && !vm.isLoading { break }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        
+        let modal = CreateServerModalView(vm: vm, onDismiss: {}, onServerCreated: { _ in })
+            .preferredColorScheme(.dark)
+            .environment(\.locale, Locale(identifier: "fr"))
+        
+        let hostingView = NSHostingView(rootView: modal)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 820, height: 740)
+        
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 820, height: 740),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = hostingView
+        window.layoutIfNeeded()
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        window.displayIfNeeded()
+        
+        if let bitmap = hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds) {
+            hostingView.cacheDisplay(in: hostingView.bounds, to: bitmap)
+            if let pngData = bitmap.representation(using: .png, properties: [:]) {
+                let ciPath = FileManager.default.temporaryDirectory.appendingPathComponent("redesigned_server_creation.png").path
+                try? pngData.write(to: URL(fileURLWithPath: ciPath))
+                let brainPath = "/Users/matheus/.gemini/antigravity/brain/5822f35c-3737-4cb4-bbb9-0e6ac15ac67b/redesigned_server_creation.png"
+                if FileManager.default.fileExists(atPath: "/Users/matheus/.gemini/antigravity/brain/5822f35c-3737-4cb4-bbb9-0e6ac15ac67b") {
+                    try? pngData.write(to: URL(fileURLWithPath: brainPath))
+                }
+            }
+        }
+        
+        let resourceView = VStack(alignment: .leading, spacing: 16) {
+            CreateServerResourceSectionView(vm: vm)
+        }
+        .padding(24)
+        .frame(width: 820)
+        .background(OvernodeTheme.background)
+        .preferredColorScheme(.dark)
+        
+        let resHosting = NSHostingView(rootView: resourceView)
+        resHosting.frame = NSRect(x: 0, y: 0, width: 820, height: 360)
+        let resWin = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 820, height: 360), styleMask: [.borderless], backing: .buffered, defer: false)
+        resWin.contentView = resHosting
+        resWin.layoutIfNeeded()
+        try? await Task.sleep(nanoseconds: 200_000_000)
+        resWin.displayIfNeeded()
+        
+        if let resBitmap = resHosting.bitmapImageRepForCachingDisplay(in: resHosting.bounds) {
+            resHosting.cacheDisplay(in: resHosting.bounds, to: resBitmap)
+            if let resPng = resBitmap.representation(using: .png, properties: [:]) {
+                let ciPath = FileManager.default.temporaryDirectory.appendingPathComponent("redesigned_server_resources.png").path
+                try? resPng.write(to: URL(fileURLWithPath: ciPath))
+                let brainPath = "/Users/matheus/.gemini/antigravity/brain/5822f35c-3737-4cb4-bbb9-0e6ac15ac67b/redesigned_server_resources.png"
+                if FileManager.default.fileExists(atPath: "/Users/matheus/.gemini/antigravity/brain/5822f35c-3737-4cb4-bbb9-0e6ac15ac67b") {
+                    try? resPng.write(to: URL(fileURLWithPath: brainPath))
+                }
+            }
+        }
     }
 }
 

@@ -39,9 +39,7 @@ public final class CreateServerViewModel: ObservableObject {
         guard let loc = selectedLocation else { return opts.nodes }
         
         let matching = opts.nodes.filter { node in
-            node.locationId.lowercased() == loc.id.lowercased() ||
-            node.locationId.lowercased() == loc.name.lowercased() ||
-            loc.flags.contains(where: { $0.lowercased() == node.locationId.lowercased() })
+            LocationHelper.isMatch(node: node, location: loc)
         }
         return matching.isEmpty ? opts.nodes : matching
     }

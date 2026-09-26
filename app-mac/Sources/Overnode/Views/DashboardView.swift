@@ -16,6 +16,9 @@ public struct DashboardView: View {
         self.authVM = authVM
         self._dashboardVM = StateObject(wrappedValue: DashboardViewModel(initialResources: authVM.initialResources))
         self._selectedTab = State(initialValue: initialTab)
+        if ProcessInfo.processInfo.environment["OVERNODE_DEMO_CREATE_SERVER"] == "1" {
+            self._isShowingCreateServerModal = State(initialValue: true)
+        }
     }
     
     public var body: some View {
