@@ -119,62 +119,77 @@ public struct ServerSettingsTabView: View {
                         Text(loc.string("settings_reinstall_confirm_msg"))
                     }
                     
-                    Divider()
-                        .background(Color.red.opacity(0.18))
-                    
-                    // Delete Server
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(loc.string("settings_delete_title"))
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(OvernodeTheme.textPrimary)
-                            Text(loc.string("settings_delete_desc"))
-                                .font(.system(size: 11))
+                    if vm.server.canDelete {
+                        Divider()
+                            .background(Color.red.opacity(0.18))
+                        
+                        // Delete Server
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(loc.string("settings_delete_title"))
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(OvernodeTheme.textPrimary)
+                                Text(loc.string("settings_delete_desc"))
+                                    .font(.system(size: 11))
+                                    .foregroundColor(OvernodeTheme.textSecondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Button(role: .destructive, action: {
+                                showingDeleteAlert = true
+                            }) {
+                                HStack(spacing: 6) {
+                                    if vm.isDeleting {
+                                        ProgressView()
+                                            .scaleEffect(0.6)
+                                            .frame(width: 14, height: 14)
+                                    } else {
+                                        Image(systemName: "trash.fill")
+                                            .font(.system(size: 11))
+                                    }
+                                    Text(loc.string("settings_delete_button"))
+                                        .font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundColor(Color.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 7)
+                                .background(Color(red: 0.85, green: 0.15, blue: 0.15))
+                                .cornerRadius(6)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(vm.isDeleting)
+                        }
+                        .confirmationDialog(
+                            loc.string("settings_delete_confirm_title"),
+                            isPresented: $showingDeleteAlert,
+                            titleVisibility: .visible
+                        ) {
+                            Button(loc.string("settings_delete_confirm_btn"), role: .destructive) {
+                                Task {
+                                    let success = await vm.deleteServer()
+                                    if success {
+                                        onServerDeleted?()
+                                    }
+                                }
+                            }
+                            Button(loc.string("generic_cancel"), role: .cancel) {}
+                        } message: {
+                            Text(loc.string("settings_delete_confirm_msg"))
+                        }
+                    } else {
+                        Divider()
+                            .background(Color.white.opacity(0.06))
+                        
+                        HStack(spacing: 8) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(OvernodeTheme.textMuted)
+                            Text(loc.string("server_delete_owner_only"))
+                                .font(.system(size: 12))
                                 .foregroundColor(OvernodeTheme.textSecondary)
                         }
-                        
-                        Spacer()
-                        
-                        Button(role: .destructive, action: {
-                            showingDeleteAlert = true
-                        }) {
-                            HStack(spacing: 6) {
-                                if vm.isDeleting {
-                                    ProgressView()
-                                        .scaleEffect(0.6)
-                                        .frame(width: 14, height: 14)
-                                } else {
-                                    Image(systemName: "trash.fill")
-                                        .font(.system(size: 11))
-                                }
-                                Text(loc.string("settings_delete_button"))
-                                    .font(.system(size: 12, weight: .semibold))
-                            }
-                            .foregroundColor(Color.white)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 7)
-                            .background(Color(red: 0.85, green: 0.15, blue: 0.15))
-                            .cornerRadius(6)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(vm.isDeleting)
-                    }
-                    .confirmationDialog(
-                        loc.string("settings_delete_confirm_title"),
-                        isPresented: $showingDeleteAlert,
-                        titleVisibility: .visible
-                    ) {
-                        Button(loc.string("settings_delete_confirm_btn"), role: .destructive) {
-                            Task {
-                                let success = await vm.deleteServer()
-                                if success {
-                                    onServerDeleted?()
-                                }
-                            }
-                        }
-                        Button(loc.string("generic_cancel"), role: .cancel) {}
-                    } message: {
-                        Text(loc.string("settings_delete_confirm_msg"))
+                        .padding(.vertical, 4)
                     }
                 }
                 .padding(18)

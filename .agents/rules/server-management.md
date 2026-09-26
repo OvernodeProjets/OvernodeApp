@@ -14,4 +14,11 @@ Règles pour la gestion des serveurs dans l'application macOS Overnode.
 - **Gestion réseau sécurisée**: Les appels API doivent réutiliser `APIClient.shared` avec persistance des cookies de session.
 - **Support bilingue**: Chaque chaîne d'interface liée aux serveurs doit exister en Français (`fr.json`) et en Anglais (`en.json`).
 - **Charte graphique Overnode**: Respecter le thème sombre (#101218, #181B22, #202229), les bordures subtiles et les accents colorés Overnode.
-
+- **Serveurs Partagés & Permissions (Subusers)**:
+  - Les serveurs où l'utilisateur est invité/sous-utilisateur doivent être récupérés et affichés aux côtés des serveurs propres, avec un badge "Partagé" distinctif (`person.2.fill`).
+  - Chaque `ServerInstance` doit tracker `isOwner` et `permissions`.
+  - Les actions d'alimentation (`start`, `restart`, `stop`, `kill`) doivent vérifier les permissions de l'utilisateur (`canStart`, `canRestart`, `canStop`) et être désactivées avec tooltip explicatif si non autorisées.
+  - Le renouvellement (`canRenew`) et la suppression définitive (`canDelete`) sont réservés au propriétaire (`isOwner == true`).
+- **Actualisation & Rate Limiting**:
+  - Lors de la navigation vers la section Serveurs, la liste des serveurs doit s'actualiser automatiquement.
+  - Un rate limiter (cooldown d'au moins 5 secondes) doit obligatoirement être appliqué sur `refreshServersOnNavigatingToServersSection` pour éviter de spammer les endpoints API.

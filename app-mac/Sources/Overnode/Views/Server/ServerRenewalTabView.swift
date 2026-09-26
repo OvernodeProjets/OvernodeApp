@@ -54,6 +54,24 @@ public struct ServerRenewalTabView: View {
                     .stroke(Color.white.opacity(0.06), lineWidth: 1)
             )
             
+            if !vm.server.isOwner {
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(Color(red: 0.961, green: 0.620, blue: 0.106))
+                    Text(loc.string("server_renewal_owner_only"))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(OvernodeTheme.textPrimary)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(red: 0.961, green: 0.620, blue: 0.106).opacity(0.12))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(red: 0.961, green: 0.620, blue: 0.106).opacity(0.3), lineWidth: 1)
+                )
+            }
+            
             // Stats Grid
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 16),
@@ -97,7 +115,7 @@ public struct ServerRenewalTabView: View {
                     
                     Spacer()
                     
-                    let canRenew = vm.renewalStatus?.canRenew ?? false
+                    let canRenew = (vm.renewalStatus?.canRenew ?? false) && vm.server.canRenew
                     Button(action: {
                         vm.renewServer()
                     }) {

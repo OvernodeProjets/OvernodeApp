@@ -144,6 +144,17 @@ public final class DashboardViewModel: ObservableObject {
         }
     }
     
+    private var lastServersSectionRefresh: Date?
+    private let serversRefreshCooldown: TimeInterval = 5.0
+    
+    public func refreshServersOnNavigatingToServersSection(force: Bool = false) {
+        if !force, let last = lastServersSectionRefresh, Date().timeIntervalSince(last) < serversRefreshCooldown {
+            return
+        }
+        lastServersSectionRefresh = Date()
+        loadDashboardData(force: true, isBackground: servers.isEmpty ? false : true)
+    }
+    
     public func loadDashboardData(force: Bool = false, isBackground: Bool = false) {
         if isLoading && !force { return }
         if !force, let last = lastUpdated, Date().timeIntervalSince(last) < 2.0 {

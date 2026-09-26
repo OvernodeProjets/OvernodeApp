@@ -361,4 +361,85 @@ final class ServerManagementTests: XCTestCase {
         XCTAssertNotNil(status.calculatedAvailableIn)
     }
 
+    func testSharedServerPermissions() {
+        let ownerServer = ServerInstance(
+            id: 1,
+            identifier: "owner-srv",
+            name: "Owner Server",
+            isOwner: true,
+            permissions: ["*"]
+        )
+        XCTAssertTrue(ownerServer.isOwner)
+        XCTAssertTrue(ownerServer.hasPermission("control.start"))
+        XCTAssertTrue(ownerServer.canStart)
+        XCTAssertTrue(ownerServer.canStop)
+        XCTAssertTrue(ownerServer.canRestart)
+        XCTAssertTrue(ownerServer.canConsole)
+        XCTAssertTrue(ownerServer.canManageFiles)
+        XCTAssertTrue(ownerServer.canDelete)
+        XCTAssertTrue(ownerServer.canRenew)
+
+        let subuserServer = ServerInstance(
+            id: 2,
+            identifier: "sub-srv",
+            name: "Shared Server",
+            isOwner: false,
+            permissions: ["control.start", "control.restart", "file.read"]
+        )
+        XCTAssertFalse(subuserServer.isOwner)
+        XCTAssertTrue(subuserServer.hasPermission("control.start"))
+        XCTAssertTrue(subuserServer.canStart)
+        XCTAssertTrue(subuserServer.canRestart)
+        XCTAssertFalse(subuserServer.canStop)
+        XCTAssertFalse(subuserServer.canConsole)
+        XCTAssertTrue(subuserServer.canManageFiles)
+        XCTAssertFalse(subuserServer.canDelete) // Subusers can never delete
+        XCTAssertFalse(subuserServer.canRenew)  // Subusers can never renew
+    }
+
+    func testSubuserServerItemDecoding() throws {
+        let json = """
+        {
+            "id": 42,
+            "serverId": "srv-abc",
+            "serverName": "Friend's Server",
+            "ownerId": "usr-5",
+            "source": "api"
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let item = try JSONDecoder().decode(InitResponse.SubuserServerItem.self, from: data)
+        XCTAssertEqual(item.id, "42")
+        XCTAssertEqual(item.serverId, "srv-abc")
+        XCTAssertEqual(item.serverName, "Friend's Server")
+        XCTAssertEqual(item.ownerId, "usr-5")
+        XCTAssertEqual(item.source, "api")
+    }
+
+    @MainActor
+    func testSharedServerTranslations() {
+        let loc = LocalizationManager.shared
+        let keys = [
+            "server_badge_shared",
+            "server_badge_owner",
+            "server_shared_notice",
+            "server_renewal_owner_only",
+            "server_delete_owner_only",
+            "server_permission_denied"
+        ]
+        
+        loc.setLanguage(.french)
+        for key in keys {
+            let fr = loc.string(key)
+            XCTAssertNotEqual(fr, key, "Missing FR translation for \(key)")
+            XCTAssertFalse(fr.isEmpty)
+        }
+        
+        loc.setLanguage(.english)
+        for key in keys {
+            let en = loc.string(key)
+            XCTAssertNotEqual(en, key, "Missing EN translation for \(key)")
+            XCTAssertFalse(en.isEmpty)
+        }
+    }
 }

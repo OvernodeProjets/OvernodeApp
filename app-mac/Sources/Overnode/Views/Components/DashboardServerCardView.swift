@@ -70,10 +70,26 @@ public struct DashboardServerCardView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(server.name)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(OvernodeTheme.textPrimary)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(server.name)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(OvernodeTheme.textPrimary)
+                            .lineLimit(1)
+                        
+                        if !server.isOwner {
+                            HStack(spacing: 3) {
+                                Image(systemName: "person.2.fill")
+                                    .font(.system(size: 9))
+                                Text(loc.string("server_badge_shared"))
+                                    .font(.system(size: 10, weight: .semibold))
+                            }
+                            .foregroundColor(Color(red: 0.961, green: 0.620, blue: 0.106))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color(red: 0.961, green: 0.620, blue: 0.106).opacity(0.12))
+                            .cornerRadius(4)
+                        }
+                    }
                     
                     HStack(spacing: 6) {
                         Circle()

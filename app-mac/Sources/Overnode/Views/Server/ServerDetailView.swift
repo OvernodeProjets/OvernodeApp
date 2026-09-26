@@ -71,7 +71,19 @@ public struct ServerDetailView: View {
                         .background(Color(red: 0.125, green: 0.133, blue: 0.161))
                         .cornerRadius(4)
                     
-
+                    if !vm.server.isOwner {
+                        HStack(spacing: 3) {
+                            Image(systemName: "person.2.fill")
+                                .font(.system(size: 9))
+                            Text(loc.string("server_badge_shared"))
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundColor(Color(red: 0.961, green: 0.620, blue: 0.106))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color(red: 0.961, green: 0.620, blue: 0.106).opacity(0.12))
+                        .cornerRadius(4)
+                    }
                 }
                 
                 Spacer()
@@ -79,37 +91,37 @@ public struct ServerDetailView: View {
                 // Power Actions Bar
                 HStack(spacing: 8) {
                     PowerActionButton(
-                        tooltip: loc.string("power_start"),
+                        tooltip: vm.server.canStart ? loc.string("power_start") : loc.string("server_permission_denied"),
                         icon: "play.fill",
                         color: Color(red: 0.133, green: 0.773, blue: 0.365),
-                        disabled: vm.isPowerLoading || vm.server.state.lowercased() == "running"
+                        disabled: vm.isPowerLoading || vm.server.state.lowercased() == "running" || !vm.server.canStart
                     ) {
                         vm.sendPowerSignal(.start)
                     }
                     
                     PowerActionButton(
-                        tooltip: loc.string("power_restart"),
+                        tooltip: vm.server.canRestart ? loc.string("power_restart") : loc.string("server_permission_denied"),
                         icon: "arrow.clockwise",
                         color: Color(red: 0.961, green: 0.620, blue: 0.106),
-                        disabled: vm.isPowerLoading || vm.server.state.lowercased() != "running"
+                        disabled: vm.isPowerLoading || vm.server.state.lowercased() != "running" || !vm.server.canRestart
                     ) {
                         vm.sendPowerSignal(.restart)
                     }
                     
                     PowerActionButton(
-                        tooltip: loc.string("power_stop"),
+                        tooltip: vm.server.canStop ? loc.string("power_stop") : loc.string("server_permission_denied"),
                         icon: "stop.fill",
                         color: Color(red: 0.937, green: 0.267, blue: 0.267),
-                        disabled: vm.isPowerLoading || vm.server.state.lowercased() == "offline"
+                        disabled: vm.isPowerLoading || vm.server.state.lowercased() == "offline" || !vm.server.canStop
                     ) {
                         vm.sendPowerSignal(.stop)
                     }
                     
                     PowerActionButton(
-                        tooltip: loc.string("power_kill"),
+                        tooltip: vm.server.canStop ? loc.string("power_kill") : loc.string("server_permission_denied"),
                         icon: "bolt.slash.fill",
                         color: Color(red: 0.60, green: 0.15, blue: 0.15),
-                        disabled: vm.isPowerLoading
+                        disabled: vm.isPowerLoading || !vm.server.canStop
                     ) {
                         showingKillConfirmation = true
                     }

@@ -94,6 +94,16 @@ public struct DashboardView: View {
             dashboardVM.setInitialResourcesIfNeeded(authVM.initialResources)
             dashboardVM.loadDashboardData()
         }
+        .onChange(of: selectedTab) { _, newTab in
+            if newTab == .servers {
+                dashboardVM.refreshServersOnNavigatingToServersSection()
+            }
+        }
+        .onChange(of: selectedServer) { _, newServer in
+            if newServer == nil && selectedTab == .servers {
+                dashboardVM.refreshServersOnNavigatingToServersSection()
+            }
+        }
         .sheet(isPresented: $isShowingCreateServerModal) {
             CreateServerModalView(
                 onDismiss: { isShowingCreateServerModal = false },
@@ -355,6 +365,9 @@ public struct DashboardView: View {
             .padding(24)
         }
         .background(OvernodeTheme.background)
+        .onAppear {
+            dashboardVM.refreshServersOnNavigatingToServersSection()
+        }
     }
     
     // MARK: - Tab: App Settings

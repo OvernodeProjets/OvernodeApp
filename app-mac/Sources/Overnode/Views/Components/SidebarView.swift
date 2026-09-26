@@ -130,6 +130,12 @@ public struct SidebarView: View {
                                     .foregroundColor(OvernodeTheme.textPrimary)
                                     .lineLimit(1)
                                 
+                                if !srv.isOwner {
+                                    Image(systemName: "person.2.fill")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(Color(red: 0.961, green: 0.620, blue: 0.106))
+                                }
+                                
                                 Spacer()
                                 
                                 Image(systemName: "chevron.right")
@@ -181,6 +187,12 @@ public struct SidebarView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(OvernodeTheme.textPrimary)
                     .lineLimit(1)
+                
+                if !server.isOwner {
+                    Image(systemName: "person.2.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(Color(red: 0.961, green: 0.620, blue: 0.106))
+                }
             }
             .padding(.horizontal, 6)
             .padding(.bottom, 6)

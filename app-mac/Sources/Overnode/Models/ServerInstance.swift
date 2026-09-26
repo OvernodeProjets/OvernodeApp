@@ -7,6 +7,8 @@ public struct ServerInstance: Codable, Identifiable, Equatable, Sendable {
     public let node: String?
     public let suspended: Bool
     public var state: String // "running", "starting", "stopping", "offline", "suspended"
+    public var isOwner: Bool
+    public var permissions: [String]
     public var memoryUsedMB: Double
     public var memoryLimitMB: Double
     public var cpuUsedPercent: Double
@@ -16,6 +18,7 @@ public struct ServerInstance: Codable, Identifiable, Equatable, Sendable {
     
     enum CodingKeys: String, CodingKey {
         case id, identifier, name, node, suspended, state
+        case isOwner, permissions
         case memoryUsedMB, memoryLimitMB, cpuUsedPercent, cpuLimitPercent, diskUsedMB, diskLimitMB
     }
     
@@ -26,6 +29,8 @@ public struct ServerInstance: Codable, Identifiable, Equatable, Sendable {
         node: String? = nil,
         suspended: Bool = false,
         state: String = "offline",
+        isOwner: Bool = true,
+        permissions: [String] = ["*"],
         memoryUsedMB: Double = 0,
         memoryLimitMB: Double = 0,
         cpuUsedPercent: Double = 0,
@@ -39,6 +44,8 @@ public struct ServerInstance: Codable, Identifiable, Equatable, Sendable {
         self.node = node
         self.suspended = suspended
         self.state = state
+        self.isOwner = isOwner
+        self.permissions = permissions
         self.memoryUsedMB = memoryUsedMB
         self.memoryLimitMB = memoryLimitMB
         self.cpuUsedPercent = cpuUsedPercent
@@ -78,6 +85,8 @@ public struct ServerInstance: Codable, Identifiable, Equatable, Sendable {
         }
         
         self.state = (try? c.decode(String.self, forKey: .state)) ?? (self.suspended ? "suspended" : "offline")
+        self.isOwner = (try? c.decode(Bool.self, forKey: .isOwner)) ?? true
+        self.permissions = (try? c.decode([String].self, forKey: .permissions)) ?? (self.isOwner ? ["*"] : [])
         self.memoryUsedMB = (try? c.decode(Double.self, forKey: .memoryUsedMB)) ?? 0
         self.memoryLimitMB = (try? c.decode(Double.self, forKey: .memoryLimitMB)) ?? 0
         self.cpuUsedPercent = (try? c.decode(Double.self, forKey: .cpuUsedPercent)) ?? 0
@@ -89,6 +98,20 @@ public struct ServerInstance: Codable, Identifiable, Equatable, Sendable {
     public var isOnline: Bool {
         return state.lowercased() == "running"
     }
+    
+    public func hasPermission(_ perm: String) -> Bool {
+        if isOwner { return true }
+        if permissions.contains("*") { return true }
+        return permissions.contains(perm)
+    }
+    
+    public var canStart: Bool { hasPermission("control.start") }
+    public var canStop: Bool { hasPermission("control.stop") }
+    public var canRestart: Bool { hasPermission("control.restart") }
+    public var canConsole: Bool { hasPermission("control.console") }
+    public var canManageFiles: Bool { hasPermission("file.read") || hasPermission("file.create") }
+    public var canDelete: Bool { isOwner }
+    public var canRenew: Bool { isOwner }
 }
 
 // Model for Pterodactyl Application API server item returned in /api/v5/servers or /api/v5/init
