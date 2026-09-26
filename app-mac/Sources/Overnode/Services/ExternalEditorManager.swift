@@ -146,14 +146,12 @@ public final class ExternalEditorManager: @unchecked Sendable {
         session.startWatching()
         
         // Open file with selected editor
-        await MainActor.run {
-            let config = NSWorkspace.OpenConfiguration()
-            config.activates = true
-            NSWorkspace.shared.open([localFileURL], withApplicationAt: targetAppURL, configuration: config) { _, error in
-                if let error = error {
-                    print("[ExternalEditorManager] Failed to launch editor: \(error.localizedDescription)")
-                }
-            }
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        do {
+            _ = try await NSWorkspace.shared.open([localFileURL], withApplicationAt: targetAppURL, configuration: config)
+        } catch {
+            print("[ExternalEditorManager] Failed to launch editor: \(error.localizedDescription)")
         }
         
         return localFileURL
