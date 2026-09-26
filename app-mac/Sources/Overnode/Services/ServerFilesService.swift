@@ -93,5 +93,72 @@ public final class ServerFilesService: @unchecked Sendable {
             body: data
         )
     }
+    
+    // MARK: - Upload
+    
+    public func getUploadURL(serverId: String, directory: String = "/") async throws -> String {
+        let encodedDir = directory.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "/"
+        let endpoint = "/api/server/\(serverId)/files/upload?directory=\(encodedDir)"
+        
+        struct UploadResponse: Codable {
+            struct Attributes: Codable {
+                let url: String
+            }
+            let attributes: Attributes?
+            let url: String?
+        }
+        
+        let response: UploadResponse = try await client.request(endpoint: endpoint)
+        guard let url = response.attributes?.url ?? response.url, !url.isEmpty else {
+            throw NSError(domain: "ServerFilesService", code: 500, userInfo: [NSLocalizedDescriptionKey: "Invalid upload URL"])
+        }
+        return url
+    }
+    
+    public func uploadFile(
+        uploadURL: String,
+        directory: String,
+        fileName: String,
+        fileData: Data
+    ) async throws {
+        var targetURLString = uploadURL
+        if !targetURLString.contains("directory=") {
+            let separator = targetURLString.contains("?") ? "&" : "?"
+            let encodedDir = directory.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? directory
+            targetURLString += "\(separator)directory=\(encodedDir)"
+        }
+        
+        guard let url = URL(string: targetURLString) else {
+            throw URLError(.badURL)
+        }
+        
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var body = Data()
+        guard let boundaryHeader = "--\(boundary)\r\n".data(using: .utf8),
+              let disposition = "Content-Disposition: form-data; name=\"files\"; filename=\"\(fileName)\"\r\n".data(using: .utf8),
+              let contentType = "Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8),
+              let boundaryFooter = "\r\n--\(boundary)--\r\n".data(using: .utf8) else {
+            throw URLError(.cannotCreateFile)
+        }
+        
+        body.append(boundaryHeader)
+        body.append(disposition)
+        body.append(contentType)
+        body.append(fileData)
+        body.append(boundaryFooter)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("\(body.count)", forHTTPHeaderField: "Content-Length")
+        request.setValue("Overnode-macOS-Native/1.0", forHTTPHeaderField: "User-Agent")
+        request.httpBody = body
+        
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw NSError(domain: "ServerFilesService", code: code, userInfo: [NSLocalizedDescriptionKey: "Upload failed with status \(code)"])
+        }
+    }
 }
 

@@ -93,6 +93,11 @@ public final class LocalizationManager: ObservableObject {
         return strings[key] ?? key
     }
     
+    public func string(_ key: String, _ args: CVarArg...) -> String {
+        let format = strings[key] ?? key
+        return String(format: format, arguments: args)
+    }
+    
     private func loadStrings(for language: AppLanguage) {
         if let url = Bundle.appResourceURL(named: language.rawValue, withExtension: "json"),
            let data = try? Data(contentsOf: url),

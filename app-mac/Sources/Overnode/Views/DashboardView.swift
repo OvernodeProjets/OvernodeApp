@@ -419,6 +419,9 @@ public struct DashboardView: View {
                 // Menu Bar Quick Action Card
                 QuickActionSettingsCardView(servers: dashboardVM.servers)
                 
+                // External Text/Code Editor Card
+                ExternalEditorSettingsCardView()
+                
                 // Software Updates Card
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {

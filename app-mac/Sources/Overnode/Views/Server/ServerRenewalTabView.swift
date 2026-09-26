@@ -140,7 +140,7 @@ public struct ServerRenewalTabView: View {
                     .disabled(vm.isRenewing || !canRenew)
                 }
                 
-                if let msg = vm.successMessage {
+                if let msg = vm.renewalSuccessMessage {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(Color(red: 0.25, green: 0.78, blue: 0.50))

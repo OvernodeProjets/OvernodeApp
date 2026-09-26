@@ -68,6 +68,10 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             MenuBarManager.shared.setup()
         }
 
+        // Clean up temporary external editor files on launch and start periodic background cleanup
+        ExternalEditorManager.shared.cleanupStaleTemporaryFiles()
+        ExternalEditorManager.shared.startPeriodicCleanup()
+
         if CommandLine.arguments.contains("--snapshot") {
             performSnapshot()
             return
@@ -117,6 +121,27 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             vm.selectedTab = .console
         }
         
+        if args.contains("--snapshot-file-sync") {
+            vm.selectedTab = .files
+            vm.fileSuccessMessage = LocalizationManager.shared.string("files_external_synced", "server.properties")
+        }
+        
+        if args.contains("--snapshot-file-upload") {
+            vm.selectedTab = .files
+            vm.isUploadingFiles = true
+            vm.uploadProgress = 0.65
+            vm.uploadProgressText = "\(LocalizationManager.shared.string("files_uploading")) EssentialsX-2.20.1.jar"
+        }
+        
+        if args.contains("--snapshot-file-upload-success") {
+            vm.selectedTab = .files
+            vm.fileSuccessMessage = LocalizationManager.shared.string("files_upload_success_multiple", 4)
+        }
+        
+        if args.contains("--snapshot-file-drop") {
+            vm.selectedTab = .files
+        }
+        
         let user = User(id: "1", username: "OvernodeUser", email: "user@overnode.fr", globalName: "Overnode User", role: "Client", avatarUrl: nil, coins: 350)
         let view = HStack(spacing: 0) {
             SidebarView(
@@ -149,9 +174,17 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         } else if args.contains("--snapshot-settings") {
             let authVM = AuthViewModel()
             finalView = AnyView(DashboardView(authVM: authVM, initialTab: .settings).preferredColorScheme(.dark).frame(width: 1100, height: 740))
-        } else if args.contains("--snapshot-dashboard") {
-            let authVM = AuthViewModel()
-            finalView = AnyView(DashboardView(authVM: authVM).preferredColorScheme(.dark).frame(width: 1100, height: 740))
+        } else if args.contains("--snapshot-file-drop") {
+            vm.selectedTab = .files
+            finalView = AnyView(
+                view.overlay(
+                    HStack(spacing: 0) {
+                        Spacer().frame(width: 210)
+                        FileDropOverlayView()
+                            .padding(24)
+                    }
+                )
+            )
         } else {
             finalView = AnyView(view)
         }
@@ -208,6 +241,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     public func applicationWillTerminate(_ notification: Notification) {
+        ExternalEditorManager.shared.purgeAllTemporaryFiles()
         DiscordRPCService.shared.stop()
     }
 }

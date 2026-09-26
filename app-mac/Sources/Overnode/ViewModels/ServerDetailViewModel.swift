@@ -46,6 +46,7 @@ public final class ServerDetailViewModel: ObservableObject {
     // Renewal
     @Published public var renewalStatus: ServerRenewalStatus?
     @Published public var isRenewing: Bool = false
+    @Published public var renewalSuccessMessage: String?
     
     // Files
     @Published public var currentDirectory: String = "/"
@@ -54,6 +55,11 @@ public final class ServerDetailViewModel: ObservableObject {
     @Published public var fileEditorContent: String = ""
     @Published public var isFileLoading: Bool = false
     @Published public var isFileSaving: Bool = false
+    @Published public var fileSuccessMessage: String?
+    @Published public var fileErrorMessage: String?
+    @Published public var isUploadingFiles: Bool = false
+    @Published public var uploadProgress: Double = 0.0
+    @Published public var uploadProgressText: String = ""
     
     // Subdomains & Subusers
     @Published public var subdomains: [ServerSubdomain] = []
@@ -306,7 +312,7 @@ public final class ServerDetailViewModel: ObservableObject {
     public func renewServer() {
         isRenewing = true
         errorMessage = nil
-        successMessage = nil
+        renewalSuccessMessage = nil
         
         Task {
             do {
@@ -321,7 +327,9 @@ public final class ServerDetailViewModel: ObservableObject {
                         self.renewalStatus = data
                     }
                 } else {
-                    successMessage = res.message ?? "Server renewed successfully"
+                    let msg = res.message ?? "Server renewed successfully"
+                    renewalSuccessMessage = msg
+                    successMessage = msg
                     if let data = res.renewalData {
                         self.renewalStatus = data
                     } else {
@@ -359,6 +367,15 @@ public final class ServerDetailViewModel: ObservableObject {
             return
         }
         
+        if ExternalEditorManager.shared.alwaysOpenInExternalEditor {
+            openFileInExternalEditor(item)
+        } else {
+            openFileInternally(item)
+        }
+    }
+    
+    public func openFileInternally(_ item: ServerFileItem) {
+        guard item.isFile else { return }
         selectedFile = item
         isFileLoading = true
         let fullPath = currentDirectory == "/" ? "/\(item.name)" : "\(currentDirectory)/\(item.name)"
@@ -373,18 +390,90 @@ public final class ServerDetailViewModel: ObservableObject {
         }
     }
     
+    public func openFileInExternalEditor(_ item: ServerFileItem, forceChooseEditor: Bool = false) {
+        guard item.isFile else { return }
+        let fullPath = currentDirectory == "/" ? "/\(item.name)" : "\(currentDirectory)/\(item.name)"
+        isFileLoading = true
+        errorMessage = nil
+        Task { [weak self] in
+            guard let self = self else { return }
+            do {
+                let content = try await self.filesService.readFile(serverId: self.server.identifier, filePath: fullPath)
+                let editorURL: URL?
+                if forceChooseEditor {
+                    editorURL = await MainActor.run {
+                        ExternalEditorManager.shared.promptUserToSelectEditor()
+                    }
+                    guard editorURL != nil else {
+                        self.isFileLoading = false
+                        return
+                    }
+                } else {
+                    editorURL = nil
+                }
+                
+                _ = try await ExternalEditorManager.shared.openAndWatch(
+                    serverId: self.server.identifier,
+                    remotePath: fullPath,
+                    fileName: item.name,
+                    initialContent: content,
+                    editorURL: editorURL
+                ) { [weak self] newContent in
+                    guard let self = self else { return }
+                    try await self.filesService.writeFile(
+                        serverId: self.server.identifier,
+                        filePath: fullPath,
+                        content: newContent
+                    )
+                    await MainActor.run {
+                        let msg = LocalizationManager.shared.string("files_external_synced", item.name)
+                        self.fileSuccessMessage = msg
+                        Task { @MainActor [weak self] in
+                            try? await Task.sleep(nanoseconds: 4_000_000_000)
+                            if self?.fileSuccessMessage == msg {
+                                self?.fileSuccessMessage = nil
+                            }
+                        }
+                    }
+                }
+                await MainActor.run {
+                    let msg = LocalizationManager.shared.string("files_external_opening", item.name)
+                    self.fileSuccessMessage = msg
+                    Task { @MainActor [weak self] in
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        if self?.fileSuccessMessage == msg {
+                            self?.fileSuccessMessage = nil
+                        }
+                    }
+                }
+            } catch {
+                self.fileErrorMessage = error.localizedDescription
+            }
+            self.isFileLoading = false
+        }
+    }
+    
     public func saveCurrentFile() {
         guard let item = selectedFile else { return }
         isFileSaving = true
+        fileErrorMessage = nil
         let fullPath = currentDirectory == "/" ? "/\(item.name)" : "\(currentDirectory)/\(item.name)"
-        Task {
+        Task { [weak self] in
+            guard let self = self else { return }
             do {
-                try await filesService.writeFile(serverId: server.identifier, filePath: fullPath, content: fileEditorContent)
-                successMessage = "File saved successfully"
+                try await self.filesService.writeFile(serverId: self.server.identifier, filePath: fullPath, content: self.fileEditorContent)
+                let msg = LocalizationManager.shared.string("files_save_success")
+                self.fileSuccessMessage = msg
+                Task { @MainActor [weak self] in
+                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                    if self?.fileSuccessMessage == msg {
+                        self?.fileSuccessMessage = nil
+                    }
+                }
             } catch {
-                errorMessage = error.localizedDescription
+                self.fileErrorMessage = error.localizedDescription
             }
-            isFileSaving = false
+            self.isFileSaving = false
         }
     }
     
@@ -403,6 +492,110 @@ public final class ServerDetailViewModel: ObservableObject {
             await loadFiles()
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+    
+    // MARK: - Drag & Drop File Upload
+    
+    public func uploadDroppedURLs(_ urls: [URL]) async {
+        guard !urls.isEmpty else { return }
+        
+        fileErrorMessage = nil
+        fileSuccessMessage = nil
+        
+        let plan: FileUploadPlan
+        do {
+            plan = try FileUploadSecurity.shared.buildPlan(
+                from: urls,
+                diskLimitMB: server.diskLimitMB,
+                diskUsedMB: server.diskUsedMB
+            )
+        } catch {
+            fileErrorMessage = (error as? FileUploadError)?.localizedMessage ?? error.localizedDescription
+            return
+        }
+        
+        let totalSteps = Double(plan.directoriesToCreate.count + plan.filesToUpload.count)
+        guard totalSteps > 0 else { return }
+        
+        isUploadingFiles = true
+        uploadProgress = 0.0
+        uploadProgressText = LocalizationManager.shared.string("files_uploading")
+        
+        var currentStep = 0.0
+        let isDemo = ProcessInfo.processInfo.environment["OVERNODE_DEMO"] != nil
+        
+        do {
+            // Create subdirectories
+            for dir in plan.directoriesToCreate {
+                let parent: String
+                let dirName: String
+                if let lastSlash = dir.lastIndex(of: "/") {
+                    let relParent = String(dir[..<lastSlash])
+                    parent = currentDirectory == "/" ? "/\(relParent)" : "\(currentDirectory)/\(relParent)"
+                    dirName = String(dir[dir.index(after: lastSlash)...])
+                } else {
+                    parent = currentDirectory
+                    dirName = dir
+                }
+                
+                uploadProgressText = "\(LocalizationManager.shared.string("files_uploading")) \(dirName)"
+                if !isDemo {
+                    try await filesService.createFolder(serverId: server.identifier, root: parent, name: dirName)
+                }
+                currentStep += 1.0
+                uploadProgress = currentStep / totalSteps
+            }
+            
+            // Upload files
+            for file in plan.filesToUpload {
+                let targetDir: String
+                if let lastSlash = file.relativePath.lastIndex(of: "/") {
+                    let relParent = String(file.relativePath[..<lastSlash])
+                    targetDir = currentDirectory == "/" ? "/\(relParent)" : "\(currentDirectory)/\(relParent)"
+                } else {
+                    targetDir = currentDirectory
+                }
+                
+                uploadProgressText = "\(LocalizationManager.shared.string("files_uploading")) \(file.fileName)"
+                
+                let fileData = try Data(contentsOf: file.localURL)
+                if !isDemo {
+                    let uploadURL = try await filesService.getUploadURL(serverId: server.identifier, directory: targetDir)
+                    try await filesService.uploadFile(
+                        uploadURL: uploadURL,
+                        directory: targetDir,
+                        fileName: file.fileName,
+                        fileData: fileData
+                    )
+                }
+                
+                currentStep += 1.0
+                uploadProgress = currentStep / totalSteps
+            }
+            
+            isUploadingFiles = false
+            uploadProgress = 1.0
+            
+            if plan.filesToUpload.count == 1 && plan.directoriesToCreate.isEmpty {
+                let singleName = plan.filesToUpload[0].fileName
+                fileSuccessMessage = LocalizationManager.shared.string("files_upload_success_single", singleName)
+            } else {
+                let count = plan.filesToUpload.count + plan.directoriesToCreate.count
+                fileSuccessMessage = LocalizationManager.shared.string("files_upload_success_multiple", count)
+            }
+            
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                if self?.fileSuccessMessage != nil {
+                    self?.fileSuccessMessage = nil
+                }
+            }
+            
+            await loadFiles()
+        } catch {
+            isUploadingFiles = false
+            fileErrorMessage = (error as? FileUploadError)?.localizedMessage ?? error.localizedDescription
         }
     }
     

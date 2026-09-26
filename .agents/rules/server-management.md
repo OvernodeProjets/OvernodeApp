@@ -22,3 +22,14 @@ Règles pour la gestion des serveurs dans l'application macOS Overnode.
 - **Actualisation & Rate Limiting**:
   - Lors de la navigation vers la section Serveurs, la liste des serveurs doit s'actualiser automatiquement.
   - Un rate limiter (cooldown d'au moins 5 secondes) doit obligatoirement être appliqué sur `refreshServersOnNavigatingToServersSection` pour éviter de spammer les endpoints API.
+- **Édition externe & Synchronisation (External Editor)**:
+  - L'ouverture d'un fichier serveur dans un éditeur externe s'effectue via `ExternalEditorManager`.
+  - Lors d'une modification enregistrée en local, la synchronisation vers le serveur (`writeFile`) doit être déclenchée automatiquement en arrière-plan sans bloquer l'UI.
+  - L'option "Toujours ouvrir avec un éditeur externe" doit être configurable dans les Paramètres et respectée au double-clic.
+- **Téléversement de Fichiers & Dossiers (Drag & Drop)**:
+  - L'upload s'effectue exclusivement par glisser-déposer (`.onDrop(of: [UTType.fileURL])`) dans l'onglet Fichiers, sans bouton ni logo additionnel sur l'interface.
+  - La sécurité et la conformité des fichiers sont vérifiées par `FileUploadSecurity` :
+    - Exclusion automatique des résidus système macOS (`.DS_Store`, `__MACOSX`, `._*`, `.localized`, `.Trashes`).
+    - Protection stricte contre les traversées de chemin (`..`, `\`, caractères de contrôle, doubles barres obliques).
+    - Respect des limites d'upload : limite unitaire de 100 Mo par fichier, maximum 500 éléments par lot, et contrôle systématique de l'espace disque disponible restant par rapport au quota serveur (`server.diskLimitMB - server.diskUsedMB`).
+  - Pour les dossiers, la hiérarchie des sous-dossiers est créée sur le serveur avant le transfert multipart des fichiers vers l'endpoint sécurisé Wings (`ServerFilesService.shared.getUploadURL`).
