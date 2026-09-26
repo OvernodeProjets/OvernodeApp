@@ -181,6 +181,9 @@ public struct ServerFilesTabView: View {
                                     },
                                     onDelete: {
                                         Task { await vm.deleteFile(item) }
+                                    },
+                                    onDrag: {
+                                        vm.itemProviderForDrag(item: item)
                                     }
                                 )
                             }
@@ -262,6 +265,7 @@ private struct FileRowView: View {
     let onOpenInternal: () -> Void
     let onOpenExternal: (Bool) -> Void
     let onDelete: () -> Void
+    let onDrag: () -> NSItemProvider
     
     var iconName: String {
         if !item.isFile { return "folder.fill" }
@@ -322,6 +326,9 @@ private struct FileRowView: View {
             if !item.isFile {
                 onOpen()
             }
+        }
+        .onDrag {
+            onDrag()
         }
         .contextMenu {
             if item.isFile {

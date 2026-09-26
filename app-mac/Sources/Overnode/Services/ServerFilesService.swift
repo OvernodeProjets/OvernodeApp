@@ -98,17 +98,12 @@ public final class ServerFilesService: @unchecked Sendable {
     
     public func getUploadURL(serverId: String, directory: String = "/") async throws -> String {
         let encodedDir = directory.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "/"
-        let endpoint = "/api/server/\(serverId)/files/upload?directory=\(encodedDir)"
-        
-        struct UploadResponse: Codable {
-            struct Attributes: Codable {
-                let url: String
-            }
-            let attributes: Attributes?
+        struct Resp: Codable {
+            struct Attr: Codable { let url: String }
+            let attributes: Attr?
             let url: String?
         }
-        
-        let response: UploadResponse = try await client.request(endpoint: endpoint)
+        let response: Resp = try await client.request(endpoint: "/api/server/\(serverId)/files/upload?directory=\(encodedDir)")
         guard let url = response.attributes?.url ?? response.url, !url.isEmpty else {
             throw NSError(domain: "ServerFilesService", code: 500, userInfo: [NSLocalizedDescriptionKey: "Invalid upload URL"])
         }
@@ -158,6 +153,45 @@ public final class ServerFilesService: @unchecked Sendable {
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
             let code = (response as? HTTPURLResponse)?.statusCode ?? -1
             throw NSError(domain: "ServerFilesService", code: code, userInfo: [NSLocalizedDescriptionKey: "Upload failed with status \(code)"])
+        }
+    }
+    
+    // MARK: - Download
+    
+    public func getDownloadURL(serverId: String, filePath: String) async throws -> String {
+        let encodedPath = filePath.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? filePath
+        struct Resp: Codable {
+            struct Attr: Codable { let url: String }
+            let attributes: Attr?
+            let url: String?
+        }
+        let response: Resp = try await client.request(endpoint: "/api/server/\(serverId)/files/download?file=\(encodedPath)")
+        guard let url = response.attributes?.url ?? response.url, !url.isEmpty else {
+            throw NSError(domain: "ServerFilesService", code: 500, userInfo: [NSLocalizedDescriptionKey: "Invalid download URL"])
+        }
+        return url
+    }
+    
+    public func downloadFile(serverId: String, filePath: String, destinationURL: URL) async throws {
+        if ProcessInfo.processInfo.environment["OVERNODE_DEMO"] != nil {
+            let sample = "Content of \(filePath) downloaded from Overnode server.\n"
+            try sample.data(using: .utf8)?.write(to: destinationURL)
+            return
+        }
+        
+        do {
+            let downloadURLString = try await getDownloadURL(serverId: serverId, filePath: filePath)
+            guard let downloadURL = URL(string: downloadURLString) else {
+                throw URLError(.badURL)
+            }
+            let (tempDownloadedURL, _) = try await URLSession.shared.download(from: downloadURL)
+            if FileManager.default.fileExists(atPath: destinationURL.path) {
+                try FileManager.default.removeItem(at: destinationURL)
+            }
+            try FileManager.default.moveItem(at: tempDownloadedURL, to: destinationURL)
+        } catch {
+            let content = try await readFile(serverId: serverId, filePath: filePath)
+            try content.data(using: .utf8)?.write(to: destinationURL)
         }
     }
 }

@@ -71,6 +71,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         // Clean up temporary external editor files on launch and start periodic background cleanup
         ExternalEditorManager.shared.cleanupStaleTemporaryFiles()
         ExternalEditorManager.shared.startPeriodicCleanup()
+        FileDownloadManager.shared.cleanupStaleTemporaryFiles()
 
         if CommandLine.arguments.contains("--snapshot") {
             performSnapshot()
@@ -242,6 +243,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
     
     public func applicationWillTerminate(_ notification: Notification) {
         ExternalEditorManager.shared.purgeAllTemporaryFiles()
+        FileDownloadManager.shared.purgeAllTemporaryFiles()
         DiscordRPCService.shared.stop()
     }
 }

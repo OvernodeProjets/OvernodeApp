@@ -495,6 +495,16 @@ public final class ServerDetailViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Drag & Drop File Download to Finder
+    
+    public func itemProviderForDrag(item: ServerFileItem) -> NSItemProvider {
+        FileDownloadManager.shared.createDragItemProvider(
+            serverId: server.identifier,
+            currentDirectory: currentDirectory,
+            item: item
+        )
+    }
+    
     // MARK: - Drag & Drop File Upload
     
     public func uploadDroppedURLs(_ urls: [URL]) async {
