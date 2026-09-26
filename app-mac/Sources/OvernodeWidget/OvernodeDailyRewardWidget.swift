@@ -31,27 +31,7 @@ public struct DailyRewardTimelineProvider: TimelineProvider {
                 coins: 1450,
                 totalClaimed: 24,
                 streakProtection: 1,
-                lastUpdated: Date(),
-                servers: [
-                    ServerWidgetRenewalInfo(
-                        identifier: "srv-1",
-                        name: "Production MC",
-                        nextRenewalAt: "2026-10-01T00:00:00Z",
-                        remainingSeconds: 432000,
-                        formattedRemainingTime: "5d 00h",
-                        canRenew: true,
-                        isExpired: false
-                    ),
-                    ServerWidgetRenewalInfo(
-                        identifier: "srv-2",
-                        name: "Bungee Proxy",
-                        nextRenewalAt: "2026-09-28T00:00:00Z",
-                        remainingSeconds: 172800,
-                        formattedRemainingTime: "2d 00h",
-                        canRenew: false,
-                        isExpired: false
-                    )
-                ]
+                lastUpdated: Date()
             )
         )
     }
@@ -78,22 +58,18 @@ public struct DailyRewardTimelineProvider: TimelineProvider {
     
     public func getTimeline(in context: Context, completion: @escaping (Timeline<DailyRewardWidgetEntry>) -> Void) {
         let currentData = DailyRewardStorage.shared.loadWidgetData()
-        var entries: [DailyRewardWidgetEntry] = []
-        
         let now = Date()
-        entries.append(DailyRewardWidgetEntry(date: now, data: currentData))
+        let entries = [DailyRewardWidgetEntry(date: now, data: currentData)]
         
-        // Refresh every 15 minutes or at midnight when a new claim day begins
         let next15Min = Calendar.current.date(byAdding: .minute, value: 15, to: now) ?? now.addingTimeInterval(900)
         let midnight = currentData.nextClaimDate
-        
         let refreshDate = currentData.effectiveCanClaim ? next15Min : min(next15Min, midnight)
-        let timeline = Timeline(entries: entries, policy: .after(refreshDate))
-        completion(timeline)
+        
+        completion(Timeline(entries: entries, policy: .after(refreshDate)))
     }
 }
 
-// MARK: - Widget Entry View
+// MARK: - Widget Entry View (High-Contrast Apple Liquid Glass)
 public struct DailyRewardWidgetEntryView: View {
     @Environment(\.widgetFamily) var envFamily
     public let entry: DailyRewardWidgetEntry
@@ -108,391 +84,377 @@ public struct DailyRewardWidgetEntryView: View {
         self.explicitFamily = family
     }
     
-    private var backgroundGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.082, green: 0.098, blue: 0.137), // #151923
-                Color(red: 0.043, green: 0.051, blue: 0.075)  // #0B0D13
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-    
-    private var goldGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.98, green: 0.86, blue: 0.52),
-                Color(red: 0.85, green: 0.67, blue: 0.22)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-    
     public var body: some View {
-        ZStack {
-            backgroundGradient
-            
-            RadialGradient(
-                colors: [
-                    Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.12),
-                    Color.clear
-                ],
-                center: .topLeading,
-                startRadius: 0,
-                endRadius: 180
-            )
-            
+        AppleWidgetCanvas {
             switch family {
             case .systemSmall:
-                smallWidgetView
+                smallView
             case .systemMedium:
-                mediumWidgetView
+                mediumView
             default:
-                smallWidgetView
+                smallView
             }
         }
-        .containerBackground(for: .widget) {
-            backgroundGradient
-        }
+        .containerBackground(.ultraThinMaterial, for: .widget)
     }
     
     // MARK: - System Small View
-    private var smallWidgetView: some View {
+    private var smallView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header: Brand & Streak
-            HStack(alignment: .center, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "gift.fill")
-                        .font(.system(size: 10.5, weight: .bold))
-                        .foregroundStyle(goldGradient)
-                    Text("OVERNODE")
-                        .font(.system(size: 8.5, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.90))
-                        .tracking(0.5)
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                }
+            // Header
+            HStack(alignment: .center) {
+                AppleWidgetHeader(
+                    title: "Overnode",
+                    subtitle: nil,
+                    systemImage: "gift.fill",
+                    tint: .yellow
+                )
                 
-                Spacer(minLength: 4)
+                Spacer()
                 
-                // Streak badge
-                HStack(spacing: 2.5) {
+                // Apple Streak Capsule
+                HStack(spacing: 3) {
                     Image(systemName: "flame.fill")
                         .font(.system(size: 9))
-                        .foregroundColor(entry.data.currentStreak > 0 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color.white.opacity(0.4))
+                        .foregroundStyle(entry.data.currentStreak > 0 ? .orange : .secondary)
                     Text("\(entry.data.currentStreak)d")
-                        .font(.system(size: 9.5, weight: .bold, design: .monospaced))
-                        .foregroundColor(entry.data.currentStreak > 0 ? .white : Color.white.opacity(0.6))
-                        .lineLimit(1)
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
                 }
-                .padding(.horizontal, 5)
-                .padding(.vertical, 2)
-                .background(
-                    entry.data.currentStreak > 0
-                        ? Color(red: 1.0, green: 0.48, blue: 0.18).opacity(0.18)
-                        : Color.white.opacity(0.06)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2.5)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule().strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
                 )
-                .cornerRadius(5)
-                .fixedSize(horizontal: true, vertical: false)
             }
             
-            Spacer(minLength: 6)
+            Spacer()
             
-            // Center Content
+            // Content
             if !entry.data.isAuthenticated {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("NOT SIGNED IN")
-                        .font(.system(size: 8, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
-                        .tracking(0.8)
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.crop.circle")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                        Text("Overnode Cloud")
+                            .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                            .foregroundColor(.primary)
+                    }
                     
-                    Text("Log in to Overnode")
-                        .font(.system(size: 15, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.85)
+                    Text("Sign In")
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
                     
-                    Text("Start your streak")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                    Text("Connect to claim coins")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             } else if entry.data.effectiveCanClaim {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 4) {
-                        Circle()
-                            .fill(Color(red: 0.91, green: 0.74, blue: 0.28))
-                            .frame(width: 5, height: 5)
-                        Text("REWARD READY")
-                            .font(.system(size: 8, weight: .heavy, design: .rounded))
-                            .foregroundColor(Color(red: 0.91, green: 0.74, blue: 0.28))
-                            .tracking(0.8)
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.orange)
+                        Text("Available Now")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundColor(.primary)
                     }
                     
-                    Text("Ready!")
-                        .font(.system(size: 24, weight: .black, design: .rounded))
-                        .foregroundStyle(goldGradient)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("+\(entry.data.nextRewardAmount)")
+                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                        Text("COINS")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
                     
-                    Text("+\(entry.data.nextRewardAmount) coins available")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.85))
+                    Text("Daily streak reward ready")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.85)
                 }
             } else {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("NEXT REWARD IN")
-                        .font(.system(size: 8, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
-                        .tracking(0.8)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Next Reward")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
                     
                     Text(entry.data.formattedRemainingTime)
-                        .font(.system(size: 23, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
                         .lineLimit(1)
-                        .minimumScaleFactor(0.85)
                     
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 9))
-                            .foregroundColor(Color(red: 0.22, green: 0.82, blue: 0.50))
-                        Text("Secured today")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                            .foregroundStyle(.green)
+                        Text("Secured for today")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
             
-            Spacer(minLength: 6)
+            Spacer()
             
-            // Footer: Action / Status
+            // Footer Action
             if !entry.data.isAuthenticated {
-                HStack(spacing: 4) {
-                    Image(systemName: "person.badge.key.fill")
-                        .font(.system(size: 9))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                    Text("Open App to Login")
-                        .font(.system(size: 9.5, weight: .bold))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                        .lineLimit(1)
+                HStack {
+                    Spacer()
+                    Text("Open App")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
+                    Spacer()
                 }
+                .padding(.vertical, 5)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+                )
             } else if entry.data.effectiveCanClaim {
-                HStack(spacing: 4) {
+                HStack {
+                    Spacer()
+                    Text("Claim Reward")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white)
+                    Spacer()
+                }
+                .padding(.vertical, 6)
+                .background(
+                    LinearGradient(
+                        colors: [.orange, .yellow],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .shadow(color: .orange.opacity(0.3), radius: 4, y: 2)
+            } else {
+                HStack {
                     Image(systemName: "circle.circle.fill")
                         .font(.system(size: 9))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                    Text("Claim +\(entry.data.nextRewardAmount) coins")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                        .lineLimit(1)
+                        .foregroundStyle(.yellow)
+                    Text("\(entry.data.coins)")
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Text("+\(entry.data.nextRewardAmount) next")
+                        .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
                 }
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3.5)
-                .background(Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.15))
-                .cornerRadius(6)
-            } else {
-                HStack(spacing: 4) {
-                    Image(systemName: "circle.circle.fill")
-                        .font(.system(size: 8))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                    Text("+\(entry.data.nextRewardAmount) coins next")
-                        .font(.system(size: 9.5, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.70))
-                        .lineLimit(1)
-                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4.5)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
+                )
             }
         }
-        .padding(12)
     }
     
     // MARK: - System Medium View
-    private var mediumWidgetView: some View {
-        HStack(spacing: 12) {
-            // Left Column: Hero Status & Message
+    private var mediumView: some View {
+        HStack(spacing: 14) {
+            // Left Column
             VStack(alignment: .leading, spacing: 0) {
-                // Header
-                HStack(spacing: 5) {
-                    Image(systemName: "gift.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(goldGradient)
-                    Text("OVERNODE")
-                        .font(.system(size: 9, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.85))
-                        .tracking(0.8)
-                    Text("•")
-                        .font(.system(size: 8))
-                        .foregroundColor(Color.white.opacity(0.35))
-                    Text("REWARD")
-                        .font(.system(size: 8.5, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                        .tracking(0.5)
-                }
-                .lineLimit(1)
+                AppleWidgetHeader(
+                    title: "Overnode",
+                    subtitle: "Daily Reward",
+                    systemImage: "gift.fill",
+                    tint: .yellow
+                )
                 
-                Spacer(minLength: 6)
+                Spacer()
                 
-                // Status Headline & Description
                 if !entry.data.isAuthenticated {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Sign In Required")
-                            .font(.system(size: 18, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
+                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
                         
-                        Text("Log in to Overnode to track streaks and claim coins.")
-                            .font(.system(size: 10.5, weight: .medium))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
+                        Text("Log in to Overnode to earn coins and track streaks.")
+                            .font(.system(size: 10.5, weight: .regular))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
                     }
                 } else if entry.data.effectiveCanClaim {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Ready to Claim!")
-                            .font(.system(size: 19, weight: .black, design: .rounded))
-                            .foregroundStyle(goldGradient)
-                            .lineLimit(1)
+                        HStack(spacing: 4) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 9.5, weight: .semibold))
+                                .foregroundStyle(.orange)
+                            Text("Reward Ready")
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundColor(.primary)
+                        }
                         
-                        Text("Claim your daily coins now.")
-                            .font(.system(size: 10.5, weight: .medium))
-                            .foregroundColor(Color(red: 0.60, green: 0.65, blue: 0.74))
+                        Text("Ready to Claim")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                        
+                        Text("Claim +\(entry.data.nextRewardAmount) coins today.")
+                            .font(.system(size: 10.5, weight: .regular))
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 } else {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("NEXT REWARD IN")
-                            .font(.system(size: 8.5, weight: .heavy, design: .rounded))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
-                            .tracking(0.8)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Next Reward In")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.secondary)
                         
                         Text(entry.data.formattedRemainingTime)
-                            .font(.system(size: 22, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                            .monospacedDigit()
                             .lineLimit(1)
                         
-                        Text("Claimed today. Return tomorrow!")
-                            .font(.system(size: 10.5, weight: .medium))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                        Text("Check back tomorrow for +\(entry.data.nextRewardAmount) coins.")
+                            .font(.system(size: 10.5, weight: .regular))
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
-                            .minimumScaleFactor(0.85)
                     }
                 }
                 
-                Spacer(minLength: 6)
+                Spacer()
                 
-                // Bottom Action Pill
-                HStack(spacing: 5) {
-                    if !entry.data.isAuthenticated {
-                        Image(systemName: "arrow.up.forward.app.fill")
+                if !entry.data.isAuthenticated {
+                    HStack(spacing: 4) {
+                        Text("Open Overnode")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        Image(systemName: "arrow.up.forward.app")
                             .font(.system(size: 9))
-                        Text("Open Overnode App")
-                            .font(.system(size: 9.5, weight: .semibold))
-                    } else if entry.data.effectiveCanClaim {
-                        Image(systemName: "gift.circle.fill")
-                            .font(.system(size: 9.5))
-                        Text("Open App to Claim")
-                            .font(.system(size: 9.5, weight: .bold))
-                    } else {
+                    }
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5))
+                } else if entry.data.effectiveCanClaim {
+                    HStack(spacing: 4) {
+                        Text("Claim in App")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        Image(systemName: "arrow.up.forward.app")
+                            .font(.system(size: 9, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        LinearGradient(
+                            colors: [.orange, .yellow],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(Capsule())
+                    .shadow(color: .orange.opacity(0.3), radius: 4, y: 2)
+                } else {
+                    HStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 9.5))
-                            .foregroundColor(Color(red: 0.22, green: 0.82, blue: 0.50))
+                            .font(.system(size: 9))
+                            .foregroundStyle(.green)
                         Text("Streak secured today")
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .foregroundColor(entry.data.effectiveCanClaim ? Color(red: 0.95, green: 0.82, blue: 0.35) : Color.white.opacity(0.8))
-                .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            // Divider with soft glow
+            // Subtle Divider
             Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.02),
-                            Color.white.opacity(0.12),
-                            Color.white.opacity(0.02)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: 1)
-                .padding(.vertical, 4)
+                .fill(Color.primary.opacity(0.10))
+                .frame(width: 0.75)
+                .padding(.vertical, 2)
             
-            // Right Column: Streak Card & Reward Card
+            // Right Column: Metric Tiles
             VStack(spacing: 8) {
-                // Streak Card
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("CURRENT STREAK")
-                        .font(.system(size: 7.5, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
-                        .tracking(0.5)
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 11))
-                            .foregroundColor(entry.data.currentStreak > 0 ? Color(red: 1.0, green: 0.48, blue: 0.18) : Color.white.opacity(0.4))
-                        Text("\(entry.data.currentStreak) days")
-                            .font(.system(size: 13, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
+                // Streak Tile
+                AppleFrostedTile(cornerRadius: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("CURRENT STREAK")
+                            .font(.system(size: 8, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.secondary)
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 12))
+                                .foregroundStyle(entry.data.currentStreak > 0 ? .orange : .secondary)
+                            Text("\(entry.data.currentStreak) Days")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(.primary)
+                                .monospacedDigit()
+                        }
+                        
+                        HStack(spacing: 4) {
+                            Text(entry.data.longestStreak > 0 ? "Best: \(entry.data.longestStreak)d" : "Daily check-in")
+                                .font(.system(size: 9, weight: .regular))
+                                .foregroundStyle(.tertiary)
+                            
+                            if entry.data.streakProtection > 0 {
+                                Spacer()
+                                Image(systemName: "shield.fill")
+                                    .font(.system(size: 7.5))
+                                    .foregroundStyle(.green)
+                                Text("\(entry.data.streakProtection)")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundStyle(.green)
+                            }
+                        }
                     }
-                    
-                    Text(entry.data.longestStreak > 0 ? "Best: \(entry.data.longestStreak)d" : "Daily check-in")
-                        .font(.system(size: 8, weight: .medium))
-                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white.opacity(0.04))
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
-                )
                 
-                // Reward Card
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.data.effectiveCanClaim ? "REWARD WAITING" : "NEXT REWARD")
-                        .font(.system(size: 7.5, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                        .tracking(0.5)
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "circle.circle.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                        Text("+\(entry.data.nextRewardAmount) coins")
-                            .font(.system(size: 12, weight: .black, design: .rounded))
-                            .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                            .lineLimit(1)
+                // Balance Tile
+                AppleFrostedTile(
+                    cornerRadius: 10,
+                    isEmphasized: entry.data.effectiveCanClaim,
+                    tintColor: .yellow
+                ) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(entry.data.effectiveCanClaim ? "BONUS READY" : "WALLET BALANCE")
+                            .font(.system(size: 8, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.secondary)
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "circle.circle.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.yellow)
+                            Text(entry.data.effectiveCanClaim ? "+\(entry.data.nextRewardAmount)" : "\(entry.data.coins)")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(.primary)
+                        }
+                        
+                        Text(entry.data.effectiveCanClaim ? "\(entry.data.coins) in wallet" : "+\(entry.data.nextRewardAmount) next")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.secondary)
                     }
-                    
-                    Text(entry.data.coins > 0 ? "\(entry.data.coins) in wallet" : "Daily bonus")
-                        .font(.system(size: 8, weight: .medium))
-                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white.opacity(0.08))
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.20), lineWidth: 0.8)
-                )
             }
-            .frame(width: 114)
+            .frame(width: 125)
         }
-        .padding(13)
     }
 }
 
-// MARK: - Main Widget Declaration
+// MARK: - Widget Declaration
 public struct OvernodeDailyRewardWidget: Widget {
     public let kind: String = "OvernodeDailyRewardWidget"
     

@@ -21,18 +21,6 @@ public struct ServerRenewalTimelineProvider: TimelineProvider {
     private static var sampleServers: [ServerWidgetRenewalInfo] {
         [
             ServerWidgetRenewalInfo(
-                identifier: "srv-mc-prod",
-                name: "Production MC",
-                nextRenewalAt: "2026-09-27T12:00:00Z",
-                remainingSeconds: 144000,
-                formattedRemainingTime: "1d 16h",
-                canRenew: false,
-                isExpired: false,
-                availableIn: "23h 58m",
-                availableInSeconds: 86280,
-                formattedAvailableIn: "23h 58m"
-            ),
-            ServerWidgetRenewalInfo(
                 identifier: "srv-bungee",
                 name: "Bungee Proxy",
                 nextRenewalAt: "2026-09-26T08:00:00Z",
@@ -43,6 +31,18 @@ public struct ServerRenewalTimelineProvider: TimelineProvider {
                 availableIn: nil,
                 availableInSeconds: 0,
                 formattedAvailableIn: "Ready now"
+            ),
+            ServerWidgetRenewalInfo(
+                identifier: "srv-mc-prod",
+                name: "Production MC",
+                nextRenewalAt: "2026-09-27T12:00:00Z",
+                remainingSeconds: 144000,
+                formattedRemainingTime: "1d 16h",
+                canRenew: false,
+                isExpired: false,
+                availableIn: "23h 58m",
+                availableInSeconds: 86280,
+                formattedAvailableIn: "23h 58m"
             ),
             ServerWidgetRenewalInfo(
                 identifier: "srv-bot",
@@ -94,15 +94,12 @@ public struct ServerRenewalTimelineProvider: TimelineProvider {
         let currentData = DailyRewardStorage.shared.loadWidgetData()
         let now = Date()
         let entry = ServerRenewalWidgetEntry(date: now, data: currentData)
-        
-        // Refresh every 15 minutes
         let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: now) ?? now.addingTimeInterval(900)
-        let timeline = Timeline(entries: [entry], policy: .after(nextRefresh))
-        completion(timeline)
+        completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
     }
 }
 
-// MARK: - Server Renewal Widget Entry View
+// MARK: - Server Renewal Widget Entry View (High-Contrast Apple Liquid Glass)
 public struct ServerRenewalWidgetEntryView: View {
     @Environment(\.widgetFamily) var envFamily
     public let entry: ServerRenewalWidgetEntry
@@ -117,486 +114,386 @@ public struct ServerRenewalWidgetEntryView: View {
         self.explicitFamily = family
     }
     
-    private var backgroundGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.082, green: 0.098, blue: 0.137), // #151923
-                Color(red: 0.043, green: 0.051, blue: 0.075)  // #0B0D13
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-    
-    private var goldGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.98, green: 0.86, blue: 0.52),
-                Color(red: 0.85, green: 0.67, blue: 0.22)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+    // High-contrast accessible forest emerald (WCAG AA compliant)
+    private var accessibleGreen: Color {
+        Color(red: 0.08, green: 0.55, blue: 0.25)
     }
     
     public var body: some View {
-        ZStack {
-            backgroundGradient
-            
-            RadialGradient(
-                colors: [
-                    Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.10),
-                    Color.clear
-                ],
-                center: .topLeading,
-                startRadius: 0,
-                endRadius: 180
-            )
-            
+        AppleWidgetCanvas {
             switch family {
             case .systemSmall:
-                smallWidgetView
+                smallView
             case .systemMedium:
-                mediumWidgetView
+                mediumView
             default:
-                smallWidgetView
+                smallView
             }
         }
-        .containerBackground(for: .widget) {
-            backgroundGradient
-        }
+        .containerBackground(.ultraThinMaterial, for: .widget)
     }
     
-    // MARK: - Small Widget View
-    private var smallWidgetView: some View {
+    // MARK: - Small View
+    private var smallView: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
-            HStack(alignment: .center, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "server.rack")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(goldGradient)
-                    Text("OVERNODE")
-                        .font(.system(size: 8.5, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.90))
-                        .tracking(0.5)
-                        .lineLimit(1)
-                }
+            HStack(alignment: .center) {
+                AppleWidgetHeader(
+                    title: "Overnode",
+                    subtitle: nil,
+                    systemImage: "server.rack",
+                    tint: .blue
+                )
                 
                 Spacer()
                 
                 if !entry.data.servers.isEmpty {
                     Text("\(entry.data.servers.count) SRV")
-                        .font(.system(size: 8, weight: .bold, design: .monospaced))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                        .padding(.horizontal, 4.5)
-                        .padding(.vertical, 1.5)
-                        .background(Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.12))
-                        .cornerRadius(4)
+                        .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2.5)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+                        )
                 }
             }
             
-            Spacer(minLength: 5)
+            Spacer()
             
-            // Content
+            // Hero
             if !entry.data.isAuthenticated {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("SIGN IN")
-                        .font(.system(size: 8, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
-                        .tracking(0.8)
-                    Text("Login required")
-                        .font(.system(size: 14, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                    Text("Open Overnode to connect")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                    HStack(spacing: 4) {
+                        Image(systemName: "server.rack")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                        Text("Overnode Cloud")
+                            .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                            .foregroundColor(.primary)
+                    }
+                    
+                    Text("Sign In")
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                    
+                    Text("Connect to monitor servers")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             } else if let nextServer = entry.data.nextRenewalServer {
-                VStack(alignment: .leading, spacing: 2) {
-                    // Tag indicating readiness or countdown until renewal opens
-                    Text(renewalTagTitle(for: nextServer))
-                        .font(.system(size: 8, weight: .heavy, design: .rounded))
-                        .foregroundColor(renewalTagColor(for: nextServer))
-                        .tracking(0.8)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 4.5) {
+                        Circle()
+                            .fill(nextServer.canRenew ? Color.green : Color.orange)
+                            .frame(width: 5.5, height: 5.5)
+                        Text(nextServer.canRenew ? "Ready to Renew" : "Renewal Opens In")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundColor(.primary)
+                    }
                     
                     Text(nextServer.name)
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundColor(.secondary)
                         .lineLimit(1)
                     
-                    // The Big Countdown / Status Text:
-                    // If not yet available: shows availableIn (e.g. "23h 58m")
-                    // If available now: shows "Ready now"
-                    // If expired: shows "Expired"
-                    Text(mainHeroText(for: nextServer))
-                        .font(.system(size: 22, weight: .black, design: .rounded))
-                        .foregroundColor(urgencyColor(for: nextServer))
+                    Text(nextServer.canRenew ? "Ready now" : nextServer.formattedAvailableIn)
+                        .font(.system(size: 23, weight: .bold, design: .rounded))
+                        .foregroundColor(nextServer.canRenew ? accessibleGreen : .primary)
+                        .monospacedDigit()
                         .lineLimit(1)
-                        .minimumScaleFactor(0.80)
+                        .minimumScaleFactor(0.85)
                     
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(urgencyColor(for: nextServer))
-                            .frame(width: 5, height: 5)
-                        Text(statusSubLabel(for: nextServer))
-                            .font(.system(size: 8.5, weight: .semibold))
-                            .foregroundColor(Color(red: 0.65, green: 0.70, blue: 0.78))
-                            .lineLimit(1)
-                    }
+                    Text(nextServer.canRenew ? "Expires in \(nextServer.formattedRemainingTime)" : "Expires in \(nextServer.formattedRemainingTime)")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("SERVERS")
-                        .font(.system(size: 8, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
-                        .tracking(0.8)
+                    HStack(spacing: 4) {
+                        Image(systemName: "server.rack")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                        Text("Cloud Servers")
+                            .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                            .foregroundColor(.primary)
+                    }
+                    
                     Text("No Servers")
-                        .font(.system(size: 15, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                    
                     Text("Deploy your first server")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(.secondary)
                 }
             }
             
-            Spacer(minLength: 5)
+            Spacer()
             
-            // Footer
-            HStack(spacing: 4) {
-                if !entry.data.isAuthenticated {
-                    Image(systemName: "person.badge.key.fill")
-                        .font(.system(size: 8.5))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                    Text("Sign in to sync")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                } else if let nextServer = entry.data.nextRenewalServer, nextServer.canRenew {
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 8.5))
-                        .foregroundColor(Color(red: 0.25, green: 0.82, blue: 0.50))
-                    Text("Renew in Overnode")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(Color(red: 0.25, green: 0.82, blue: 0.50))
-                } else if entry.data.servers.count > 1 {
-                    Image(systemName: "server.rack")
-                        .font(.system(size: 8))
-                        .foregroundColor(Color.white.opacity(0.60))
-                    Text("+\(entry.data.servers.count - 1) other server\(entry.data.servers.count - 1 > 1 ? "s" : "")")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.65))
-                } else if let nextServer = entry.data.nextRenewalServer {
-                    Image(systemName: "clock")
-                        .font(.system(size: 8))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                    Text("Expires in \(nextServer.formattedRemainingTime)")
-                        .font(.system(size: 8.5, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.70))
-                } else {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 8.5))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                    Text("Overnode Cloud")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.70))
+            // Footer Action
+            if !entry.data.isAuthenticated {
+                HStack {
+                    Spacer()
+                    Text("Open App")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
+                    Spacer()
                 }
+                .padding(.vertical, 5)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+                )
+            } else if let nextServer = entry.data.nextRenewalServer, nextServer.canRenew {
+                HStack {
+                    Spacer()
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 9.5, weight: .bold))
+                    Text("Renew Now")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    Spacer()
+                }
+                .foregroundColor(.white)
+                .padding(.vertical, 6)
+                .background(.green)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .shadow(color: .green.opacity(0.35), radius: 4, y: 2)
+            } else if let nextServer = entry.data.nextRenewalServer {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 8.5))
+                        .foregroundStyle(.orange)
+                    Text("Opens in \(nextServer.formattedAvailableIn)")
+                        .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
+                    Spacer()
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+                )
+            } else {
+                HStack {
+                    Spacer()
+                    Text("Deploy Server")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
+                    Spacer()
+                }
+                .padding(.vertical, 5)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
-            .lineLimit(1)
         }
-        .padding(12)
     }
     
-    // MARK: - Medium Widget View
-    private var mediumWidgetView: some View {
-        HStack(spacing: 12) {
-            // Left Column: Next Renewable Hero
+    // MARK: - Medium View
+    private var mediumView: some View {
+        HStack(spacing: 14) {
+            // Left Column
             VStack(alignment: .leading, spacing: 0) {
-                // Header
-                HStack(spacing: 5) {
-                    Image(systemName: "server.rack")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(goldGradient)
-                    Text("OVERNODE")
-                        .font(.system(size: 9, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.85))
-                        .tracking(0.8)
-                    Text("•")
-                        .font(.system(size: 8))
-                        .foregroundColor(Color.white.opacity(0.35))
-                    Text("RENEWAL")
-                        .font(.system(size: 8.5, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                        .tracking(0.5)
-                }
-                .lineLimit(1)
+                AppleWidgetHeader(
+                    title: "Overnode",
+                    subtitle: "Renewals",
+                    systemImage: "server.rack",
+                    tint: .blue
+                )
                 
-                Spacer(minLength: 6)
+                Spacer()
                 
                 if !entry.data.isAuthenticated {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Sign In Required")
-                            .font(.system(size: 17, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("Log in to Overnode to monitor server renewal.")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                        
+                        Text("Log in to Overnode to track cloud server renewal windows.")
+                            .font(.system(size: 10.5, weight: .regular))
+                            .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
                 } else if let nextServer = entry.data.nextRenewalServer {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(renewalTagTitle(for: nextServer))
-                            .font(.system(size: 8, weight: .heavy, design: .rounded))
-                            .foregroundColor(renewalTagColor(for: nextServer))
-                            .tracking(0.8)
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 4.5) {
+                            Circle()
+                                .fill(nextServer.canRenew ? Color.green : Color.orange)
+                                .frame(width: 5.5, height: 5.5)
+                            Text(nextServer.canRenew ? "Ready to Renew" : "Next Renewal")
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundColor(.primary)
+                        }
                         
                         Text(nextServer.name)
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
                             .lineLimit(1)
                         
-                        Text(mainHeroText(for: nextServer))
-                            .font(.system(size: 22, weight: .black, design: .rounded))
-                            .foregroundColor(urgencyColor(for: nextServer))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                        
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(urgencyColor(for: nextServer))
-                                .frame(width: 5, height: 5)
-                            Text(statusSubLabel(for: nextServer))
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundColor(Color(red: 0.65, green: 0.70, blue: 0.78))
-                                .lineLimit(1)
-                        }
+                        Text(nextServer.canRenew ? "Expires in \(nextServer.formattedRemainingTime). Ready for 30-day extension." : "Renewal opens in \(nextServer.formattedAvailableIn).")
+                            .font(.system(size: 10.5, weight: .regular))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
                     }
                 } else {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Cloud Servers")
-                            .font(.system(size: 17, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("No active servers found on your Overnode account.")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                        
+                        Text("No active servers requiring renewal at this time.")
+                            .font(.system(size: 10.5, weight: .regular))
+                            .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
                 }
                 
-                Spacer(minLength: 6)
+                Spacer()
                 
-                // Footer
-                HStack(spacing: 5) {
-                    if !entry.data.isAuthenticated {
-                        Image(systemName: "arrow.up.forward.app.fill")
-                            .font(.system(size: 9))
+                if !entry.data.isAuthenticated {
+                    HStack(spacing: 4) {
                         Text("Open Overnode")
-                            .font(.system(size: 9.5, weight: .semibold))
-                    } else if let nextServer = entry.data.nextRenewalServer, nextServer.canRenew {
-                        Image(systemName: "checkmark.seal.fill")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        Image(systemName: "arrow.up.forward.app")
                             .font(.system(size: 9))
-                            .foregroundColor(Color(red: 0.25, green: 0.82, blue: 0.50))
-                        Text("Action: Ready to Renew")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(Color(red: 0.25, green: 0.82, blue: 0.50))
-                    } else if entry.data.servers.isEmpty {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 9))
-                            .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                        Text("Create a Server")
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                    } else {
+                    }
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5))
+                } else if let nextServer = entry.data.nextRenewalServer, nextServer.canRenew {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 9.5, weight: .bold))
+                        Text("Renew Server")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(.green)
+                    .clipShape(Capsule())
+                    .shadow(color: .green.opacity(0.35), radius: 4, y: 2)
+                } else {
+                    HStack(spacing: 4) {
                         Image(systemName: "server.rack")
                             .font(.system(size: 9))
-                            .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                        Text("\(entry.data.servers.count) active server\(entry.data.servers.count > 1 ? "s" : "")")
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.85))
+                            .foregroundStyle(.blue)
+                        Text("\(entry.data.servers.count) active cloud server\(entry.data.servers.count > 1 ? "s" : "")")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
             // Divider
             Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.02),
-                            Color.white.opacity(0.12),
-                            Color.white.opacity(0.02)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: 1)
-                .padding(.vertical, 4)
+                .fill(Color.primary.opacity(0.10))
+                .frame(width: 0.75)
+                .padding(.vertical, 2)
             
-            // Right Column: Server List
+            // Right Timeline
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 4) {
-                    Text("SERVERS TIMELINE")
-                        .font(.system(size: 7.5, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                        .tracking(0.5)
+                HStack {
+                    Text("SERVER TIMELINE")
+                        .font(.system(size: 8, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
                     Spacer()
-                    if !entry.data.servers.isEmpty {
-                        Text("\(entry.data.servers.count)")
-                            .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundColor(Color.white.opacity(0.6))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color.white.opacity(0.08))
-                            .cornerRadius(3)
-                    }
+                    Text("\(entry.data.servers.count)")
+                        .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.secondary)
                 }
                 
                 if entry.data.servers.isEmpty {
-                    VStack(alignment: .center, spacing: 5) {
+                    VStack(alignment: .center, spacing: 4) {
                         Spacer()
                         Image(systemName: "server.rack")
-                            .font(.system(size: 20))
-                            .foregroundColor(Color.white.opacity(0.25))
-                        Text("No servers to renew")
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundColor(Color(red: 0.58, green: 0.63, blue: 0.72))
+                            .font(.system(size: 16))
+                            .foregroundStyle(.tertiary)
+                        Text("No servers active")
+                            .font(.system(size: 9, weight: .medium, design: .rounded))
+                            .foregroundStyle(.secondary)
                         Spacer()
                     }
                     .frame(maxWidth: .infinity)
                 } else {
-                    VStack(spacing: 5) {
+                    VStack(spacing: 6) {
                         ForEach(entry.data.servers.prefix(2)) { server in
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 4) {
-                                    Text(server.name)
-                                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                                        .foregroundColor(.white)
-                                        .lineLimit(1)
-                                    Spacer(minLength: 2)
-                                    Circle()
-                                        .fill(urgencyColor(for: server))
-                                        .frame(width: 5, height: 5)
-                                }
-                                
-                                HStack(spacing: 4) {
-                                    Image(systemName: server.canRenew ? "checkmark.circle.fill" : "clock.fill")
-                                        .font(.system(size: 7.5))
-                                        .foregroundColor(urgencyColor(for: server))
+                            AppleFrostedTile(
+                                cornerRadius: 8,
+                                isEmphasized: server.canRenew,
+                                tintColor: .green
+                            ) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack {
+                                        Text(server.name)
+                                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                            .foregroundColor(.primary)
+                                            .lineLimit(1)
+                                        Spacer()
+                                        Circle()
+                                            .fill(server.canRenew ? Color.green : (server.availableInSeconds ?? 0 <= 86400 ? Color.orange : Color.secondary))
+                                            .frame(width: 4.5, height: 4.5)
+                                    }
                                     
-                                    Text(server.canRenew ? "Ready now" : "In \(server.formattedAvailableIn)")
-                                        .font(.system(size: 10.5, weight: .black, design: .rounded))
-                                        .foregroundColor(urgencyColor(for: server))
-                                        .lineLimit(1)
-                                    
-                                    Spacer(minLength: 2)
-                                    
-                                    if server.canRenew {
-                                        Text("Renew")
-                                            .font(.system(size: 7.5, weight: .bold))
-                                            .foregroundColor(Color(red: 0.85, green: 0.67, blue: 0.22))
-                                            .padding(.horizontal, 4)
-                                            .padding(.vertical, 1)
-                                            .background(Color(red: 0.85, green: 0.67, blue: 0.22).opacity(0.12))
-                                            .cornerRadius(3)
-                                    } else {
-                                        Text(server.formattedRemainingTime)
-                                            .font(.system(size: 7.5, weight: .medium, design: .monospaced))
-                                            .foregroundColor(Color.white.opacity(0.45))
+                                    HStack {
+                                        if server.canRenew {
+                                            Text("Ready now")
+                                                .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                                                .foregroundColor(accessibleGreen)
+                                            Spacer()
+                                            Text("Renew")
+                                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                                .foregroundColor(.green)
+                                                .padding(.horizontal, 4.5)
+                                                .padding(.vertical, 1.5)
+                                                .background(Color.green.opacity(0.15))
+                                                .clipShape(Capsule())
+                                        } else {
+                                            Text("In \(server.formattedAvailableIn)")
+                                                .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                                                .foregroundColor(.primary)
+                                                .monospacedDigit()
+                                            Spacer()
+                                            Text(server.formattedRemainingTime)
+                                                .font(.system(size: 8.5, weight: .medium, design: .monospaced))
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
                                 }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white.opacity(0.04))
-                            .cornerRadius(7)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 7)
-                                    .stroke(
-                                        urgencyColor(for: server).opacity(0.20),
-                                        lineWidth: 0.7
-                                    )
-                            )
                         }
                     }
                     
                     if entry.data.servers.count > 2 {
                         Text("+\(entry.data.servers.count - 2) more server\(entry.data.servers.count - 2 > 1 ? "s" : "")")
                             .font(.system(size: 7.5, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.40))
+                            .foregroundStyle(.tertiary)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                 }
             }
-            .frame(width: 130)
+            .frame(width: 135)
         }
-        .padding(13)
-    }
-    
-    // MARK: - Helpers
-    private func renewalTagTitle(for server: ServerWidgetRenewalInfo) -> String {
-        if server.isExpired {
-            return "RENEWAL EXPIRED"
-        }
-        if server.canRenew {
-            return "READY TO RENEW"
-        }
-        return "RENEWABLE IN"
-    }
-    
-    private func renewalTagColor(for server: ServerWidgetRenewalInfo) -> Color {
-        if server.isExpired {
-            return Color.red
-        }
-        if server.canRenew {
-            return Color(red: 0.25, green: 0.82, blue: 0.50) // Green
-        }
-        return Color(red: 0.85, green: 0.67, blue: 0.22) // Gold
-    }
-    
-    private func mainHeroText(for server: ServerWidgetRenewalInfo) -> String {
-        if server.isExpired {
-            return "Expired"
-        }
-        if server.canRenew {
-            return "Ready now"
-        }
-        return server.formattedAvailableIn
-    }
-    
-    private func statusSubLabel(for server: ServerWidgetRenewalInfo) -> String {
-        if server.isExpired {
-            return "Server suspended"
-        }
-        if server.canRenew {
-            return "Expires in \(server.formattedRemainingTime)"
-        }
-        return "Expires in \(server.formattedRemainingTime)"
-    }
-    
-    private func urgencyColor(for server: ServerWidgetRenewalInfo) -> Color {
-        if server.isExpired {
-            return Color.red
-        }
-        if server.canRenew {
-            return Color(red: 0.25, green: 0.82, blue: 0.50) // Emerald / Ready
-        }
-        if let avail = server.availableInSeconds {
-            if avail < 86400 {
-                return Color(red: 1.0, green: 0.52, blue: 0.20) // Amber: available in < 24h!
-            } else if avail < 86400 * 3 {
-                return Color(red: 0.95, green: 0.82, blue: 0.35) // Gold
-            }
-        }
-        return Color(red: 0.40, green: 0.70, blue: 1.0) // Soft Blue / Scheduled
     }
 }
 
-// MARK: - Main Server Renewal Widget Declaration
+// MARK: - Widget Declaration
 public struct OvernodeServerRenewalWidget: Widget {
     public let kind: String = "OvernodeServerRenewalWidget"
     
@@ -607,7 +504,7 @@ public struct OvernodeServerRenewalWidget: Widget {
             ServerRenewalWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Server Renewals")
-        .description("Track expiration dates and renewal countdowns for your Overnode cloud servers.")
+        .description("Track when your Overnode servers become renewable with countdowns in days, hours, and minutes.")
         .supportedFamilies([.systemSmall, .systemMedium])
         .contentMarginsDisabled()
     }
