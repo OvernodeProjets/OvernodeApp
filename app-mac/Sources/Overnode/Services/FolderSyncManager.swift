@@ -13,7 +13,7 @@ public final class FolderSyncManager: @unchecked Sendable {
     private var configs: [String: SyncedFolderConfig] = [:]
     private var watchers: [String: FolderWatcher] = [:]
     private var snapshots: [String: [String: LocalFileRecord]] = [:]
-    private var debounceItems: [String: DispatchWorkItem] = [:]
+    private var debounceTasks: [String: Task<Void, Never>] = [:]
     private var activeSyncs: Set<String> = []
     private var internalDownloads: Set<String> = []
     
@@ -76,8 +76,8 @@ public final class FolderSyncManager: @unchecked Sendable {
         syncQueue.sync {
             watchers[configId]?.stop()
             watchers.removeValue(forKey: configId)
-            debounceItems[configId]?.cancel()
-            debounceItems.removeValue(forKey: configId)
+            debounceTasks[configId]?.cancel()
+            debounceTasks.removeValue(forKey: configId)
             snapshots.removeValue(forKey: configId)
             configs.removeValue(forKey: configId)
             saveConfigs()
@@ -133,12 +133,12 @@ public final class FolderSyncManager: @unchecked Sendable {
     private func handleWatcherEvent(configId: String) {
         syncQueue.async { [weak self] in
             guard let self = self, let config = self.configs[configId], config.isEnabled else { return }
-            self.debounceItems[configId]?.cancel()
-            let item = DispatchWorkItem { [weak self] in
-                Task { await self?.processLocalChanges(configId: configId) }
+            self.debounceTasks[configId]?.cancel()
+            self.debounceTasks[configId] = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                guard !Task.isCancelled else { return }
+                await self?.processLocalChanges(configId: configId)
             }
-            self.debounceItems[configId] = item
-            self.syncQueue.asyncAfter(deadline: .now() + 0.5, execute: item)
         }
     }
     
