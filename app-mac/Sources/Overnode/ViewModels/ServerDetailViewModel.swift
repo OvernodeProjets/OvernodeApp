@@ -150,6 +150,22 @@ public final class ServerDetailViewModel: ObservableObject {
             ]
         }
         
+        NotificationCenter.default.addObserver(forName: FolderSyncManager.didSyncChangesNotification, object: nil, queue: .main) { [weak self] notif in
+            let folderName = notif.userInfo?["folderName"] as? String
+            let count = notif.userInfo?["count"] as? Int
+            Task { @MainActor [weak self] in
+                guard let self = self, let folderName = folderName, let count = count else { return }
+                let msg = String(format: LocalizationManager.shared.string("files_sync_success_notification"), folderName, count)
+                self.fileSuccessMessage = msg
+                await self.loadFiles()
+            }
+        }
+        NotificationCenter.default.addObserver(forName: FolderSyncManager.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.objectWillChange.send()
+            }
+        }
+        
         loadCurrentTabData()
     }
     
@@ -492,6 +508,79 @@ public final class ServerDetailViewModel: ObservableObject {
             await loadFiles()
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+    
+    // MARK: - Folder Synchronization (SFTP Sync)
+    
+    public func createSyncedFolder(name: String, localURL: URL, initialPull: Bool) async {
+        do {
+            try await filesService.createFolder(serverId: server.identifier, root: currentDirectory, name: name)
+            let fullRemote = currentDirectory == "/" ? "/\(name)" : "\(currentDirectory)/\(name)"
+            _ = try await FolderSyncManager.shared.registerSyncedFolder(
+                serverId: server.identifier,
+                remotePath: fullRemote,
+                localURL: localURL,
+                initialPull: initialPull
+            )
+            await loadFiles()
+            let msg = String(format: LocalizationManager.shared.string("files_sync_success_banner"), name)
+            self.fileSuccessMessage = msg
+        } catch {
+            self.fileErrorMessage = error.localizedDescription
+        }
+    }
+    
+    public func isFolderSynced(item: ServerFileItem) -> Bool {
+        guard !item.isFile else { return false }
+        let fullRemote = currentDirectory == "/" ? "/\(item.name)" : "\(currentDirectory)/\(item.name)"
+        return FolderSyncManager.shared.isFolderSynced(serverId: server.identifier, remotePath: fullRemote)
+    }
+    
+    public func syncedFolderFor(item: ServerFileItem) -> SyncedFolderConfig? {
+        guard !item.isFile else { return nil }
+        let fullRemote = currentDirectory == "/" ? "/\(item.name)" : "\(currentDirectory)/\(item.name)"
+        return FolderSyncManager.shared.configFor(serverId: server.identifier, remotePath: fullRemote)
+    }
+    
+    public func openSyncedFolderInFinder(item: ServerFileItem) {
+        guard let cfg = syncedFolderFor(item: item) else { return }
+        FolderSyncManager.shared.openInFinder(config: cfg)
+    }
+    
+    public func stopSyncFolder(item: ServerFileItem) {
+        guard let cfg = syncedFolderFor(item: item) else { return }
+        FolderSyncManager.shared.stopSync(configId: cfg.id)
+        objectWillChange.send()
+    }
+    
+    public func forceSyncFolder(item: ServerFileItem) async {
+        guard let cfg = syncedFolderFor(item: item) else { return }
+        await FolderSyncManager.shared.processLocalChanges(configId: cfg.id)
+        await loadFiles()
+    }
+    
+    @MainActor
+    public func promptSyncFolder(item: ServerFileItem) {
+        guard !item.isFile else { return }
+        let panel = NSOpenPanel()
+        panel.title = LocalizationManager.shared.string("files_sync_choose_location")
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK, let localURL = panel.url {
+            let fullRemote = currentDirectory == "/" ? "/\(item.name)" : "\(currentDirectory)/\(item.name)"
+            Task {
+                _ = try? await FolderSyncManager.shared.registerSyncedFolder(
+                    serverId: server.identifier,
+                    remotePath: fullRemote,
+                    localURL: localURL,
+                    initialPull: true
+                )
+                await loadFiles()
+                self.objectWillChange.send()
+            }
         }
     }
     

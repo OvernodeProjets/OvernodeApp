@@ -174,11 +174,16 @@ public struct ServerFilesTabView: View {
                             ForEach(vm.files) { item in
                                 FileRowView(
                                     item: item,
+                                    isSynced: vm.isFolderSynced(item: item),
                                     onOpen: { vm.openFile(item) },
                                     onOpenInternal: { vm.openFileInternally(item) },
                                     onOpenExternal: { forceChoose in
                                         vm.openFileInExternalEditor(item, forceChooseEditor: forceChoose)
                                     },
+                                    onPromptSync: { vm.promptSyncFolder(item: item) },
+                                    onOpenFinder: { vm.openSyncedFolderInFinder(item: item) },
+                                    onForceSync: { Task { await vm.forceSyncFolder(item: item) } },
+                                    onStopSync: { vm.stopSyncFolder(item: item) },
                                     onDelete: {
                                         Task { await vm.deleteFile(item) }
                                     },
@@ -261,14 +266,19 @@ public struct ServerFilesTabView: View {
 private struct FileRowView: View {
     @ObservedObject var loc = LocalizationManager.shared
     let item: ServerFileItem
+    let isSynced: Bool
     let onOpen: () -> Void
     let onOpenInternal: () -> Void
     let onOpenExternal: (Bool) -> Void
+    let onPromptSync: () -> Void
+    let onOpenFinder: () -> Void
+    let onForceSync: () -> Void
+    let onStopSync: () -> Void
     let onDelete: () -> Void
     let onDrag: () -> NSItemProvider
     
     var iconName: String {
-        if !item.isFile { return "folder.fill" }
+        if !item.isFile { return isSynced ? "folder.fill.badge.gearshape" : "folder.fill" }
         let ext = (item.name as NSString).pathExtension.lowercased()
         switch ext {
         case "json", "toml", "yml", "yaml", "xml", "properties": return "doc.text.fill"
@@ -279,7 +289,9 @@ private struct FileRowView: View {
     }
     
     var iconColor: Color {
-        if !item.isFile { return OvernodeTheme.accentGold }
+        if !item.isFile {
+            return isSynced ? Color(red: 0.25, green: 0.78, blue: 0.50) : OvernodeTheme.accentGold
+        }
         let ext = (item.name as NSString).pathExtension.lowercased()
         switch ext {
         case "json", "yml", "yaml", "properties": return Color(red: 0.35, green: 0.55, blue: 0.95)
@@ -295,10 +307,26 @@ private struct FileRowView: View {
                 .foregroundColor(iconColor)
                 .frame(width: 24)
             
-            Text(item.name)
-                .font(.system(size: 13, weight: item.isFile ? .regular : .semibold))
-                .foregroundColor(OvernodeTheme.textPrimary)
-                .lineLimit(1)
+            HStack(spacing: 6) {
+                Text(item.name)
+                    .font(.system(size: 13, weight: item.isFile ? .regular : .semibold))
+                    .foregroundColor(OvernodeTheme.textPrimary)
+                    .lineLimit(1)
+                
+                if isSynced {
+                    HStack(spacing: 3) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 9, weight: .bold))
+                        Text(loc.string("files_sync_badge"))
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .foregroundColor(Color(red: 0.25, green: 0.78, blue: 0.50))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color(red: 0.25, green: 0.78, blue: 0.50).opacity(0.12))
+                    .cornerRadius(4)
+                }
+            }
             
             Spacer()
             
@@ -352,6 +380,26 @@ private struct FileRowView: View {
             } else {
                 Button(action: onOpen) {
                     Label(loc.string("files_context_open_folder"), systemImage: "folder")
+                }
+                
+                Divider()
+                
+                if isSynced {
+                    Button(action: onOpenFinder) {
+                        Label(loc.string("files_context_sync_open_finder"), systemImage: "arrow.up.forward.app")
+                    }
+                    
+                    Button(action: onForceSync) {
+                        Label(loc.string("files_context_sync_force"), systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    
+                    Button(role: .destructive, action: onStopSync) {
+                        Label(loc.string("files_context_sync_stop"), systemImage: "xmark.circle")
+                    }
+                } else {
+                    Button(action: onPromptSync) {
+                        Label(loc.string("files_context_sync_enable"), systemImage: "arrow.triangle.2.circlepath")
+                    }
                 }
                 
                 Divider()
