@@ -1,0 +1,182 @@
+<UserControl
+    x:Class="Overnode.App.Views.AuthView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="#101218">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Top Language Switcher -->
+        <StackPanel Grid.Row="0" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right" 
+                    Margin="0,20,32,0">
+            <Border Background="#202229" 
+                    BorderBrush="#2E3337" 
+                    BorderThickness="1" 
+                    CornerRadius="8" 
+                    Padding="3">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="FrButton" 
+                            Click="FrButton_Click"
+                            Padding="8,4" 
+                            CornerRadius="6"
+                            BorderThickness="0"
+                            Background="#33FFFFFF">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="🇫🇷" FontSize="11" />
+                            <TextBlock Text="FR" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="EnButton" 
+                            Click="EnButton_Click"
+                            Padding="8,4" 
+                            CornerRadius="6"
+                            BorderThickness="0"
+                            Background="Transparent">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="🇬🇧" FontSize="11" />
+                            <TextBlock Text="EN" FontSize="11" FontWeight="Bold" Foreground="#95A1AD" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Central Card Container -->
+        <ScrollViewer Grid.Row="1" 
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Center">
+            <Border Width="400"
+                    Background="#181B22"
+                    BorderBrush="#2E3337"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    Padding="32"
+                    Margin="20">
+                <StackPanel Spacing="22" HorizontalAlignment="Stretch">
+                    <!-- Overnode Logo -->
+                    <Image x:Name="LogoImage" 
+                           Source="ms-appx:///Assets/overnode_logo.png" 
+                           Height="48" 
+                           Stretch="Uniform" 
+                           HorizontalAlignment="Center" 
+                           Margin="0,0,0,6"/>
+
+                    <!-- Title & Subtitle -->
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock x:Name="TitleText" 
+                                   Text="Bienvenue sur Overnode" 
+                                   FontSize="22" 
+                                   FontWeight="Bold" 
+                                   Foreground="#FFFFFF" 
+                                   HorizontalAlignment="Center" />
+
+                        <TextBlock x:Name="SubtitleText" 
+                                   Text="Connectez-vous pour accéder à votre console et gérer vos ressources cloud." 
+                                   FontSize="13" 
+                                   Foreground="#95A1AD" 
+                                   TextWrapping="Wrap" 
+                                   TextAlignment="Center" 
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Error Alert Banner -->
+                    <Border x:Name="ErrorBorder" 
+                            Background="#1AEF4444" 
+                            BorderBrush="#4DEF4444" 
+                            BorderThickness="1" 
+                            CornerRadius="8" 
+                            Padding="12,10" 
+                            Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE783;" FontSize="14" Foreground="#EF4444" VerticalAlignment="Center" />
+                            <TextBlock x:Name="ErrorText" 
+                                       Text="" 
+                                       FontSize="12" 
+                                       Foreground="#EF4444" 
+                                       TextWrapping="Wrap" 
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Auth Action Buttons -->
+                    <StackPanel Spacing="12" Margin="0,8,0,0">
+                        <!-- Discord OAuth2 Button -->
+                        <Button x:Name="DiscordButton" 
+                                Click="DiscordButton_Click"
+                                Height="44" 
+                                HorizontalAlignment="Stretch" 
+                                Background="#5865F2" 
+                                CornerRadius="8" 
+                                BorderThickness="0">
+                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                                <FontIcon Glyph="&#xE8BD;" FontSize="16" Foreground="#FFFFFF" />
+                                <TextBlock x:Name="DiscordButtonText" 
+                                           Text="Continuer avec Discord" 
+                                           FontSize="13" 
+                                           FontWeight="SemiBold" 
+                                           Foreground="#FFFFFF" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Passkey Button -->
+                        <Button x:Name="PasskeyButton" 
+                                Click="PasskeyButton_Click"
+                                Height="44" 
+                                HorizontalAlignment="Stretch" 
+                                Background="#202229" 
+                                BorderBrush="#2E3337" 
+                                BorderThickness="1" 
+                                CornerRadius="8">
+                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                                <FontIcon Glyph="&#xE8D7;" FontSize="16" Foreground="#FFFFFF" />
+                                <TextBlock x:Name="PasskeyButtonText" 
+                                           Text="Se connecter avec Passkey" 
+                                           FontSize="13" 
+                                           FontWeight="SemiBold" 
+                                           Foreground="#FFFFFF" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Passkey notice -->
+                        <TextBlock x:Name="PasskeyNoticeText" 
+                                   Text="Authentification biométrique ou clé de sécurité matérielle." 
+                                   FontSize="11" 
+                                   Foreground="#66707D" 
+                                   TextAlignment="Center" 
+                                   TextWrapping="Wrap" 
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+
+                    <!-- Loading Progress -->
+                    <ProgressRing x:Name="LoadingRing" 
+                                  IsActive="False" 
+                                  Visibility="Collapsed" 
+                                  Foreground="#F59E0B" 
+                                  Width="32" 
+                                  Height="32" 
+                                  HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <TextBlock Grid.Row="2" 
+                   Text="Overnode Cloud Architecture • Windows Native" 
+                   FontSize="11" 
+                   Foreground="#66707D" 
+                   HorizontalAlignment="Center" 
+                   Margin="0,0,0,20" />
+    </Grid>
+</UserControl>

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Overnode.App/Overnode.App.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Overnode.Tests/Overnode.Tests.csproj">
+      <Platform Project="x86" />
+    </Project>
+  </Folder>
+</Solution>

@@ -1,0 +1,349 @@
+<UserControl
+    x:Class="Overnode.App.Views.Components.SidebarControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="using:Overnode.App.Converters"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <converters:BoolToStatusBrushConverter x:Key="BoolToStatusBrushConverter" />
+        <Style x:Key="SidebarNavButtonStyle" TargetType="Button">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+    </UserControl.Resources>
+
+    <Border Width="230"
+            Background="{StaticResource OvernodeCardBrush}"
+            BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+            BorderThickness="0,0,1,0"
+            Padding="12">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Scrollable Navigation Items -->
+            <ScrollViewer Grid.Row="0"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <!-- Global Navigation Container -->
+                    <StackPanel x:Name="GlobalNavContainer" Spacing="4">
+                        <!-- Nav Tabs -->
+                        <Button x:Name="NavDashboardBtn" Click="OnTabClicked" Tag="Dashboard" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE80F;" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" Width="20" />
+                                <TextBlock x:Name="NavDashboardText" Text="Aperçu" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="NavServersBtn" Click="OnTabClicked" Tag="Servers" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE7F8;" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" Width="20" />
+                                <TextBlock x:Name="NavServersText" Text="Serveurs" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="NavWalletBtn" Click="OnTabClicked" Tag="Wallet" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE8C7;" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" Width="20" />
+                                <TextBlock x:Name="NavWalletText" Text="Wallet" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="NavDailyRewardBtn" Click="OnTabClicked" Tag="DailyReward" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE8F8;" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" Width="20" />
+                                <TextBlock x:Name="NavDailyRewardText" Text="Récompense" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="NavStoreBtn" Click="OnTabClicked" Tag="Store" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE719;" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" Width="20" />
+                                <TextBlock x:Name="NavStoreText" Text="Boutique" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="NavSupportBtn" Click="OnTabClicked" Tag="Support" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE8BD;" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" Width="20" />
+                                <TextBlock x:Name="NavSupportText" Text="Support" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="NavAfkBtn" Click="OnTabClicked" Tag="Afk" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE823;" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" Width="20" />
+                                <TextBlock x:Name="NavAfkText" Text="Session AFK" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="NavSettingsBtn" Click="OnTabClicked" Tag="Settings" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE713;" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" Width="20" />
+                                <TextBlock x:Name="NavSettingsText" Text="Paramètres" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Quick Servers Header -->
+                        <StackPanel x:Name="QuickServersContainer" Visibility="Collapsed" Margin="0,14,0,0">
+                            <TextBlock x:Name="QuickServersTitle"
+                                       Text="MES SERVEURS"
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource OvernodeTextMutedBrush}"
+                                       Margin="12,0,0,6" />
+
+                            <!-- List of servers in sidebar -->
+                            <ItemsControl x:Name="QuickServersItemsControl">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Click="OnQuickServerClicked"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Stretch"
+                                                Padding="10,6"
+                                                Margin="0,2"
+                                                CornerRadius="6"
+                                                Background="#0AFFFFFF"
+                                                BorderThickness="0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Status dot -->
+                                                <Ellipse Grid.Column="0"
+                                                         Width="6" Height="6"
+                                                         Margin="0,0,8,0"
+                                                         VerticalAlignment="Center"
+                                                         Fill="{Binding IsOnline, Converter={StaticResource BoolToStatusBrushConverter}}" />
+
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding Name}"
+                                                           FontSize="12"
+                                                           FontWeight="Medium"
+                                                           Foreground="{StaticResource OvernodeTextPrimaryBrush}"
+                                                           MaxLines="1"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           VerticalAlignment="Center" />
+
+                                                <FontIcon Grid.Column="2"
+                                                          Glyph="&#xE76C;"
+                                                          FontSize="9"
+                                                          Foreground="{StaticResource OvernodeTextMutedBrush}"
+                                                          VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Server Management Navigation Container -->
+                    <StackPanel x:Name="ServerNavContainer" Visibility="Collapsed" Spacing="6">
+                        <!-- Back Button to Servers -->
+                        <Button Click="OnBackToServersClicked"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Padding="10,6"
+                                Margin="0,0,0,4"
+                                CornerRadius="6"
+                                Background="#0AFFFFFF"
+                                BorderThickness="0">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE72B;" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock x:Name="BackToServersText" Text="Retour aux serveurs" FontSize="12" FontWeight="Medium" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Server Identity Header -->
+                        <Grid Margin="6,2,6,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Ellipse x:Name="ServerSidebarDot" Grid.Column="0" Width="7" Height="7" Fill="#40C780" VerticalAlignment="Center" Margin="0,0,8,0" />
+
+                            <TextBlock x:Name="ServerSidebarName"
+                                       Grid.Column="1"
+                                       Text="Serveur"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource OvernodeTextPrimaryBrush}"
+                                       VerticalAlignment="Center"
+                                       MaxLines="1"
+                                       TextTrimming="CharacterEllipsis" />
+
+                            <FontIcon x:Name="ServerSidebarSharedIcon"
+                                      Grid.Column="2"
+                                      Glyph="&#xE716;"
+                                      FontSize="10"
+                                      Foreground="{StaticResource OvernodeAccentGoldBrush}"
+                                      Visibility="Collapsed"
+                                      VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="#0FFFFFFF" Margin="0,0,0,6" />
+
+                        <!-- Server Tabs Buttons -->
+                        <Button x:Name="ServerTabConsoleBtn" Click="OnServerTabClicked" Tag="Console" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE756;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock x:Name="ServerTabConsoleText" Text="Console" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="ServerTabRenewalBtn" Click="OnServerTabClicked" Tag="Renewal" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE787;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock x:Name="ServerTabRenewalText" Text="Renouvellement" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="ServerTabFilesBtn" Click="OnServerTabClicked" Tag="Files" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE8B7;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock x:Name="ServerTabFilesText" Text="Fichiers" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="ServerTabSubdomainsBtn" Click="OnServerTabClicked" Tag="Subdomains" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE839;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock x:Name="ServerTabSubdomainsText" Text="Sous-domaines" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="ServerTabSubusersBtn" Click="OnServerTabClicked" Tag="Subusers" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE716;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock x:Name="ServerTabSubusersText" Text="Sous-utilisateurs" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="ServerTabSettingsBtn" Click="OnServerTabClicked" Tag="Settings" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE713;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock x:Name="ServerTabSettingsText" Text="Paramètres" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Bottom User Account Card -->
+            <Border Grid.Row="1"
+                    Background="{StaticResource OvernodeSecondaryCardBrush}"
+                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Margin="0,10,0,0">
+                <StackPanel>
+                    <!-- Coins Row -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" Padding="12,10,12,8">
+                        <FontIcon Glyph="&#xE8D6;" FontSize="12" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                        <TextBlock x:Name="UserCoinsText"
+                                   Text="0"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   FontFamily="Consolas, Segoe UI"
+                                   Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                        <TextBlock x:Name="CoinsLabelText"
+                                   Text="coins"
+                                   FontSize="11"
+                                   Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <Rectangle Height="1" Fill="#0FFFFFFF" />
+
+                    <!-- User Profile Button with Menu -->
+                    <Button x:Name="UserProfileBtn"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="12,10"
+                            CornerRadius="0,0,10,10">
+                        <Button.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem x:Name="MenuUsernameItem" Text="User" />
+                                <MenuFlyoutItem x:Name="MenuEmailItem" Text="" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem x:Name="MenuLogoutItem"
+                                                Text="Déconnexion"
+                                                Foreground="{StaticResource OvernodeAccentDangerBrush}"
+                                                Click="OnLogoutClicked">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE7E8;" Foreground="{StaticResource OvernodeAccentDangerBrush}" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </Button.Flyout>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Avatar initial -->
+                            <Border Grid.Column="0"
+                                    Width="28" Height="28"
+                                    CornerRadius="6"
+                                    Background="#1A1D25"
+                                    Margin="0,0,10,0"
+                                    VerticalAlignment="Center">
+                                <TextBlock x:Name="UserInitialText"
+                                           Text="U"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
+
+                            <!-- Username & Email -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                <TextBlock x:Name="UsernameText"
+                                           Text="User"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource OvernodeTextPrimaryBrush}"
+                                           MaxLines="1"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="EmailText"
+                                           Text="user@example.com"
+                                           FontSize="10"
+                                           Foreground="{StaticResource OvernodeTextSecondaryBrush}"
+                                           MaxLines="1"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <!-- Chevron -->
+                            <FontIcon Grid.Column="2"
+                                      Glyph="&#xE70D;"
+                                      FontSize="10"
+                                      Foreground="#55FFFFFF"
+                                      VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

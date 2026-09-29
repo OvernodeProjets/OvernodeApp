@@ -1,0 +1,354 @@
+<UserControl
+    x:Class="Overnode.App.Views.DashboardView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:components="using:Overnode.App.Views.Components"
+    xmlns:serverViews="using:Overnode.App.Views.Server"
+    xmlns:walletViews="using:Overnode.App.Views.Wallet"
+    xmlns:dailyViews="using:Overnode.App.Views.DailyReward"
+    xmlns:storeViews="using:Overnode.App.Views.Store"
+    xmlns:supportViews="using:Overnode.App.Views.Support"
+    xmlns:afkViews="using:Overnode.App.Views.AFK"
+    xmlns:settingsViews="using:Overnode.App.Views.Settings"
+    mc:Ignorable="d">
+
+    <Grid Background="{StaticResource OvernodeBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Top Header Bar -->
+        <components:HeaderBarControl x:Name="HeaderBar"
+                                     Grid.Row="0"
+                                     RefreshRequested="OnRefreshRequested" />
+
+        <!-- Main Workspace (Sidebar + Content) -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Navigation Sidebar -->
+            <components:SidebarControl x:Name="Sidebar"
+                                       Grid.Column="0"
+                                       TabSelected="OnSidebarTabSelected"
+                                       QuickServerSelected="OnQuickServerSelected"
+                                       ServerTabSelected="OnSidebarServerTabSelected"
+                                       BackToServersRequested="OnSidebarBackToServersRequested"
+                                       LogoutRequested="OnLogoutRequested" />
+
+            <!-- Content Area -->
+            <Grid Grid.Column="1">
+                <!-- Overview / Dashboard Tab -->
+                <ScrollViewer x:Name="OverviewContent"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Spacing="32" Padding="28,24">
+                        <!-- Dashboard Title -->
+                        <TextBlock x:Name="DashboardTitleText"
+                                   Text="Tableau de Bord"
+                                   FontSize="24"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+
+                        <!-- 4 Resource Gauges Grid -->
+                        <Grid ColumnSpacing="16" RowSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <components:ResourceGaugeControl x:Name="RamGauge"
+                                                             Grid.Column="0"
+                                                             Glyph="&#xEA40;"
+                                                             AccentBrush="{StaticResource OvernodeGaugeRamBrush}" />
+
+                            <components:ResourceGaugeControl x:Name="CpuGauge"
+                                                             Grid.Column="1"
+                                                             Glyph="&#xE950;"
+                                                             AccentBrush="{StaticResource OvernodeGaugeCpuBrush}" />
+
+                            <components:ResourceGaugeControl x:Name="DiskGauge"
+                                                             Grid.Column="2"
+                                                             Glyph="&#xE8B7;"
+                                                             AccentBrush="{StaticResource OvernodeGaugeDiskBrush}" />
+
+                            <components:ResourceGaugeControl x:Name="ServersGauge"
+                                                             Grid.Column="3"
+                                                             Glyph="&#xE7F8;"
+                                                             AccentBrush="{StaticResource OvernodeGaugeServersBrush}" />
+                        </Grid>
+
+                        <!-- Servers Section Header -->
+                        <StackPanel Spacing="16">
+                            <Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock x:Name="ServersSectionTitle"
+                                               Text="Mes Serveurs"
+                                               FontSize="18"
+                                               FontWeight="Medium"
+                                               Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+
+                                    <Border x:Name="ServersCountBadge"
+                                            Background="{StaticResource OvernodeSecondaryCardBrush}"
+                                            CornerRadius="4"
+                                            Padding="6,2"
+                                            VerticalAlignment="Center">
+                                        <TextBlock x:Name="ServersCountText"
+                                                   Text="0"
+                                                   FontSize="11"
+                                                   FontWeight="Bold"
+                                                   FontFamily="Consolas, Segoe UI"
+                                                   Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                    </Border>
+                                </StackPanel>
+
+                                <Button x:Name="CreateServerBtn"
+                                        HorizontalAlignment="Right"
+                                        Background="{StaticResource OvernodeAccentGoldBrush}"
+                                        Foreground="#000000"
+                                        FontWeight="SemiBold"
+                                        FontSize="12"
+                                        CornerRadius="6"
+                                        Padding="12,7"
+                                        BorderThickness="0"
+                                        Click="OnCreateServerClicked">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE710;" FontSize="11" FontWeight="Bold" />
+                                        <TextBlock x:Name="CreateServerBtnText" Text="Créer un serveur" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <!-- Loading State -->
+                            <Border x:Name="ServersLoadingPanel"
+                                    Background="{StaticResource OvernodeCardBrush}"
+                                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="24"
+                                    Visibility="Collapsed">
+                                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                    <ProgressRing IsActive="True" Width="20" Height="20" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                    <TextBlock x:Name="ServersLoadingText"
+                                               Text="Chargement des serveurs..."
+                                               FontSize="13"
+                                               Foreground="{StaticResource OvernodeTextSecondaryBrush}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Empty State -->
+                            <Border x:Name="ServersEmptyPanel"
+                                    Background="{StaticResource OvernodeCardBrush}"
+                                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="20"
+                                    Visibility="Collapsed">
+                                <Grid>
+                                    <TextBlock x:Name="ServersNoneFoundText"
+                                               Text="Aucun serveur actif dans votre compte."
+                                               FontSize="13"
+                                               Foreground="{StaticResource OvernodeTextSecondaryBrush}"
+                                               VerticalAlignment="Center" />
+                                    <Button HorizontalAlignment="Right"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Click="OnRefreshRequested">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE72C;" FontSize="11" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                            <TextBlock x:Name="EmptyRefreshText"
+                                                       Text="Actualiser"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Server Cards ItemsControl (2 columns) -->
+                            <ItemsControl x:Name="ServersCardsItemsControl">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VariableSizedWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" ItemWidth="380" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <components:DashboardServerCardControl ManageRequested="OnCardManageRequested"
+                                                                               DeleteRequested="OnCardDeleteRequested"
+                                                                               Margin="0,0,16,16" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Platform Stats Section -->
+                        <StackPanel x:Name="PlatformStatsPanel" Spacing="16" Margin="0,10,0,0">
+                            <TextBlock x:Name="PlatformStatsTitle"
+                                       Text="Statistiques de la Plateforme"
+                                       FontSize="16"
+                                       FontWeight="Medium"
+                                       Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+
+                            <Grid ColumnSpacing="16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Total Users -->
+                                <Border Grid.Column="0"
+                                        Background="{StaticResource OvernodeCardBrush}"
+                                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock x:Name="StatUsersLabel" Text="Utilisateurs Inscrits" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                        <TextBlock x:Name="StatUsersValue" Text="0" FontSize="18" FontWeight="Bold" FontFamily="Consolas, Segoe UI" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Total Servers -->
+                                <Border Grid.Column="1"
+                                        Background="{StaticResource OvernodeCardBrush}"
+                                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock x:Name="StatServersLabel" Text="Serveurs Actifs" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                        <TextBlock x:Name="StatServersValue" Text="0" FontSize="18" FontWeight="Bold" FontFamily="Consolas, Segoe UI" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Total Nodes -->
+                                <Border Grid.Column="2"
+                                        Background="{StaticResource OvernodeCardBrush}"
+                                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock x:Name="StatNodesLabel" Text="Nœuds d'Infrastructure" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                        <TextBlock x:Name="StatNodesValue" Text="0" FontSize="18" FontWeight="Bold" FontFamily="Consolas, Segoe UI" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Total Locations -->
+                                <Border Grid.Column="3"
+                                        Background="{StaticResource OvernodeCardBrush}"
+                                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock x:Name="StatLocationsLabel" Text="Emplacements Réseau" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                        <TextBlock x:Name="StatLocationsValue" Text="0" FontSize="18" FontWeight="Bold" FontFamily="Consolas, Segoe UI" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Servers Tab Content -->
+                <ScrollViewer x:Name="ServersListContent"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Visibility="Collapsed">
+                    <StackPanel Spacing="24" Padding="28,24">
+                        <Grid>
+                            <StackPanel Spacing="4">
+                                <TextBlock x:Name="ServersPageTitle"
+                                           Text="Mes Serveurs"
+                                           FontSize="24"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                <TextBlock x:Name="ServersPageSubtitle"
+                                           Text="Gérez et supervisez l'ensemble de vos instances cloud."
+                                           FontSize="13"
+                                           Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+
+                            <Button HorizontalAlignment="Right"
+                                    Background="{StaticResource OvernodeAccentGoldBrush}"
+                                    Foreground="#000000"
+                                    FontWeight="SemiBold"
+                                    FontSize="12"
+                                    CornerRadius="6"
+                                    Padding="14,8"
+                                    BorderThickness="0"
+                                    Click="OnCreateServerClicked">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE710;" FontSize="11" FontWeight="Bold" />
+                                    <TextBlock x:Name="ServersPageCreateBtnText" Text="Créer un serveur" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Server Cards in Servers Tab -->
+                        <ItemsControl x:Name="ServersPageItemsControl">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VariableSizedWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" ItemWidth="380" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <components:DashboardServerCardControl ManageRequested="OnCardManageRequested"
+                                                                           DeleteRequested="OnCardDeleteRequested"
+                                                                           Margin="0,0,16,16" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Wallet Tab -->
+                <walletViews:WalletView x:Name="WalletViewContent" Visibility="Collapsed" />
+
+                <!-- Daily Reward Tab -->
+                <dailyViews:DailyRewardView x:Name="DailyRewardViewContent" Visibility="Collapsed" />
+
+                <!-- Store Tab -->
+                <storeViews:StoreView x:Name="StoreViewContent" Visibility="Collapsed" />
+
+                <!-- Support Tab -->
+                <supportViews:SupportView x:Name="SupportViewContent" Visibility="Collapsed" />
+
+                <!-- AFK Tab -->
+                <afkViews:AFKView x:Name="AFKViewContent" Visibility="Collapsed" />
+
+                <!-- Settings Tab -->
+                <settingsViews:SettingsControl x:Name="SettingsViewContent" Visibility="Collapsed" />
+
+                <!-- Detailed Server Management View -->
+                <serverViews:ServerDetailControl x:Name="ServerDetailView" Visibility="Collapsed" />
+            </Grid>
+        </Grid>
+
+        <!-- Create Server Modal Overlay -->
+        <Grid x:Name="CreateServerModalOverlay"
+              Grid.RowSpan="2"
+              Background="#D90B0D13"
+              Visibility="Collapsed"
+              Tapped="OnModalOverlayTapped">
+            <serverViews:CreateServerModalControl x:Name="CreateServerModal"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Margin="24" />
+        </Grid>
+    </Grid>
+</UserControl>

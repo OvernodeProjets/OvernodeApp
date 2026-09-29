@@ -1,0 +1,147 @@
+<UserControl
+    x:Class="Overnode.App.Views.TwoFactorVerificationView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="#101218">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalAlignment="Center" 
+                      HorizontalAlignment="Center">
+            <Border Width="400"
+                    Background="#181B22"
+                    BorderBrush="#2E3337"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    Padding="32"
+                    Margin="20">
+                <StackPanel Spacing="22" HorizontalAlignment="Stretch">
+                    
+                    <!-- 2FA Gold Icon Badge -->
+                    <Border Width="64" 
+                            Height="64" 
+                            CornerRadius="16" 
+                            Background="#1FF59E0B" 
+                            BorderBrush="#4DF59E0B" 
+                            BorderThickness="1" 
+                            HorizontalAlignment="Center"
+                            Margin="0,0,0,6">
+                        <FontIcon Glyph="&#xE72E;" 
+                                  FontSize="28" 
+                                  Foreground="#F59E0B" 
+                                  HorizontalAlignment="Center" 
+                                  VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- Title & Subtitle -->
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock x:Name="TitleText" 
+                                   Text="Double Facteur (2FA)" 
+                                   FontSize="22" 
+                                   FontWeight="Bold" 
+                                   Foreground="#FFFFFF" 
+                                   HorizontalAlignment="Center" />
+
+                        <TextBlock x:Name="SubtitleText" 
+                                   Text="Saisissez le code à 6 chiffres généré par votre application d'authentification ou un code de secours." 
+                                   FontSize="13" 
+                                   Foreground="#95A1AD" 
+                                   TextWrapping="Wrap" 
+                                   TextAlignment="Center" 
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Code Input Field -->
+                    <StackPanel Spacing="8">
+                        <TextBox x:Name="CodeInput" 
+                                 PlaceholderText="000000" 
+                                 FontSize="22" 
+                                 FontWeight="Bold" 
+                                 FontFamily="Consolas" 
+                                 TextAlignment="Center" 
+                                 MaxLength="20" 
+                                 Height="48" 
+                                 Background="#202229" 
+                                 Foreground="#FFFFFF" 
+                                 BorderBrush="#2E3337" 
+                                 CornerRadius="8" 
+                                 KeyDown="CodeInput_KeyDown"
+                                 TextChanged="CodeInput_TextChanged" />
+                        
+                        <TextBlock Text="Code TOTP à 6 chiffres ou code de secours" 
+                                   FontSize="11" 
+                                   Foreground="#66707D" 
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Error Alert Banner -->
+                    <Border x:Name="ErrorBorder" 
+                            Background="#1AEF4444" 
+                            BorderBrush="#4DEF4444" 
+                            BorderThickness="1" 
+                            CornerRadius="8" 
+                            Padding="12,10" 
+                            Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE783;" FontSize="14" Foreground="#EF4444" VerticalAlignment="Center" />
+                            <TextBlock x:Name="ErrorText" 
+                                       Text="" 
+                                       FontSize="12" 
+                                       Foreground="#EF4444" 
+                                       TextWrapping="Wrap" 
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Loading Progress -->
+                    <ProgressRing x:Name="LoadingRing" 
+                                  IsActive="False" 
+                                  Visibility="Collapsed" 
+                                  Foreground="#F59E0B" 
+                                  Width="32" 
+                                  Height="32" 
+                                  HorizontalAlignment="Center" />
+
+                    <!-- Action Buttons -->
+                    <StackPanel Spacing="10" Margin="0,8,0,0">
+                        <!-- Verify Button -->
+                        <Button x:Name="VerifyButton" 
+                                Click="VerifyButton_Click"
+                                Height="44" 
+                                HorizontalAlignment="Stretch" 
+                                Background="#F59E0B" 
+                                CornerRadius="8" 
+                                BorderThickness="0"
+                                IsEnabled="False">
+                            <TextBlock x:Name="VerifyButtonText" 
+                                       Text="Valider le code" 
+                                       FontSize="13" 
+                                       FontWeight="Bold" 
+                                       Foreground="#0B0D13" />
+                        </Button>
+
+                        <!-- Cancel Button -->
+                        <Button x:Name="CancelButton" 
+                                Click="CancelButton_Click"
+                                Height="42" 
+                                HorizontalAlignment="Stretch" 
+                                Background="#202229" 
+                                BorderBrush="#2E3337" 
+                                BorderThickness="1" 
+                                CornerRadius="8">
+                            <TextBlock x:Name="CancelButtonText" 
+                                       Text="Annuler la connexion" 
+                                       FontSize="13" 
+                                       FontWeight="SemiBold" 
+                                       Foreground="#95A1AD" />
+                        </Button>
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -1,0 +1,209 @@
+<UserControl
+    x:Class="Overnode.App.Views.Server.ServerRenewalTabControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <StackPanel Spacing="16">
+        <!-- Header Card -->
+        <Border Background="{StaticResource OvernodeCardBrush}"
+                BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="18">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon Glyph="&#xE787;" FontSize="18" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                        <TextBlock x:Name="RenewalTitleText" Text="Renouvellement" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                    </StackPanel>
+                    <TextBlock x:Name="RenewalSubtitleText"
+                               Text="Surveillez l'échéance et prolongez la validité de votre serveur"
+                               FontSize="12"
+                               Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Click="OnRefreshRenewalClicked"
+                        Background="#201F232B"
+                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                        BorderThickness="1"
+                        Padding="8"
+                        CornerRadius="6"
+                        VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE72C;" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Owner Only Warning Banner (shown if !IsOwner) -->
+        <Border x:Name="OwnerOnlyBanner"
+                Visibility="Collapsed"
+                Background="#1FF59E0B"
+                BorderBrush="#4DF59E0B"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="14,10">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <FontIcon Glyph="&#xE7BA;" FontSize="14" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                <TextBlock x:Name="OwnerOnlyText"
+                           Text="Seul le propriétaire du serveur peut effectuer un renouvellement."
+                           FontSize="12"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource OvernodeTextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- 3 Renewal Stats Cards -->
+        <Grid ColumnSpacing="14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Next Date -->
+            <Border Grid.Column="0"
+                    Background="{StaticResource OvernodeCardBrush}"
+                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Background="#1A598CF2">
+                        <FontIcon Glyph="&#xE787;" FontSize="16" Foreground="#598CF2" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock x:Name="StatNextDateTitle" Text="Prochaine échéance" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                        <TextBlock x:Name="StatNextDateValue" Text="—" FontSize="13" FontWeight="Bold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Remaining Time -->
+            <Border Grid.Column="1"
+                    Background="{StaticResource OvernodeCardBrush}"
+                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Background="#1AF59E0B">
+                        <FontIcon Glyph="&#xE916;" FontSize="16" Foreground="{StaticResource OvernodeAccentGoldBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock x:Name="StatRemainingTimeTitle" Text="Temps restant" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                        <TextBlock x:Name="StatRemainingTimeValue" Text="—" FontSize="13" FontWeight="Bold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Renewal Count -->
+            <Border Grid.Column="2"
+                    Background="{StaticResource OvernodeCardBrush}"
+                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Background="#1A40C780">
+                        <FontIcon Glyph="&#xE777;" FontSize="16" Foreground="#40C780" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock x:Name="StatCountTitle" Text="Renouvellements" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                        <TextBlock x:Name="StatCountValue" Text="0" FontSize="13" FontWeight="Bold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Renewal Action Card -->
+        <Border Background="{StaticResource OvernodeCardBrush}"
+                BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="18">
+            <StackPanel Spacing="14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock x:Name="ActionTitleText" Text="Renouveler le serveur" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                        <TextBlock x:Name="ActionDescText"
+                                   Text="Prolongez la durée d'activité de votre serveur cloud avant la date d'échéance."
+                                   FontSize="12"
+                                   Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <Button x:Name="RenewNowButton"
+                            Grid.Column="1"
+                            Click="OnRenewNowClicked"
+                            Background="{StaticResource OvernodeAccentGoldBrush}"
+                            Foreground="Black"
+                            FontWeight="SemiBold"
+                            FontSize="12"
+                            Padding="16,8"
+                            CornerRadius="6"
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ProgressRing x:Name="RenewProgressRing" Width="14" Height="14" IsActive="False" Visibility="Collapsed" />
+                            <FontIcon x:Name="RenewBoltIcon" Glyph="&#xE945;" FontSize="12" />
+                            <TextBlock x:Name="RenewButtonText" Text="Renouveler Maintenant" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- Success Message -->
+                <Border x:Name="SuccessBanner"
+                        Visibility="Collapsed"
+                        Background="#1A10B981"
+                        BorderBrush="#4D10B981"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="#10B981" />
+                        <TextBlock x:Name="SuccessBannerText" Text="Serveur renouvelé avec succès !" FontSize="12" Foreground="#10B981" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Error Message -->
+                <Border x:Name="ErrorBanner"
+                        Visibility="Collapsed"
+                        Background="#1AEF4444"
+                        BorderBrush="#4DEF4444"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE783;" FontSize="12" Foreground="#EF4444" />
+                        <TextBlock x:Name="ErrorBannerText" Text="Erreur lors du renouvellement." FontSize="12" Foreground="#EF4444" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

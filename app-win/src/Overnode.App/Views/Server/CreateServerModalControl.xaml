@@ -1,0 +1,365 @@
+<UserControl
+    x:Class="Overnode.App.Views.Server.CreateServerModalControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Border Background="{StaticResource OvernodeBackgroundBrush}"
+            BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+            BorderThickness="1"
+            CornerRadius="14"
+            MaxWidth="840"
+            MaxHeight="760"
+            VerticalAlignment="Center"
+            HorizontalAlignment="Center">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- 1. Header -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource OvernodeCardBrush}"
+                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="22,14"
+                    CornerRadius="14,14,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0"
+                            Width="38" Height="38"
+                            CornerRadius="10"
+                            Background="#26F59E0B"
+                            Margin="0,0,14,0">
+                        <FontIcon Glyph="&#xE809;" FontSize="18" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock x:Name="ModalTitleText"
+                                   Text="Créer un serveur"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                        <TextBlock x:Name="ModalSubtitleText"
+                                   Text="Déployez un nouveau serveur cloud en quelques secondes"
+                                   FontSize="11.5"
+                                   Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
+                            Click="OnCloseClicked"
+                            Width="30" Height="30"
+                            Padding="0"
+                            CornerRadius="15"
+                            Background="#10FFFFFF"
+                            BorderThickness="0">
+                        <FontIcon Glyph="&#xE711;" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- 2. Scrollable Content -->
+            <ScrollViewer x:Name="ModalScrollViewer"
+                          Grid.Row="1"
+                          Padding="24,20"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="22">
+                    <!-- Loading View -->
+                    <StackPanel x:Name="LoadingPanel"
+                                Visibility="Collapsed"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="12"
+                                Margin="0,40">
+                        <ProgressRing IsActive="True" Width="36" Height="36" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                        <TextBlock x:Name="LoadingText"
+                                   Text="Chargement des options de déploiement..."
+                                   FontSize="12"
+                                   Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <!-- Content Panel -->
+                    <StackPanel x:Name="ContentPanel" Spacing="20">
+                        <!-- Quota Alert Banner -->
+                        <Border x:Name="QuotaAlertBanner"
+                                Visibility="Collapsed"
+                                Background="#20EF4444"
+                                BorderBrush="#60EF4444"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14,10">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE7BA;" FontSize="16" Foreground="{StaticResource OvernodeAccentDangerBrush}" />
+                                <StackPanel Spacing="2">
+                                    <TextBlock x:Name="QuotaExceededTitleText" Text="Limite de serveurs atteinte" FontWeight="SemiBold" FontSize="12.5" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                    <TextBlock x:Name="QuotaExceededDescText" Text="Vous avez utilisé tous les emplacements de serveurs disponibles sur votre compte." FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Section: Server Name -->
+                        <StackPanel Spacing="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE809;" FontSize="13" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                    <TextBlock x:Name="ServerNameLabel" Text="Nom du serveur" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                </StackPanel>
+
+                                <!-- Name Validation Status -->
+                                <StackPanel Grid.Column="2" x:Name="NameStatusPanel" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <FontIcon x:Name="NameStatusIcon" Glyph="&#xE73E;" FontSize="11" Foreground="{StaticResource OvernodeAccentSuccessBrush}" />
+                                    <TextBlock x:Name="NameStatusText" Text="Nom valide" FontSize="11" Foreground="{StaticResource OvernodeAccentSuccessBrush}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBox x:Name="ServerNameInput"
+                                     PlaceholderText="ex : Survie Minecraft, Bot Discord..."
+                                     TextChanged="OnServerNameChanged"
+                                     Background="{StaticResource OvernodeSecondaryCardBrush}"
+                                     BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                                     Foreground="{StaticResource OvernodeTextPrimaryBrush}"
+                                     CornerRadius="8"
+                                     Padding="12,10"
+                                     FontSize="13" />
+                        </StackPanel>
+
+                        <!-- Section: Location & Datacenter -->
+                        <StackPanel Spacing="10">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE774;" FontSize="13" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                <StackPanel Spacing="2">
+                                    <TextBlock x:Name="LocationLabel" Text="Datacenter &amp; Emplacement" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                    <TextBlock x:Name="LocationSubtitle" Text="Sélectionnez le datacenter le plus proche pour une latence minimale et protection DDoS" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Locations Grid -->
+                            <ItemsControl x:Name="LocationsList">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VariableSizedWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" ItemWidth="375" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+
+                            <!-- Node Chips Container -->
+                            <Border x:Name="NodesSection"
+                                    Background="#10FFFFFF"
+                                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="10">
+                                <StackPanel Spacing="6">
+                                    <TextBlock x:Name="NodeSelectionLabel" Text="Nœud de déploiement disponible" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                        <StackPanel x:Name="NodesChipsPanel" Orientation="Horizontal" Spacing="8" />
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Section: Software & Egg -->
+                        <StackPanel Spacing="10">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE7B8;" FontSize="13" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                <StackPanel Spacing="2">
+                                    <TextBlock x:Name="SoftwareLabel" Text="Type de serveur &amp; Logiciel" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                    <TextBlock x:Name="SoftwareSubtitle" Text="Choisissez le moteur de jeu ou l'environnement d'exécution" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Categories filter bar -->
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                <StackPanel x:Name="CategoriesPanel" Orientation="Horizontal" Spacing="8" />
+                            </ScrollViewer>
+
+                            <!-- Eggs Grid -->
+                            <ItemsControl x:Name="EggsList">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VariableSizedWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" ItemWidth="375" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Section: Resources Allocation -->
+                        <StackPanel Spacing="10">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE9E9;" FontSize="13" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                <StackPanel Spacing="2">
+                                    <TextBlock x:Name="ResourcesLabel" Text="Allocation des ressources" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                    <TextBlock x:Name="ResourcesSubtitle" Text="Allouez la mémoire vive (RAM), le processeur (CPU) et l'espace disque (SSD)" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Border Background="{StaticResource OvernodeSecondaryCardBrush}"
+                                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="14">
+                                <StackPanel Spacing="16">
+                                    <!-- RAM Slider -->
+                                    <StackPanel Spacing="6">
+                                        <Grid>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <FontIcon Glyph="&#xEB05;" FontSize="12" Foreground="{StaticResource OvernodeGaugeRamBrush}" />
+                                                <TextBlock x:Name="RamLabel" Text="Mémoire vive (RAM)" FontSize="12.5" FontWeight="Medium" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                                                <TextBlock x:Name="RamValueText" Text="1024 MB" FontSize="12.5" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeGaugeRamBrush}" />
+                                                <TextBlock x:Name="RamRemainingText" Text="(Restant: 4932 MB)" FontSize="11" FontFamily="Consolas" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                        <Slider x:Name="RamSlider"
+                                                Minimum="128" Maximum="8192" StepFrequency="256"
+                                                ValueChanged="OnRamSliderChanged"
+                                                Foreground="{StaticResource OvernodeGaugeRamBrush}" />
+                                        <StackPanel x:Name="RamPresetsPanel" Orientation="Horizontal" Spacing="6" />
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="{StaticResource OvernodeBorderSubtleBrush}" />
+
+                                    <!-- CPU Slider -->
+                                    <StackPanel Spacing="6">
+                                        <Grid>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <FontIcon Glyph="&#xE950;" FontSize="12" Foreground="{StaticResource OvernodeGaugeCpuBrush}" />
+                                                <TextBlock x:Name="CpuLabel" Text="Processeur (CPU)" FontSize="12.5" FontWeight="Medium" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                                                <TextBlock x:Name="CpuValueText" Text="100%" FontSize="12.5" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeGaugeCpuBrush}" />
+                                                <TextBlock x:Name="CpuRemainingText" Text="(Restant: 259%)" FontSize="11" FontFamily="Consolas" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                        <Slider x:Name="CpuSlider"
+                                                Minimum="10" Maximum="400" StepFrequency="25"
+                                                ValueChanged="OnCpuSliderChanged"
+                                                Foreground="{StaticResource OvernodeGaugeCpuBrush}" />
+                                        <StackPanel x:Name="CpuPresetsPanel" Orientation="Horizontal" Spacing="6" />
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="{StaticResource OvernodeBorderSubtleBrush}" />
+
+                                    <!-- Disk Slider -->
+                                    <StackPanel Spacing="6">
+                                        <Grid>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <FontIcon Glyph="&#xE8B7;" FontSize="12" Foreground="{StaticResource OvernodeGaugeDiskBrush}" />
+                                                <TextBlock x:Name="DiskLabel" Text="Espace disque (SSD)" FontSize="12.5" FontWeight="Medium" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                                                <TextBlock x:Name="DiskValueText" Text="2048 MB" FontSize="12.5" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeGaugeDiskBrush}" />
+                                                <TextBlock x:Name="DiskRemainingText" Text="(Restant: 31640 MB)" FontSize="11" FontFamily="Consolas" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                        <Slider x:Name="DiskSlider"
+                                                Minimum="256" Maximum="40960" StepFrequency="512"
+                                                ValueChanged="OnDiskSliderChanged"
+                                                Foreground="{StaticResource OvernodeGaugeDiskBrush}" />
+                                        <StackPanel x:Name="DiskPresetsPanel" Orientation="Horizontal" Spacing="6" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Error Message Banner -->
+                        <Border x:Name="ErrorBanner"
+                                Visibility="Collapsed"
+                                Background="#20EF4444"
+                                BorderBrush="#60EF4444"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12,10">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE711;" FontSize="12" Foreground="{StaticResource OvernodeAccentDangerBrush}" />
+                                <TextBlock x:Name="ErrorBannerText" Text="Error message" FontSize="11.5" Foreground="{StaticResource OvernodeAccentDangerBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- 3. Bottom Action Bar -->
+            <Border Grid.Row="2"
+                    Background="{StaticResource OvernodeCardBrush}"
+                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                    BorderThickness="0,1,0,0"
+                    Padding="22,14"
+                    CornerRadius="0,0,14,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Summary Chips -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <!-- Location Pill -->
+                        <Border x:Name="SummaryLocationPill" Background="#10FFFFFF" CornerRadius="6" Padding="8,4">
+                            <TextBlock x:Name="SummaryLocationText" Text="🇫🇷 France" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                        </Border>
+
+                        <!-- Egg Pill -->
+                        <Border x:Name="SummaryEggPill" Background="#10FFFFFF" CornerRadius="6" Padding="8,4">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <FontIcon Glyph="&#xE7B8;" FontSize="10" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                <TextBlock x:Name="SummaryEggText" Text="Paper Minecraft" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Servers Remaining Pill -->
+                        <Border x:Name="SummaryServersPill" Background="#10FFFFFF" CornerRadius="6" Padding="8,4">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <FontIcon Glyph="&#xE809;" FontSize="10" Foreground="{StaticResource OvernodeGaugeServersBrush}" />
+                                <TextBlock x:Name="SummaryServersText" Text="Serveurs disponibles : 2" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Buttons -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                        <Button x:Name="CancelButton"
+                                Click="OnCloseClicked"
+                                Content="Annuler"
+                                Padding="16,8"
+                                Background="#10FFFFFF"
+                                BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                FontSize="12.5"
+                                Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+
+                        <Button x:Name="DeployButton"
+                                Click="OnDeployClicked"
+                                Padding="20,8"
+                                Background="{StaticResource OvernodeAccentGoldBrush}"
+                                BorderThickness="0"
+                                CornerRadius="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ProgressRing x:Name="DeploySpinner" Visibility="Collapsed" Width="14" Height="14" Foreground="#000000" IsActive="True" />
+                                <FontIcon x:Name="DeployIcon" Glyph="&#xE710;" FontSize="12" Foreground="#000000" FontWeight="Bold" />
+                                <TextBlock x:Name="DeployButtonText" Text="Créer le serveur" FontSize="12.5" FontWeight="Bold" Foreground="#000000" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

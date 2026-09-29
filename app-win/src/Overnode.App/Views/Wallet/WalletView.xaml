@@ -1,0 +1,247 @@
+<UserControl
+    x:Class="Overnode.App.Views.Wallet.WalletView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="24" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24">
+            <!-- Header section -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock x:Name="WalletTitleText" Text="Portefeuille" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                    <TextBlock x:Name="WalletSubtitleText" Text="Gérez votre solde, vos crédits et vos transactions" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Click="OnRefreshClicked"
+                        Background="#201F232B"
+                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                        BorderThickness="1"
+                        Padding="8"
+                        CornerRadius="6"
+                        VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE72C;" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                </Button>
+            </Grid>
+
+            <!-- Toledo horizontal sub-tabs bar -->
+            <Border BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <!-- Tab Overview -->
+                    <Button x:Name="TabOverviewBtn" Click="OnTabOverviewClicked" Padding="14,8" Background="Transparent" BorderThickness="0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE8C7;" FontSize="12" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                            <TextBlock x:Name="TabOverviewText" Text="Aperçu" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Tab Leaderboard -->
+                    <Button x:Name="TabLeaderboardBtn" Click="OnTabLeaderboardClicked" Padding="14,8" Background="Transparent" BorderThickness="0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE734;" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            <TextBlock x:Name="TabLeaderboardText" Text="Classement" FontSize="13" FontWeight="Normal" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Tab Activity -->
+                    <Button x:Name="TabActivityBtn" Click="OnTabActivityClicked" Padding="14,8" Background="Transparent" BorderThickness="0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE81C;" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            <TextBlock x:Name="TabActivityText" Text="Activité" FontSize="13" FontWeight="Normal" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- Loading Indicator -->
+            <ProgressRing x:Name="LoadingSpinner" IsActive="True" Width="32" Height="32" Visibility="Collapsed" HorizontalAlignment="Center" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+
+            <!-- Tab 1: Overview Panel -->
+            <Grid x:Name="OverviewPanel" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Coin Balance Card -->
+                <Border Grid.Column="0"
+                        Background="{StaticResource OvernodeCardBrush}"
+                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10">
+                    <StackPanel Spacing="0">
+                        <Border BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="0,0,0,1" Padding="16">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Width="32" Height="32" CornerRadius="16" Background="#26F59E0B">
+                                    <FontIcon Glyph="&#xE8D6;" FontSize="14" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                </Border>
+                                <TextBlock x:Name="CoinBalanceTitle" Text="Solde de Coins" FontSize="14" FontWeight="Medium" Foreground="{StaticResource OvernodeTextPrimaryBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Spacing="10" Padding="16">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock x:Name="CoinBalanceAmount" Text="350" FontSize="28" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                <TextBlock x:Name="CoinBalanceSuffix" Text="coins" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+                            </StackPanel>
+                            <TextBlock x:Name="CoinBalanceDesc" Text="Utilisez vos coins pour acheter des ressources ou des serveurs." FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Credit Balance Card -->
+                <Border Grid.Column="1"
+                        Background="{StaticResource OvernodeCardBrush}"
+                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10">
+                    <StackPanel Spacing="0">
+                        <Border BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="0,0,0,1" Padding="16">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Width="32" Height="32" CornerRadius="16" Background="#1AFFFFFF">
+                                    <FontIcon Glyph="&#xE8C7;" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                </Border>
+                                <TextBlock x:Name="CreditBalanceTitle" Text="Crédit en Euros" FontSize="14" FontWeight="Medium" Foreground="{StaticResource OvernodeTextPrimaryBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Spacing="12" Padding="16">
+                            <TextBlock x:Name="CreditBalanceAmount" Text="0,00 €" FontSize="28" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+
+                            <Button Click="OnAddFundsClicked"
+                                    HorizontalAlignment="Stretch"
+                                    Padding="0,8"
+                                    Background="#FFFFFF"
+                                    Foreground="#000000"
+                                    CornerRadius="6">
+                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                    <FontIcon Glyph="&#xE710;" FontSize="11" FontWeight="Bold" />
+                                    <TextBlock x:Name="AddFundsBtnText" Text="Ajouter des fonds" FontSize="12.5" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </Button>
+
+                            <TextBlock x:Name="StripeSecureText" Text="Paiements sécurisés par Stripe" FontSize="11" Foreground="{StaticResource OvernodeTextMutedBrush}" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Purchase Coins Card -->
+                <Border Grid.Column="2"
+                        Background="{StaticResource OvernodeCardBrush}"
+                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10">
+                    <StackPanel Spacing="0">
+                        <Border BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="0,0,0,1" Padding="16">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Width="32" Height="32" CornerRadius="16" Background="#1AFFFFFF">
+                                    <FontIcon Glyph="&#xE7BF;" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                </Border>
+                                <TextBlock x:Name="PurchaseCoinsTitle" Text="Acheter des Coins" FontSize="14" FontWeight="Medium" Foreground="{StaticResource OvernodeTextPrimaryBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel x:Name="PackagesList" Spacing="8" Padding="16" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Tab 2: Leaderboard Panel -->
+            <StackPanel x:Name="LeaderboardPanel" Spacing="16" Visibility="Collapsed">
+                <!-- User Rank Banner -->
+                <Border x:Name="UserRankCard"
+                        Background="{StaticResource OvernodeCardBrush}"
+                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="16,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="18" Background="#26F59E0B" Margin="0,0,12,0">
+                            <FontIcon Glyph="&#xE734;" FontSize="16" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                        </Border>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock x:Name="UserRankLabel" Text="Votre classement" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock x:Name="UserRankValue" Text="#42" FontSize="15" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                <TextBlock Text="•" Foreground="{StaticResource OvernodeTextMutedBrush}" />
+                                <TextBlock x:Name="UserRankUsername" Text="OvernodeUser" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Border Grid.Column="2" Background="#10FFFFFF" CornerRadius="6" Padding="10,4" VerticalAlignment="Center">
+                            <TextBlock x:Name="UserRankCoins" Text="350 coins" FontSize="13" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Leaderboard Table -->
+                <Border Background="{StaticResource OvernodeCardBrush}"
+                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10">
+                    <StackPanel Spacing="0">
+                        <!-- Header -->
+                        <Border Background="{StaticResource OvernodeSecondaryCardBrush}" BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="0,0,0,1" Padding="16,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="120" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="RankHeader" Text="Rang" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock Grid.Column="1" x:Name="UserHeader" Text="Utilisateur" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock Grid.Column="2" x:Name="CoinsHeader" Text="Coins" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" HorizontalAlignment="Right" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Rows Container -->
+                        <StackPanel x:Name="LeaderboardRows" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Tab 3: Activity Panel -->
+            <Border x:Name="ActivityPanel"
+                    Background="{StaticResource OvernodeCardBrush}"
+                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Visibility="Collapsed">
+                <StackPanel Spacing="0">
+                    <!-- Header -->
+                    <Border Background="{StaticResource OvernodeSecondaryCardBrush}" BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="0,0,0,1" Padding="16,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="ActivityTypeHeader" Text="Type" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            <TextBlock Grid.Column="1" x:Name="ActivityIdHeader" Text="Identifiant" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            <TextBlock Grid.Column="2" x:Name="ActivityAmountHeader" Text="Montant" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" HorizontalAlignment="Right" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Rows Container -->
+                    <StackPanel x:Name="ActivityRows" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
