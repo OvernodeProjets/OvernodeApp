@@ -23,7 +23,7 @@ public sealed partial class SidebarControl : UserControl
 
     public static readonly DependencyProperty CurrentUserProperty =
         DependencyProperty.Register(nameof(CurrentUser), typeof(User), typeof(SidebarControl),
-            new PropertyMetadata(null, (d, e) => ((SidebarControl)d).UpdateUserUI()));
+            new PropertyMetadata(null, (d, e) => ((SidebarControl)d).OnCurrentUserChanged(e.OldValue as User, e.NewValue as User)));
 
     public static readonly DependencyProperty ServersProperty =
         DependencyProperty.Register(nameof(Servers), typeof(IEnumerable<ServerInstance>), typeof(SidebarControl),
@@ -151,6 +151,52 @@ public sealed partial class SidebarControl : UserControl
         btn.Background = isActive ? ActiveTabBg : InactiveTabBg;
         textBlock.Foreground = isActive ? ActiveTabFg : InactiveTabFg;
         textBlock.FontWeight = isActive ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Medium;
+    }
+
+    private User? _subscribedUser;
+
+    private void OnCurrentUserChanged(User? oldUser, User? newUser)
+    {
+        if (_subscribedUser != null)
+        {
+            _subscribedUser.PropertyChanged -= OnSubscribedUserPropertyChanged;
+            _subscribedUser = null;
+        }
+
+        if (newUser != null)
+        {
+            _subscribedUser = newUser;
+            _subscribedUser.PropertyChanged += OnSubscribedUserPropertyChanged;
+        }
+
+        UpdateUserUI();
+    }
+
+    private void OnSubscribedUserPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(User.Coins))
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (CurrentUser != null)
+                {
+                    UserCoinsText.Text = CurrentUser.Coins.ToString("N0");
+                }
+            });
+        }
+        else
+        {
+            DispatcherQueue.TryEnqueue(UpdateUserUI);
+        }
+    }
+
+    public void UpdateCoins(int coins)
+    {
+        if (CurrentUser != null)
+        {
+            CurrentUser.Coins = coins;
+        }
+        UserCoinsText.Text = coins.ToString("N0");
     }
 
     private void UpdateUserUI()

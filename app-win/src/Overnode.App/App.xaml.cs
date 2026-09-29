@@ -31,6 +31,11 @@ public partial class App : Application
             File.AppendAllText(LogPath,
                 $"[{DateTime.Now}] UNOBSERVED TASK: {e.Exception}\n");
         };
+        AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+        {
+            File.AppendAllText(LogPath,
+                $"[{DateTime.Now}] PROCESS EXIT! StackTrace:\n{Environment.StackTrace}\n");
+        };
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
@@ -39,6 +44,11 @@ public partial class App : Application
         {
             File.AppendAllText(LogPath, $"[{DateTime.Now}] OnLaunched start\n");
             _window = new MainWindow();
+            _window.Closed += (s, e) =>
+            {
+                File.AppendAllText(LogPath,
+                    $"[{DateTime.Now}] MainWindow.Closed fired!\n");
+            };
             File.AppendAllText(LogPath, $"[{DateTime.Now}] MainWindow created\n");
             _window.Activate();
             File.AppendAllText(LogPath, $"[{DateTime.Now}] Window activated OK\n");

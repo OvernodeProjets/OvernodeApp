@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Overnode.App.Models;
 
@@ -24,8 +27,8 @@ public sealed class ServerDeployService
 
         try
         {
-            var eggsTask = FetchSafeAsync<List<ServerEgg>>("/api/v5/eggs");
-            var locsTask = FetchSafeAsync<List<ServerLocation>>("/api/v5/locations");
+            var eggsTask = FetchRealEggsAsync();
+            var locsTask = FetchRealLocationsAsync();
             var nodesTask = FetchRealNodesAsync();
             var resTask = FetchSafeAsync<ResourcesResponse>("/api/v5/resources");
 
@@ -53,6 +56,8 @@ public sealed class ServerDeployService
                 rawRes.Remaining ?? demo.Resources.Remaining
             );
 
+            Debug.WriteLine($"[ServerDeployService] Real data loaded: Eggs={rawEggs.Count}, Locations={rawLocs.Count}, Nodes={rawNodes.Count}");
+
             return new DeployOptionsResponse(
                 categories,
                 rawEggs.Count > 0 ? rawEggs : demo.Eggs,
@@ -61,8 +66,9 @@ public sealed class ServerDeployService
                 deployRes
             );
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"[ServerDeployService] Error in FetchDeployOptionsAsync: {ex}");
             return DemoDeployOptions();
         }
     }
@@ -73,29 +79,132 @@ public sealed class ServerDeployService
         {
             return await _client.GetAsync<T>(endpoint);
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"[ServerDeployService] FetchSafeAsync failed for {endpoint}: {ex.Message}");
             return null;
         }
     }
 
+    private async Task<List<ServerEgg>> FetchRealEggsAsync()
+    {
+        string[] endpoints = { "/api/v5/eggs", "/api/eggs" };
+        foreach (var endpoint in endpoints)
+        {
+            try
+            {
+                var json = await _client.GetStringAsync(endpoint);
+                if (string.IsNullOrWhiteSpace(json)) continue;
+
+                var eggs = ParseArrayFromJson<ServerEgg>(json);
+                if (eggs.Count > 0)
+                {
+                    Debug.WriteLine($"[ServerDeployService] Fetched {eggs.Count} eggs from {endpoint}");
+                    return eggs;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ServerDeployService] Failed fetching eggs from {endpoint}: {ex.Message}");
+            }
+        }
+
+        return new List<ServerEgg>();
+    }
+
+    private async Task<List<ServerLocation>> FetchRealLocationsAsync()
+    {
+        string[] endpoints = { "/api/v5/locations", "/api/locations" };
+        foreach (var endpoint in endpoints)
+        {
+            try
+            {
+                var json = await _client.GetStringAsync(endpoint);
+                if (string.IsNullOrWhiteSpace(json)) continue;
+
+                var locs = ParseArrayFromJson<ServerLocation>(json);
+                if (locs.Count > 0)
+                {
+                    Debug.WriteLine($"[ServerDeployService] Fetched {locs.Count} locations from {endpoint}");
+                    return locs;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ServerDeployService] Failed fetching locations from {endpoint}: {ex.Message}");
+            }
+        }
+
+        return new List<ServerLocation>();
+    }
+
     private async Task<List<ServerNode>> FetchRealNodesAsync()
     {
-        try
+        string[] endpoints = { "/api/v5/nodes", "/api/nodes" };
+        foreach (var endpoint in endpoints)
         {
-            var nodes = await _client.GetAsync<List<ServerNode>>("/api/v5/nodes");
-            if (nodes != null && nodes.Count > 0) return nodes;
-        }
-        catch { }
+            try
+            {
+                var json = await _client.GetStringAsync(endpoint);
+                if (string.IsNullOrWhiteSpace(json)) continue;
 
-        try
-        {
-            var nodes = await _client.GetAsync<List<ServerNode>>("/api/nodes");
-            if (nodes != null && nodes.Count > 0) return nodes;
+                var nodes = ParseArrayFromJson<ServerNode>(json);
+                if (nodes.Count > 0)
+                {
+                    Debug.WriteLine($"[ServerDeployService] Fetched {nodes.Count} real nodes from {endpoint}");
+                    return nodes;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ServerDeployService] Failed fetching nodes from {endpoint}: {ex.Message}");
+            }
         }
-        catch { }
 
         return new List<ServerNode>();
+    }
+
+    private static List<T> ParseArrayFromJson<T>(string json)
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString
+        };
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            JsonElement root = doc.RootElement;
+
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                return JsonSerializer.Deserialize<List<T>>(json, options) ?? new();
+            }
+
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                if (root.TryGetProperty("data", out var dataElem) && dataElem.ValueKind == JsonValueKind.Array)
+                {
+                    return JsonSerializer.Deserialize<List<T>>(dataElem.GetRawText(), options) ?? new();
+                }
+
+                string keyName = typeof(T) == typeof(ServerNode) ? "nodes" :
+                                 typeof(T) == typeof(ServerLocation) ? "locations" :
+                                 typeof(T) == typeof(ServerEgg) ? "eggs" : "";
+
+                if (!string.IsNullOrEmpty(keyName) && root.TryGetProperty(keyName, out var namedElem) && namedElem.ValueKind == JsonValueKind.Array)
+                {
+                    return JsonSerializer.Deserialize<List<T>>(namedElem.GetRawText(), options) ?? new();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[ServerDeployService] ParseArrayFromJson<{typeof(T).Name}> failed: {ex.Message}");
+        }
+
+        return new();
     }
 
     public async Task<CreateServerResult> CreateServerAsync(CreateServerPayload payload)

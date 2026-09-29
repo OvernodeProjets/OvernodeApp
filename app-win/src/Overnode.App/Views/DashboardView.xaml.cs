@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Overnode.App.Localization;
 using Overnode.App.Models;
+using Overnode.App.Services;
 using Overnode.App.ViewModels;
 
 namespace Overnode.App.Views;
@@ -40,6 +41,7 @@ public sealed partial class DashboardView : UserControl
         CreateServerModal.ServerCreated += OnServerCreated;
         SettingsViewContent.LogoutRequested += OnLogoutRequested;
         StoreViewContent.ResourcePurchased += OnResourcePurchased;
+        DailyRewardViewContent.RewardClaimed += (s, e) => _ = RefreshCoinsAsync();
 
         var testTabEnv = Environment.GetEnvironmentVariable("OVERNODE_TEST_TAB");
         if (!string.IsNullOrEmpty(testTabEnv) && Enum.TryParse<NavigationTab>(testTabEnv, true, out var initialNavTab))
@@ -69,6 +71,7 @@ public sealed partial class DashboardView : UserControl
             if (AuthVM.CurrentUser != null)
             {
                 StoreViewContent.ViewModel.UserCoins = AuthVM.CurrentUser.Coins;
+                Sidebar.UpdateCoins(AuthVM.CurrentUser.Coins);
             }
 
             ViewModel.SetInitialResourcesIfNeeded(AuthVM.InitialResources);
@@ -81,9 +84,12 @@ public sealed partial class DashboardView : UserControl
                     if (AuthVM.CurrentUser != null)
                     {
                         StoreViewContent.ViewModel.UserCoins = AuthVM.CurrentUser.Coins;
+                        Sidebar.UpdateCoins(AuthVM.CurrentUser.Coins);
                     }
                 }
             };
+
+            _ = RefreshCoinsAsync();
         }
     }
 
@@ -99,11 +105,22 @@ public sealed partial class DashboardView : UserControl
             {
                 UpdatePlatformStats();
             }
+            else if (e.PropertyName == nameof(DashboardViewModel.UserCoins))
+            {
+                if (AuthVM?.CurrentUser != null)
+                {
+                    AuthVM.CurrentUser.Coins = ViewModel.UserCoins;
+                }
+                Sidebar.UpdateCoins(ViewModel.UserCoins);
+                StoreViewContent.ViewModel.UserCoins = ViewModel.UserCoins;
+            }
+            else if (e.PropertyName == nameof(DashboardViewModel.Servers))
+            {
+                UpdateServersView();
+            }
             else if (e.PropertyName == nameof(DashboardViewModel.IsLoading))
             {
-                ServersLoadingPanel.Visibility = (ViewModel.IsLoading && ViewModel.Servers.Count == 0)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
+                UpdateServersView();
             }
             else if (e.PropertyName == nameof(DashboardViewModel.SelectedTab))
             {
@@ -194,8 +211,15 @@ public sealed partial class DashboardView : UserControl
 
     private void UpdateServersView()
     {
+        ServersCardsItemsControl.ItemsSource = null;
         ServersCardsItemsControl.ItemsSource = ViewModel.Servers;
+        ServersCardsItemsControl.Visibility = ViewModel.Servers.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        ServersPageItemsControl.ItemsSource = null;
         ServersPageItemsControl.ItemsSource = ViewModel.Servers;
+        ServersPageItemsControl.Visibility = ViewModel.Servers.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        Sidebar.Servers = null;
         Sidebar.Servers = ViewModel.Servers;
 
         ServersCountText.Text = ViewModel.Servers.Count.ToString();
@@ -203,6 +227,9 @@ public sealed partial class DashboardView : UserControl
 
         bool isEmpty = ViewModel.Servers.Count == 0 && !ViewModel.IsLoading;
         ServersEmptyPanel.Visibility = isEmpty ? Visibility.Visible : Visibility.Collapsed;
+        ServersLoadingPanel.Visibility = (ViewModel.IsLoading && ViewModel.Servers.Count == 0)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private void UpdatePlatformStats()
@@ -288,6 +315,7 @@ public sealed partial class DashboardView : UserControl
         Sidebar.SelectedServer = null;
         ViewModel.SelectedTab = tab;
         UpdateTabContent();
+        _ = RefreshCoinsAsync();
     }
 
     private void OnSidebarServerTabSelected(object? sender, ServerTab tab)
@@ -316,6 +344,7 @@ public sealed partial class DashboardView : UserControl
     private void OnRefreshRequested(object? sender, EventArgs e)
     {
         AuthVM?.CheckSessionCommand.Execute(null);
+        _ = RefreshCoinsAsync();
         ViewModel.RefreshCommand.Execute(null);
     }
 
@@ -343,8 +372,20 @@ public sealed partial class DashboardView : UserControl
     private void OnServerCreated(ServerInstance server)
     {
         CreateServerModalOverlay.Visibility = Visibility.Collapsed;
-        ViewModel.Servers.Insert(0, server);
-        ViewModel.RefreshCommand.Execute(null);
+        var existing = ViewModel.Servers.FirstOrDefault(s => s.Identifier == server.Identifier || (s.Id != 0 && s.Id == server.Id));
+        if (existing == null)
+        {
+            ViewModel.Servers.Insert(0, server);
+        }
+        UpdateServersView();
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1200);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                _ = ViewModel.LoadDashboardDataAsync(force: true, isBackground: true);
+            });
+        });
     }
 
     private void OnModalOverlayTapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
@@ -387,7 +428,32 @@ public sealed partial class DashboardView : UserControl
         {
             AuthVM.CurrentUser.Coins = remainingCoins;
         }
+        Sidebar.UpdateCoins(remainingCoins);
+        ViewModel.UserCoins = remainingCoins;
+        StoreViewContent.ViewModel.UserCoins = remainingCoins;
         ViewModel.RefreshCommand.Execute(null);
+    }
+
+    public async Task RefreshCoinsAsync()
+    {
+        try
+        {
+            var coins = await AuthService.Instance.FetchCoinsAsync();
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (AuthVM?.CurrentUser != null)
+                {
+                    AuthVM.CurrentUser.Coins = coins;
+                }
+                ViewModel.UserCoins = coins;
+                Sidebar.UpdateCoins(coins);
+                StoreViewContent.ViewModel.UserCoins = coins;
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DashboardView] RefreshCoinsAsync error: {ex.Message}");
+        }
     }
 
     private async void OnCardDeleteRequested(object? sender, ServerInstance server)

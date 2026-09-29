@@ -11,6 +11,7 @@ public class PteroServerWrapper
         [JsonPropertyName("id")]
         public object? RawId { get; set; }
 
+        [JsonIgnore]
         public int Id
         {
             get
@@ -36,6 +37,7 @@ public class PteroServerWrapper
         [JsonPropertyName("node")]
         public object? RawNode { get; set; }
 
+        [JsonIgnore]
         public string? Node
         {
             get

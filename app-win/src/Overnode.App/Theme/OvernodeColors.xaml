@@ -45,4 +45,10 @@
     <SolidColorBrush x:Key="OvernodeGaugeDiskBrush" Color="{StaticResource OvernodeGaugeDiskColor}" />
     <SolidColorBrush x:Key="OvernodeGaugeServersBrush" Color="{StaticResource OvernodeGaugeServersColor}" />
 
+    <!-- Global ScrollViewer: hide scrollbars/sliders by default while preserving smooth scrolling -->
+    <Style TargetType="ScrollViewer">
+        <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />
+        <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+    </Style>
+
 </ResourceDictionary>

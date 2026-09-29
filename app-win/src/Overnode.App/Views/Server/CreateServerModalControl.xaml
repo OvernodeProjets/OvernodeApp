@@ -71,7 +71,8 @@
             <ScrollViewer x:Name="ModalScrollViewer"
                           Grid.Row="1"
                           Padding="24,20"
-                          VerticalScrollBarVisibility="Auto">
+                          VerticalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Spacing="22">
                     <!-- Loading View -->
                     <StackPanel x:Name="LoadingPanel"

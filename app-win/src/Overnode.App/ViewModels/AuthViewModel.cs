@@ -31,6 +31,8 @@ public partial class AuthViewModel : ObservableObject
     [ObservableProperty]
     private string? _errorMessage;
 
+    private User? _pendingTwoFactorUser;
+
     public TwoFactorViewModel TwoFactorVM { get; }
 
     public LocalizationManager Loc => _loc;
@@ -38,7 +40,7 @@ public partial class AuthViewModel : ObservableObject
     public AuthViewModel()
     {
         TwoFactorVM = new TwoFactorViewModel();
-        TwoFactorVM.VerificationSucceeded += OnTwoFactorSucceeded;
+        TwoFactorVM.OnVerifySuccessAsync = HandleTwoFactorSuccessAsync;
         TwoFactorVM.VerificationCancelled += OnTwoFactorCancelled;
 
         // Check demo mode environment flag
@@ -103,6 +105,11 @@ public partial class AuthViewModel : ObservableObject
                     Role = initData.Roles?.Count > 0 ? initData.Roles[0].Name : null,
                     Coins = initData.Coins ?? 0
                 };
+                try
+                {
+                    CurrentUser.Coins = await _authService.FetchCoinsAsync();
+                }
+                catch { }
                 IsAuthenticated = true;
                 IsTwoFactorPending = false;
                 return;
@@ -116,6 +123,7 @@ public partial class AuthViewModel : ObservableObject
                 var state = await _authService.CheckAuthStateAsync();
                 if (state.TwoFactorPending == true)
                 {
+                    _pendingTwoFactorUser = state.User;
                     IsTwoFactorPending = true;
                     IsAuthenticated = false;
                     return;
@@ -124,8 +132,14 @@ public partial class AuthViewModel : ObservableObject
                 if (state.Authenticated && state.User != null)
                 {
                     CurrentUser = state.User;
+                    try
+                    {
+                        CurrentUser.Coins = await _authService.FetchCoinsAsync();
+                    }
+                    catch { }
                     IsAuthenticated = true;
                     IsTwoFactorPending = false;
+                    _pendingTwoFactorUser = null;
                     return;
                 }
             }
@@ -161,6 +175,7 @@ public partial class AuthViewModel : ObservableObject
 
             if (state.TwoFactorPending == true)
             {
+                _pendingTwoFactorUser = state.User;
                 IsTwoFactorPending = true;
                 return;
             }
@@ -186,36 +201,62 @@ public partial class AuthViewModel : ObservableObject
         ErrorMessage = _loc["auth_passkey_notice"];
     }
 
-    private async void OnTwoFactorSucceeded()
+    public async Task<bool> HandleTwoFactorSuccessAsync()
     {
-        IsTwoFactorPending = false;
-        IsLoading = true;
         ErrorMessage = null;
+
+        if (Environment.GetEnvironmentVariable("OVERNODE_TEST_2FA") == "1")
+        {
+            CurrentUser = new User
+            {
+                Id = "1",
+                Username = "OvernodeUser",
+                Email = "user@overnode.fr",
+                GlobalName = "Overnode User",
+                Role = "Client",
+                Coins = 350
+            };
+            IsAuthenticated = true;
+            IsTwoFactorPending = false;
+            _pendingTwoFactorUser = null;
+            return true;
+        }
 
         try
         {
-            await CompleteSessionInitializationAsync(null);
+            bool ok = await CompleteSessionInitializationAsync(_pendingTwoFactorUser);
+            if (ok)
+            {
+                IsAuthenticated = true;
+                IsTwoFactorPending = false;
+                _pendingTwoFactorUser = null;
+                return true;
+            }
+            else
+            {
+                TwoFactorVM.ErrorMessage = _loc["auth_error_generic"];
+                return false;
+            }
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
-        }
-        finally
-        {
-            IsLoading = false;
+            TwoFactorVM.ErrorMessage = ex.Message;
+            return false;
         }
     }
 
     private void OnTwoFactorCancelled()
     {
+        _pendingTwoFactorUser = null;
         IsTwoFactorPending = false;
         _authService.Logout();
         IsAuthenticated = false;
         CurrentUser = null;
     }
 
-    private async Task CompleteSessionInitializationAsync(User? fallbackUser)
+    private async Task<bool> CompleteSessionInitializationAsync(User? fallbackUser)
     {
+        // 1. Primary: fetch /api/v5/init
         try
         {
             var initData = await _authService.FetchInitAsync();
@@ -237,20 +278,88 @@ public partial class AuthViewModel : ObservableObject
 
                 try
                 {
+                    CurrentUser.Coins = await _authService.FetchCoinsAsync();
+                }
+                catch { }
+
+                try
+                {
                     InitialResources = await _authService.FetchResourcesAsync();
                 }
                 catch { }
 
                 IsAuthenticated = true;
-                return;
+                return true;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AuthVM] FetchInitAsync failed: {ex.Message}");
+        }
 
+        // 2. Secondary fallback: check /api/v5/state (same fallback mechanism as macOS checkSession)
+        try
+        {
+            var state = await _authService.CheckAuthStateAsync();
+            if (state.Authenticated && state.User != null)
+            {
+                CurrentUser = state.User;
+                try
+                {
+                    CurrentUser.Coins = await _authService.FetchCoinsAsync();
+                }
+                catch { }
+
+                try
+                {
+                    InitialResources = await _authService.FetchResourcesAsync();
+                }
+                catch { }
+
+                IsAuthenticated = true;
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AuthVM] CheckAuthStateAsync fallback failed: {ex.Message}");
+        }
+
+        // 3. Fallback to passed user object
         if (fallbackUser != null)
         {
             CurrentUser = fallbackUser;
+            try
+            {
+                CurrentUser.Coins = await _authService.FetchCoinsAsync();
+            }
+            catch { }
+
+            try
+            {
+                InitialResources = await _authService.FetchResourcesAsync();
+            }
+            catch { }
+
             IsAuthenticated = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    [RelayCommand]
+    public async Task RefreshCoinsAsync()
+    {
+        if (CurrentUser == null) return;
+        try
+        {
+            var coins = await _authService.FetchCoinsAsync();
+            CurrentUser.Coins = coins;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AuthVM] RefreshCoinsAsync error: {ex.Message}");
         }
     }
 
@@ -262,5 +371,6 @@ public partial class AuthViewModel : ObservableObject
         CurrentUser = null;
         InitialResources = null;
         IsTwoFactorPending = false;
+        _pendingTwoFactorUser = null;
     }
 }

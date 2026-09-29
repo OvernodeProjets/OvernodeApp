@@ -84,7 +84,7 @@ public sealed partial class WalletView : UserControl
     private void UpdateBalances()
     {
         var balances = ViewModel.BillingInfo?.Balances;
-        int coins = balances?.Coins ?? 350;
+        int coins = balances?.Coins ?? 0;
         double credit = balances?.CreditEur ?? 0.0;
 
         CoinBalanceAmount.Text = coins.ToString("N0", CultureInfo.InvariantCulture);

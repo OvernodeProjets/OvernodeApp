@@ -6,7 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer Padding="24" VerticalScrollBarVisibility="Auto">
+    <ScrollViewer Padding="24" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="24">
             <!-- Header section -->
             <Grid>
@@ -82,7 +82,7 @@
                         <Border BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="0,0,0,1" Padding="16">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Border Width="32" Height="32" CornerRadius="16" Background="#26F59E0B">
-                                    <FontIcon Glyph="&#xE8D6;" FontSize="14" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                    <FontIcon Glyph="&#xE735;" FontSize="14" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
                                 </Border>
                                 <TextBlock x:Name="CoinBalanceTitle" Text="Solde de Coins" FontSize="14" FontWeight="Medium" Foreground="{StaticResource OvernodeTextPrimaryBrush}" VerticalAlignment="Center" />
                             </StackPanel>

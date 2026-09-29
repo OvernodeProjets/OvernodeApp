@@ -1,8 +1,55 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Overnode.App.Models;
+
+public class FlexibleStringConverter : JsonConverter<string>
+{
+    public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return reader.TokenType switch
+        {
+            JsonTokenType.String => reader.GetString() ?? string.Empty,
+            JsonTokenType.Number => reader.TryGetInt64(out long l) ? l.ToString() : (reader.TryGetDouble(out double d) ? d.ToString() : string.Empty),
+            JsonTokenType.True => "true",
+            JsonTokenType.False => "false",
+            JsonTokenType.Null => string.Empty,
+            _ => string.Empty
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value);
+    }
+}
+
+public class FlexibleIntConverter : JsonConverter<int>
+{
+    public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Number)
+        {
+            return reader.GetInt32();
+        }
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var str = reader.GetString();
+            if (!string.IsNullOrEmpty(str) && int.TryParse(str, out int val))
+            {
+                return val;
+            }
+        }
+        return 0;
+    }
+
+    public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+    {
+        writer.WriteNumberValue(value);
+    }
+}
 
 public class ResourceRequirement
 {
@@ -28,6 +75,7 @@ public class ResourceRequirement
 public class ServerEgg
 {
     [JsonPropertyName("id")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
     public string Id { get; set; } = string.Empty;
 
     [JsonPropertyName("name")]
@@ -71,6 +119,7 @@ public class ServerEgg
 public class EggCategory
 {
     [JsonPropertyName("id")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
     public string Id { get; set; } = string.Empty;
 
     [JsonPropertyName("name")]
@@ -102,7 +151,10 @@ public class EggCategory
 
 public class ServerLocation
 {
+    private List<string>? _flags;
+
     [JsonPropertyName("id")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
     public string Id { get; set; } = string.Empty;
 
     [JsonPropertyName("name")]
@@ -112,7 +164,11 @@ public class ServerLocation
     public string Description { get; set; } = string.Empty;
 
     [JsonPropertyName("flags")]
-    public List<string> Flags { get; set; } = new();
+    public List<string> Flags
+    {
+        get => _flags ??= new();
+        set => _flags = value ?? new();
+    }
 
     [JsonPropertyName("full")]
     public bool Full { get; set; }
@@ -132,13 +188,38 @@ public class ServerLocation
 public class ServerNode
 {
     [JsonPropertyName("id")]
+    [JsonConverter(typeof(FlexibleIntConverter))]
     public int Id { get; set; }
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("locationId")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
     public string LocationId { get; set; } = string.Empty;
+
+    [JsonPropertyName("location_id")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
+    public string? LocationIdSnakeCase
+    {
+        get => null;
+        set
+        {
+            if (!string.IsNullOrEmpty(value) && string.IsNullOrEmpty(LocationId))
+            {
+                LocationId = value;
+            }
+        }
+    }
+
+    [JsonPropertyName("fqdn")]
+    public string? Fqdn { get; set; }
+
+    [JsonPropertyName("memory")]
+    public double? Memory { get; set; }
+
+    [JsonPropertyName("disk")]
+    public double? Disk { get; set; }
 
     public ServerNode() { }
 

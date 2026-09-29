@@ -31,23 +31,48 @@ public sealed class AuthService
         return await _client.GetAsync<ResourcesResponse>("/api/v5/resources");
     }
 
-    private class CoinsResponse
-    {
-        [JsonPropertyName("coins")]
-        public int Coins { get; set; }
-    }
-
     public async Task<int> FetchCoinsAsync()
     {
+        // 1. Primary: /api/coins
         try
         {
             var res = await _client.GetAsync<CoinsResponse>("/api/coins");
-            return res?.Coins ?? 0;
+            return res.Coins;
         }
-        catch
+        catch (Exception ex)
         {
-            return 0;
+            System.Diagnostics.Debug.WriteLine($"[AuthService] /api/coins failed: {ex.Message}");
         }
+
+        // 2. Fallback: /api/store/config
+        try
+        {
+            var store = await _client.GetAsync<StoreBalanceResponse>("/api/store/config");
+            if (store.UserBalance.HasValue)
+            {
+                return store.UserBalance.Value;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AuthService] /api/store/config coins fallback failed: {ex.Message}");
+        }
+
+        // 3. Fallback: /api/v5/billing/info
+        try
+        {
+            var billing = await _client.GetAsync<BillingInfo>("/api/v5/billing/info");
+            if (billing.Balances != null)
+            {
+                return billing.Balances.Coins;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AuthService] /api/v5/billing/info coins fallback failed: {ex.Message}");
+        }
+
+        return 0;
     }
 
     public async Task<TwoFactorVerifyResponse> Verify2FAAsync(string code)

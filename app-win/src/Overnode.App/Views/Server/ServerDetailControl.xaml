@@ -113,7 +113,7 @@
         <!-- Main Tab Content Body -->
         <ScrollViewer Grid.Row="1"
                       Padding="24"
-                      VerticalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Hidden"
                       HorizontalScrollBarVisibility="Disabled">
             <Grid>
                 <serverViews:ServerConsoleTabControl x:Name="ConsoleTab" Visibility="Collapsed" />

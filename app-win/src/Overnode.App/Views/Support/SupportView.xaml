@@ -107,7 +107,7 @@
                         <TextBlock Text="Vos Tickets Récents" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                     </Border>
 
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel x:Name="TicketsListPanel" Padding="8" Spacing="6" />
                     </ScrollViewer>
                 </Grid>
@@ -150,7 +150,7 @@
                     </Border>
 
                     <!-- Messages List -->
-                    <ScrollViewer Grid.Row="1" Padding="18" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Grid.Row="1" Padding="18" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel x:Name="MessagesPanel" Spacing="12" />
                     </ScrollViewer>
 

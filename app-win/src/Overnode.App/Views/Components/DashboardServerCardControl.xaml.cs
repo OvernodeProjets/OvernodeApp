@@ -36,6 +36,15 @@ public sealed partial class DashboardServerCardControl : UserControl
             }
         };
 
+        this.Loaded += (s, e) =>
+        {
+            if (DataContext is ServerInstance srv && Server == null)
+            {
+                Server = srv;
+            }
+            UpdateUI();
+        };
+
         LocalizationManager.Instance.LanguageChanged += (s, e) => UpdateUI();
     }
 

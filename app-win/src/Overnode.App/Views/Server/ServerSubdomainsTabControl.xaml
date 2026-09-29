@@ -62,7 +62,7 @@
                 BorderThickness="1"
                 CornerRadius="8">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
-                <FontIcon Glyph="&#xE839;" FontSize="32" Foreground="{StaticResource OvernodeTextMutedBrush}" />
+                <FontIcon Glyph="&#xE774;" FontSize="32" Foreground="{StaticResource OvernodeTextMutedBrush}" />
                 <TextBlock x:Name="EmptyText" Text="Aucun sous-domaine configuré" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
             </StackPanel>
         </Border>

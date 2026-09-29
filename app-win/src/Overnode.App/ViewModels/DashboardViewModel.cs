@@ -44,6 +44,9 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty]
     private ServerInstance? _selectedServer;
 
+    [ObservableProperty]
+    private int _userCoins;
+
     public LocalizationManager Loc => _loc;
 
     public DashboardViewModel(ResourcesResponse? initialResources = null)
@@ -176,6 +179,7 @@ public partial class DashboardViewModel : ObservableObject
                 Limits = new ResourceBucket(8192, 40960, 400, 4)
             };
             LastUpdated = DateTime.UtcNow;
+            UserCoins = 350;
             IsLoading = false;
 
             if (Environment.GetEnvironmentVariable("OVERNODE_TEST_SERVER_DETAIL") == "1")
@@ -190,13 +194,19 @@ public partial class DashboardViewModel : ObservableObject
             var srvsTask = _authService.FetchServersStatusAsync();
             var statsTask = _authService.FetchPlatformStatsAsync();
             var resTask = _authService.FetchResourcesAsync();
+            var coinsTask = _authService.FetchCoinsAsync();
 
-            await Task.WhenAll(srvsTask, statsTask, resTask);
+            await Task.WhenAll(srvsTask, statsTask, resTask, coinsTask);
 
             var srvs = await srvsTask;
-            if (srvs != null && srvs.Count > 0)
+            if (srvs != null)
             {
-                Servers = new ObservableCollection<ServerInstance>(srvs);
+                Servers.Clear();
+                foreach (var s in srvs)
+                {
+                    Servers.Add(s);
+                }
+                OnPropertyChanged(nameof(Servers));
             }
 
             PlatformStats = await statsTask;
@@ -210,6 +220,12 @@ public partial class DashboardViewModel : ObservableObject
             {
                 if (Resources == null) Resources = ResourcesResponse.Empty;
             }
+
+            try
+            {
+                UserCoins = await coinsTask;
+            }
+            catch { }
 
             LastUpdated = DateTime.UtcNow;
         }

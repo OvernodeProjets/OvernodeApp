@@ -61,3 +61,15 @@ public class PasskeyVerifyPayload
         public string? UserHandle { get; set; }
     }
 }
+
+public class CoinsResponse
+{
+    [JsonPropertyName("coins")]
+    public int Coins { get; set; }
+}
+
+public class StoreBalanceResponse
+{
+    [JsonPropertyName("userBalance")]
+    public int? UserBalance { get; set; }
+}

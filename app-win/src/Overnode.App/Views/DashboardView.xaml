@@ -45,7 +45,7 @@
             <Grid Grid.Column="1">
                 <!-- Overview / Dashboard Tab -->
                 <ScrollViewer x:Name="OverviewContent"
-                              VerticalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Hidden"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Spacing="32" Padding="28,24">
                         <!-- Dashboard Title -->
@@ -66,7 +66,7 @@
 
                             <components:ResourceGaugeControl x:Name="RamGauge"
                                                              Grid.Column="0"
-                                                             Glyph="&#xEA40;"
+                                                             Glyph="&#xEB05;"
                                                              AccentBrush="{StaticResource OvernodeGaugeRamBrush}" />
 
                             <components:ResourceGaugeControl x:Name="CpuGauge"
@@ -265,7 +265,7 @@
 
                 <!-- Servers Tab Content -->
                 <ScrollViewer x:Name="ServersListContent"
-                              VerticalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Hidden"
                               HorizontalScrollBarVisibility="Disabled"
                               Visibility="Collapsed">
                     <StackPanel Spacing="24" Padding="28,24">

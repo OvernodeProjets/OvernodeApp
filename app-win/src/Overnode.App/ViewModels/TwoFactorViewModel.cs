@@ -22,6 +22,7 @@ public partial class TwoFactorViewModel : ObservableObject
     [ObservableProperty]
     private string? _errorMessage;
 
+    public Func<Task<bool>>? OnVerifySuccessAsync { get; set; }
     public event Action? VerificationSucceeded;
     public event Action? VerificationCancelled;
 
@@ -42,10 +43,34 @@ public partial class TwoFactorViewModel : ObservableObject
 
         try
         {
+            if (Environment.GetEnvironmentVariable("OVERNODE_TEST_2FA") == "1")
+            {
+                if (OnVerifySuccessAsync != null)
+                {
+                    bool ok = await OnVerifySuccessAsync();
+                    if (!ok && string.IsNullOrEmpty(ErrorMessage))
+                    {
+                        ErrorMessage = _loc["auth_error_generic"];
+                    }
+                    return;
+                }
+            }
+
             var res = await _authService.Verify2FAAsync(Code.Trim());
             if (res.Success)
             {
-                VerificationSucceeded?.Invoke();
+                if (OnVerifySuccessAsync != null)
+                {
+                    bool ok = await OnVerifySuccessAsync();
+                    if (!ok && string.IsNullOrEmpty(ErrorMessage))
+                    {
+                        ErrorMessage = _loc["auth_error_generic"];
+                    }
+                }
+                else
+                {
+                    VerificationSucceeded?.Invoke();
+                }
             }
             else
             {

@@ -4,9 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Overnode">
 
-    <Grid Background="#101218">
-        <TextBlock Text="Overnode - Test" Foreground="White" FontSize="24" 
-                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+    <Grid x:Name="RootGrid" Background="#101218">
     </Grid>
 </Window>
 

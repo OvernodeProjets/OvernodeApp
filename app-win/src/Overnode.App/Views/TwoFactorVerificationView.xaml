@@ -7,7 +7,7 @@
     mc:Ignorable="d">
 
     <Grid Background="#101218">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" 
+        <ScrollViewer VerticalScrollBarVisibility="Hidden" 
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalAlignment="Center" 
                       HorizontalAlignment="Center">

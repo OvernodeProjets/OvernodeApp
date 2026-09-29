@@ -19,7 +19,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Border Width="230"
+    <Border Width="240"
             Background="{StaticResource OvernodeCardBrush}"
             BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
             BorderThickness="0,0,1,0"
@@ -32,7 +32,7 @@
 
             <!-- Scrollable Navigation Items -->
             <ScrollViewer Grid.Row="0"
-                          VerticalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Hidden"
                           HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
                     <!-- Global Navigation Container -->
@@ -61,7 +61,7 @@
 
                         <Button x:Name="NavDailyRewardBtn" Click="OnTabClicked" Tag="DailyReward" Style="{StaticResource SidebarNavButtonStyle}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
-                                <FontIcon Glyph="&#xE8F8;" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" Width="20" />
+                                <FontIcon Glyph="&#xE7F6;" FontSize="14" Foreground="{StaticResource OvernodeTextSecondaryBrush}" Width="20" />
                                 <TextBlock x:Name="NavDailyRewardText" Text="Récompense" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                             </StackPanel>
                         </Button>
@@ -223,7 +223,7 @@
 
                         <Button x:Name="ServerTabSubdomainsBtn" Click="OnServerTabClicked" Tag="Subdomains" Style="{StaticResource SidebarNavButtonStyle}">
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <FontIcon Glyph="&#xE839;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <FontIcon Glyph="&#xE774;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                                 <TextBlock x:Name="ServerTabSubdomainsText" Text="Sous-domaines" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                             </StackPanel>
                         </Button>
@@ -254,8 +254,10 @@
                     Margin="0,10,0,0">
                 <StackPanel>
                     <!-- Coins Row -->
-                    <StackPanel Orientation="Horizontal" Spacing="6" Padding="12,10,12,8">
-                        <FontIcon Glyph="&#xE8D6;" FontSize="12" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" Padding="12,10,12,8">
+                        <Border Width="16" Height="16" CornerRadius="8" Background="{StaticResource OvernodeAccentGoldBrush}" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE735;" FontSize="9" Foreground="#0B0D13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
                         <TextBlock x:Name="UserCoinsText"
                                    Text="0"
                                    FontSize="12"

@@ -14,6 +14,7 @@ public sealed partial class DailyRewardView : UserControl
 {
     private readonly LocalizationManager _loc = LocalizationManager.Instance;
     public DailyRewardViewModel ViewModel { get; } = new();
+    public event EventHandler? RewardClaimed;
 
     public DailyRewardView()
     {
@@ -201,5 +202,6 @@ public sealed partial class DailyRewardView : UserControl
     private async void OnClaimClicked(object sender, RoutedEventArgs e)
     {
         await ViewModel.ClaimRewardAsync();
+        RewardClaimed?.Invoke(this, EventArgs.Empty);
     }
 }

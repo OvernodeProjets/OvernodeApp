@@ -53,7 +53,7 @@
 
         <!-- Central Card Container -->
         <ScrollViewer Grid.Row="1" 
-                      VerticalScrollBarVisibility="Auto" 
+                      VerticalScrollBarVisibility="Hidden" 
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalAlignment="Center"
                       HorizontalAlignment="Center">

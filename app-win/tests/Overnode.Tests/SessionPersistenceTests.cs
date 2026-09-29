@@ -10,36 +10,62 @@ public class SessionPersistenceTests
     public void Test_DPAPI_Save_And_Load_Cookies()
     {
         var persistence = SessionPersistence.Instance;
-        persistence.Clear();
+        var existingRealCookies = persistence.LoadCookies();
 
-        var testCookies = new List<Cookie>
+        try
         {
-            new("connect.sid", "s%3Atestsessionid12345.signature", "/", "console.overnode.fr")
+            persistence.Clear();
+
+            var testCookies = new List<Cookie>
             {
-                Secure = true,
-                HttpOnly = true,
-                Expires = DateTime.UtcNow.AddDays(7)
+                new("connect.sid", "s%3Atestsessionid12345.signature", "/", "console.overnode.fr")
+                {
+                    Secure = true,
+                    HttpOnly = true,
+                    Expires = DateTime.UtcNow.AddDays(7)
+                }
+            };
+
+            // Act: Save encrypted via DPAPI
+            persistence.SaveCookies(testCookies);
+
+            // Act: Decrypt via DPAPI
+            var loaded = persistence.LoadCookies();
+
+            // Assert
+            Assert.IsNotNull(loaded);
+            Assert.IsTrue(loaded.Count > 0);
+            var sidCookie = loaded.Find(c => c.Name == "connect.sid");
+            Assert.IsNotNull(sidCookie);
+            Assert.AreEqual("s%3Atestsessionid12345.signature", sidCookie.Value);
+            Assert.IsTrue(sidCookie.Secure);
+            Assert.IsTrue(sidCookie.HttpOnly);
+        }
+        finally
+        {
+            persistence.Clear();
+            if (existingRealCookies != null && existingRealCookies.Count > 0)
+            {
+                persistence.SaveCookies(existingRealCookies);
             }
-        };
+        }
+    }
 
-        // Act: Save encrypted via DPAPI
-        persistence.SaveCookies(testCookies);
+    public void Test_CookieContainer_Domains()
+    {
+        var baseUri = new Uri("https://console.overnode.fr");
+        var container = new CookieContainer();
 
-        // Act: Decrypt via DPAPI
-        var loaded = persistence.LoadCookies();
+        var c1 = new Cookie("c1", "v1", "/", "overnode.fr");
+        container.Add(baseUri, c1);
 
-        // Assert
-        Assert.IsNotNull(loaded);
-        Assert.IsTrue(loaded.Count > 0);
-        var sidCookie = loaded.Find(c => c.Name == "connect.sid");
-        Assert.IsNotNull(sidCookie);
-        Assert.AreEqual("s%3Atestsessionid12345.signature", sidCookie.Value);
-        Assert.IsTrue(sidCookie.Secure);
-        Assert.IsTrue(sidCookie.HttpOnly);
+        var c2 = new Cookie("c2", "v2", "/", ".overnode.fr");
+        container.Add(baseUri, c2);
 
-        // Clean up
-        persistence.Clear();
-        var empty = persistence.LoadCookies();
-        Assert.AreEqual(0, empty.Count);
+        var c3 = new Cookie("c3", "v3", "/", "console.overnode.fr");
+        container.Add(baseUri, c3);
+
+        var retrieved = container.GetCookies(baseUri);
+        Assert.IsTrue(retrieved.Count >= 3);
     }
 }

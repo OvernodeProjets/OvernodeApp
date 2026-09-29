@@ -1,11 +1,18 @@
-using System;
-using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace Overnode.App.Models;
 
-public class User
+public class User : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
 
@@ -24,8 +31,21 @@ public class User
     [JsonPropertyName("avatar_url")]
     public string? AvatarUrl { get; set; }
 
+    private int _coins = 0;
+
     [JsonPropertyName("coins")]
-    public int Coins { get; set; } = 0;
+    public int Coins
+    {
+        get => _coins;
+        set
+        {
+            if (_coins != value)
+            {
+                _coins = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
     public string DisplayName => !string.IsNullOrWhiteSpace(GlobalName) ? GlobalName : Username;
     public string Initial => !string.IsNullOrEmpty(Username) ? Username.Substring(0, 1).ToUpperInvariant() : "U";

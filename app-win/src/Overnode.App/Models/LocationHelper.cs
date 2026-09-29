@@ -142,9 +142,14 @@ public static class LocationHelper
             city = "Beauharnois";
             tag = "Game DDoS";
         }
+        else if (!string.IsNullOrEmpty(node.Fqdn))
+        {
+            city = node.Fqdn;
+            tag = "Online";
+        }
 
         return new FormattedNodeInfo(
-            string.IsNullOrEmpty(node.Name) ? "Node" : node.Name,
+            string.IsNullOrEmpty(node.Name) ? $"Node #{node.Id}" : node.Name,
             city,
             tag,
             "\uE945" // Bolt / Lightning
@@ -153,16 +158,52 @@ public static class LocationHelper
 
     public static bool IsMatch(ServerNode node, ServerLocation location)
     {
-        var nLoc = (node.LocationId ?? string.Empty).ToLowerInvariant();
-        var nName = (node.Name ?? string.Empty).ToLowerInvariant();
-        var locId = (location.Id ?? string.Empty).ToLowerInvariant();
-        var locName = (location.Name ?? string.Empty).ToLowerInvariant();
+        var nLoc = (node.LocationId ?? string.Empty).Trim().ToLowerInvariant();
+        var nName = (node.Name ?? string.Empty).Trim().ToLowerInvariant();
+        var locId = (location.Id ?? string.Empty).Trim().ToLowerInvariant();
+        var locName = (location.Name ?? string.Empty).Trim().ToLowerInvariant();
 
-        if (!string.IsNullOrEmpty(locId) && nLoc == locId) return true;
-        if (!string.IsNullOrEmpty(locName) && nLoc == locName) return true;
+        // Direct ID match
+        if (!string.IsNullOrEmpty(locId) && !string.IsNullOrEmpty(nLoc) && nLoc == locId) return true;
+        if (!string.IsNullOrEmpty(locName) && !string.IsNullOrEmpty(nLoc) && nLoc == locName) return true;
         if (!string.IsNullOrEmpty(locId) && nName.StartsWith(locId + ".")) return true;
         if (!string.IsNullOrEmpty(locName) && nName.StartsWith(locName + ".")) return true;
-        if (location.Flags != null && location.Flags.Any(f => f.Equals(nLoc, StringComparison.OrdinalIgnoreCase))) return true;
+        if (location.Flags != null && location.Flags.Any(f => f.Trim().Equals(nLoc, StringComparison.OrdinalIgnoreCase))) return true;
+
+        // If both have numeric IDs that don't match, they belong to different datacenters
+        if (int.TryParse(nLoc, out int nLocInt) && int.TryParse(locId, out int locIdInt))
+        {
+            return nLocInt == locIdInt;
+        }
+
+        // Heuristics based on country & datacenter abbreviations
+        bool locIsFrance = locId == "fr" || locName.Contains("france") || locName.Contains("gravelines") || locName.Contains("marseille") || locName.Contains("paris") || (location.Flags != null && location.Flags.Any(f => f.Equals("fr", StringComparison.OrdinalIgnoreCase)));
+        if (locIsFrance)
+        {
+            if (nLoc == "fr" || nLoc.Contains("france") || nName.Contains("-fr") || nName.Contains("fr-") || nName.Contains("gra") || nName.Contains("mrs") || nName.Contains("par") || nName.Contains("rbx"))
+                return true;
+        }
+
+        bool locIsGermany = locId == "de" || locName.Contains("germany") || locName.Contains("allemagne") || locName.Contains("frankfurt") || locName.Contains("francfort") || (location.Flags != null && location.Flags.Any(f => f.Equals("de", StringComparison.OrdinalIgnoreCase)));
+        if (locIsGermany)
+        {
+            if (nLoc == "de" || nLoc.Contains("germany") || nName.Contains("-de") || nName.Contains("de-") || nName.Contains("fra"))
+                return true;
+        }
+
+        bool locIsUs = locId == "us" || locName.Contains("united states") || locName.Contains("usa") || locName.Contains("new york") || (location.Flags != null && location.Flags.Any(f => f.Equals("us", StringComparison.OrdinalIgnoreCase)));
+        if (locIsUs)
+        {
+            if (nLoc == "us" || nLoc.Contains("usa") || nName.Contains("-us") || nName.Contains("us-") || nName.Contains("nyc") || nName.Contains("chi"))
+                return true;
+        }
+
+        bool locIsCanada = locId == "ca" || locName.Contains("canada") || locName.Contains("beauharnois") || (location.Flags != null && location.Flags.Any(f => f.Equals("ca", StringComparison.OrdinalIgnoreCase)));
+        if (locIsCanada)
+        {
+            if (nLoc == "ca" || nLoc.Contains("canada") || nName.Contains("-ca") || nName.Contains("ca-") || nName.Contains("bhs"))
+                return true;
+        }
 
         return false;
     }

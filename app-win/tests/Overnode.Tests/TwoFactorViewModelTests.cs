@@ -38,4 +38,34 @@ public class TwoFactorViewModelTests
         Assert.IsNull(vm.ErrorMessage);
         Assert.IsTrue(cancelled);
     }
+
+    public void Test_Verify_With_OnVerifySuccessAsync()
+    {
+        Environment.SetEnvironmentVariable("OVERNODE_TEST_2FA", "1");
+        try
+        {
+            var vm = new TwoFactorViewModel
+            {
+                Code = "123456"
+            };
+
+            bool callbackInvoked = false;
+            vm.OnVerifySuccessAsync = () =>
+            {
+                callbackInvoked = true;
+                return Task.FromResult(true);
+            };
+
+            var task = vm.VerifyCommand.ExecuteAsync(null);
+            task.GetAwaiter().GetResult();
+
+            Assert.IsTrue(callbackInvoked);
+            Assert.IsFalse(vm.IsLoading);
+            Assert.IsNull(vm.ErrorMessage);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("OVERNODE_TEST_2FA", null);
+        }
+    }
 }

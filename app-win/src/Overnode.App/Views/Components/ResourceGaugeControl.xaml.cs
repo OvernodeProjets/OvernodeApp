@@ -90,6 +90,7 @@ public sealed partial class ResourceGaugeControl : UserControl
         var unitSuffix = !string.IsNullOrEmpty(Unit) ? $" {Unit}" : "";
         GaugeValues.Text = $"{UsedFormatted}{unitSuffix} / {TotalFormatted}{unitSuffix}";
         GaugeProgress.Value = Math.Clamp(Percentage, 0, 100);
+        GaugePercentageBadge.Text = $"{Percentage:F0}%";
 
         var utilText = LocalizationManager.Instance.GetString("resource_utilization");
         GaugeUtilization.Text = $"{Percentage:F1}% {utilText}";
@@ -98,6 +99,7 @@ public sealed partial class ResourceGaugeControl : UserControl
         {
             GaugeIcon.Foreground = AccentBrush;
             GaugeProgress.Foreground = AccentBrush;
+            GaugePercentageBadge.Foreground = AccentBrush;
         }
     }
 }

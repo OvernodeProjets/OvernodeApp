@@ -1,5 +1,6 @@
 using System;
 using Overnode.App.Localization;
+using Overnode.App.Services;
 
 namespace Overnode.Tests;
 
@@ -15,6 +16,7 @@ public class Program
 
         int passed = 0;
         int failed = 0;
+
 
         void Run(string name, Action test)
         {
@@ -43,15 +45,23 @@ public class Program
         var modelTests = new ModelSerializationTests();
         Run("AuthStateResponse 2FA Pending Deserialization", modelTests.Test_AuthStateResponse_Deserialization_With_2FA_Pending);
         Run("AuthStateResponse Authenticated Deserialization", modelTests.Test_AuthStateResponse_Deserialization_Authenticated);
+        Run("User Coins PropertyChanged Notification", modelTests.Test_User_Coins_PropertyChanged_Event);
+        Run("CoinsResponse String/Number Deserialization", modelTests.Test_CoinsResponse_AllowReadingFromString);
+        Run("ServerNode Flexible Types Deserialization", modelTests.Test_ServerNode_Deserialization_Flexible_Types);
+        Run("ServerLocation Flexible Types Deserialization", modelTests.Test_ServerLocation_Deserialization_Flexible_Types);
+        Run("LocationHelper Real Node Matching", modelTests.Test_LocationHelper_IsMatch_Real_Nodes);
+        Run("CreateServerResult Deserialization No Collision", modelTests.Test_CreateServerResult_Deserialization_CaseInsensitive);
 
         // 2. DPAPI Tests
         var persistenceTests = new SessionPersistenceTests();
         Run("DPAPI Save and Load Cookies", persistenceTests.Test_DPAPI_Save_And_Load_Cookies);
+        Run("CookieContainer Domains", persistenceTests.Test_CookieContainer_Domains);
 
         // 3. 2FA ViewModel Tests
         var twoFactorTests = new TwoFactorViewModelTests();
         Run("2FA CanVerify requires minimum 6 characters", twoFactorTests.Test_CanVerify_Requires_Minimum_Six_Characters);
         Run("2FA Cancel resets code and error", twoFactorTests.Test_Cancel_Resets_Code_And_Error);
+        Run("2FA Verify with OnVerifySuccessAsync callback", twoFactorTests.Test_Verify_With_OnVerifySuccessAsync);
 
         // 4. Server & Dashboard Tests
         var serverTests = new ServerAndDashboardTests();
