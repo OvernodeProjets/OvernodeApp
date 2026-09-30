@@ -30,9 +30,9 @@
                             CornerRadius="6"
                             BorderThickness="0"
                             Background="#33FFFFFF">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBlock Text="🇫🇷" FontSize="11" />
-                            <TextBlock Text="FR" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Image Source="ms-appx:///Assets/flag_fr.png" Width="16" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                            <TextBlock Text="FR" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
@@ -42,9 +42,9 @@
                             CornerRadius="6"
                             BorderThickness="0"
                             Background="Transparent">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBlock Text="🇬🇧" FontSize="11" />
-                            <TextBlock Text="EN" FontSize="11" FontWeight="Bold" Foreground="#95A1AD" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Image Source="ms-appx:///Assets/flag_en.png" Width="16" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                            <TextBlock Text="EN" FontSize="11" FontWeight="Bold" Foreground="#95A1AD" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
