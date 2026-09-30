@@ -144,4 +144,40 @@ public class SecondaryModulesTests
         Assert.AreEqual("\uE823", NavigationTab.Afk.ToGlyph());
         Assert.AreEqual("\uE713", NavigationTab.Settings.ToGlyph());
     }
+
+    public void Test_ExternalEditorManager_Settings_And_Toggle()
+    {
+        var manager = Overnode.App.Services.ExternalEditorManager.Instance;
+        Assert.IsNotNull(manager);
+
+        bool eventFired = false;
+        EventHandler handler = (_, _) => eventFired = true;
+        manager.DidChange += handler;
+
+        try
+        {
+            bool original = manager.AlwaysOpenInExternalEditor;
+            manager.AlwaysOpenInExternalEditor = !original;
+            Assert.IsTrue(eventFired);
+            Assert.AreEqual(!original, manager.AlwaysOpenInExternalEditor);
+
+            // Revert back
+            manager.AlwaysOpenInExternalEditor = original;
+            Assert.AreEqual(original, manager.AlwaysOpenInExternalEditor);
+        }
+        finally
+        {
+            manager.DidChange -= handler;
+        }
+    }
+
+    public async Task Test_Subdomain_Domain_Restriction()
+    {
+        var configService = Overnode.App.Services.ServerConfigService.Instance;
+        var domains = await configService.FetchAvailableDomainsAsync();
+
+        Assert.IsNotNull(domains);
+        Assert.AreEqual(1, domains.Count);
+        Assert.AreEqual("overnode.fr", domains[0]);
+    }
 }

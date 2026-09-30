@@ -64,6 +64,7 @@ public class StoreBundle
     public List<string> Features { get; set; } = new();
     public string IconGlyph { get; set; } = "\uE719";
     public string IconColorHex { get; set; } = "#F59E0B";
+    public string ColorHex => IconColorHex;
 
     public StoreBundle() { }
 

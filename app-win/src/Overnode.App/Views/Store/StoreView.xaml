@@ -141,28 +141,20 @@
                             <TextBlock x:Name="ServersDesc" Text="+1 serveur supplémentaire" FontSize="11.5" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                         </StackPanel>
                         <TextBlock x:Name="ServersPriceText" Text="200 coins" FontSize="18" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeGaugeServersBrush}" />
-                        <Button x:Name="BuyServersBtn" Click="OnBuyServersClicked" HorizontalAlignment="Stretch" Padding="0,8" Background="{StaticResource OvernodeAccentGoldBrush}" BorderThickness="0" CornerRadius="6">
-                            <TextBlock Text="Acheter" FontSize="12.5" FontWeight="Bold" Foreground="#000000" />
+                        <Button x:Name="BuyServersBtn" Click="OnBuyServersClicked" HorizontalAlignment="Stretch" Padding="0,8" Background="#15FFFFFF" BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="1" CornerRadius="6">
+                            <TextBlock Text="Acheter" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
                         </Button>
                     </StackPanel>
                 </Border>
             </Grid>
 
             <!-- Tab 2: Bundles Panel -->
-            <Grid x:Name="BundlesPanel" ColumnSpacing="16" Visibility="Collapsed">
+            <Grid x:Name="BundlesPanel" ColumnSpacing="16" RowSpacing="16" Visibility="Collapsed">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-
-                <ItemsControl Grid.ColumnSpan="3" x:Name="BundlesList">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <VariableSizedWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="3" ItemWidth="360" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
             </Grid>
         </StackPanel>
     </ScrollViewer>

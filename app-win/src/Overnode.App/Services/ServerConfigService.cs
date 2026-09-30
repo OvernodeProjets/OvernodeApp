@@ -10,6 +10,7 @@ namespace Overnode.App.Services;
 public class ServerConfigService
 {
     private static readonly Lazy<ServerConfigService> _instance = new(() => new ServerConfigService());
+    public static ServerConfigService Instance => _instance.Value;
     public static ServerConfigService Shared => _instance.Value;
 
     private readonly APIClient _client;
@@ -33,16 +34,8 @@ public class ServerConfigService
 
     public async Task<List<string>> FetchAvailableDomainsAsync()
     {
-        try
-        {
-            var res = await _client.GetAsync<List<string>>("/api/v5/subdomains/domains");
-            if (res != null && res.Count > 0) return res;
-        }
-        catch
-        {
-            // fallback
-        }
-        return new List<string> { "overnode.fr", "overnode.cloud", "play.overnode.fr" };
+        await Task.CompletedTask;
+        return new List<string> { "overnode.fr" };
     }
 
     public async Task CreateSubdomainAsync(string serverId, string subdomain, string domainName)

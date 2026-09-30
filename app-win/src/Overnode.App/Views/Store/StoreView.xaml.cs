@@ -96,7 +96,14 @@ public sealed partial class StoreView : UserControl
 
     private void UpdateBundles()
     {
-        BundlesList.ItemsSource = ViewModel.Bundles.ConvertAll(b => CreateBundleCard(b));
+        BundlesPanel.Children.Clear();
+        for (int i = 0; i < ViewModel.Bundles.Count; i++)
+        {
+            var bundle = ViewModel.Bundles[i];
+            var card = CreateBundleCard(bundle);
+            Grid.SetColumn(card, i % 3);
+            BundlesPanel.Children.Add(card);
+        }
     }
 
     private FrameworkElement CreateBundleCard(StoreBundle bundle)
@@ -107,39 +114,90 @@ public sealed partial class StoreView : UserControl
             BorderBrush = (SolidColorBrush)Application.Current.Resources["OvernodeBorderSubtleBrush"],
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(10),
-            Margin = new Thickness(6)
+            VerticalAlignment = VerticalAlignment.Stretch
         };
 
-        var stack = new StackPanel();
+        Windows.UI.Color accentColor = ColorHelper.FromArgb(255, 229, 184, 66);
+        if (!string.IsNullOrWhiteSpace(bundle.ColorHex) && bundle.ColorHex.StartsWith("#") && bundle.ColorHex.Length == 7)
+        {
+            try
+            {
+                byte r = Convert.ToByte(bundle.ColorHex.Substring(1, 2), 16);
+                byte g = Convert.ToByte(bundle.ColorHex.Substring(3, 2), 16);
+                byte b = Convert.ToByte(bundle.ColorHex.Substring(5, 2), 16);
+                accentColor = ColorHelper.FromArgb(255, r, g, b);
+            }
+            catch { }
+        }
+
+        var accentBrush = new SolidColorBrush(accentColor);
+        var accentBgBrush = new SolidColorBrush(ColorHelper.FromArgb(30, accentColor.R, accentColor.G, accentColor.B));
+
+        var mainGrid = new Grid();
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         // Header
         var headerBorder = new Border
         {
             BorderBrush = (SolidColorBrush)Application.Current.Resources["OvernodeBorderSubtleBrush"],
             BorderThickness = new Thickness(0, 0, 0, 1),
-            Padding = new Thickness(16)
+            Padding = new Thickness(16, 14, 16, 14)
         };
         var headerStack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
         headerStack.Children.Add(new Border
         {
-            Width = 32, Height = 32, CornerRadius = new CornerRadius(16),
-            Background = new SolidColorBrush(ColorHelper.FromArgb(30, 245, 158, 11)),
-            Child = new FontIcon { Glyph = bundle.IconGlyph, FontSize = 14, Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeAccentGoldBrush"] }
+            Width = 34,
+            Height = 34,
+            CornerRadius = new CornerRadius(17),
+            Background = accentBgBrush,
+            Child = new FontIcon { Glyph = bundle.IconGlyph, FontSize = 15, Foreground = accentBrush }
         });
-        headerStack.Children.Add(new TextBlock { Text = bundle.Title, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextPrimaryBrush"], VerticalAlignment = VerticalAlignment.Center });
+        headerStack.Children.Add(new TextBlock
+        {
+            Text = bundle.Title,
+            FontSize = 14,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextPrimaryBrush"],
+            VerticalAlignment = VerticalAlignment.Center
+        });
         headerBorder.Child = headerStack;
-        stack.Children.Add(headerBorder);
+        Grid.SetRow(headerBorder, 0);
+        mainGrid.Children.Add(headerBorder);
 
-        // Body
-        var body = new StackPanel { Spacing = 14, Padding = new Thickness(16) };
+        // Body Content
+        var bodyStack = new StackPanel { Spacing = 12, Padding = new Thickness(16, 16, 16, 12) };
+
         var priceRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-        priceRow.Children.Add(new TextBlock { Text = bundle.Price, FontSize = 22, FontWeight = Microsoft.UI.Text.FontWeights.Bold, FontFamily = new FontFamily("Consolas"), Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextPrimaryBrush"] });
-        priceRow.Children.Add(new TextBlock { Text = bundle.Period, FontSize = 12, Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"], VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 3) });
-        body.Children.Add(priceRow);
+        priceRow.Children.Add(new TextBlock
+        {
+            Text = bundle.Price,
+            FontSize = 22,
+            FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+            FontFamily = new FontFamily("Consolas"),
+            Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextPrimaryBrush"]
+        });
+        priceRow.Children.Add(new TextBlock
+        {
+            Text = bundle.Period,
+            FontSize = 12,
+            Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"],
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Margin = new Thickness(0, 0, 0, 3)
+        });
+        bodyStack.Children.Add(priceRow);
 
-        body.Children.Add(new TextBlock { Text = bundle.Description, FontSize = 11.5, Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"], TextWrapping = TextWrapping.Wrap });
+        bodyStack.Children.Add(new TextBlock
+        {
+            Text = bundle.Description,
+            FontSize = 11.5,
+            Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"],
+            TextWrapping = TextWrapping.Wrap,
+            MinHeight = 34
+        });
 
-        var featStack = new StackPanel { Spacing = 6 };
+        var featStack = new StackPanel { Spacing = 6, Margin = new Thickness(0, 4, 0, 0) };
         foreach (var feat in bundle.Features)
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -147,23 +205,34 @@ public sealed partial class StoreView : UserControl
             row.Children.Add(new TextBlock { Text = feat, FontSize = 11.5, Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextPrimaryBrush"] });
             featStack.Children.Add(row);
         }
-        body.Children.Add(featStack);
+        bodyStack.Children.Add(featStack);
 
+        Grid.SetRow(bodyStack, 1);
+        mainGrid.Children.Add(bodyStack);
+
+        // Footer Button
+        var footerBorder = new Border { Padding = new Thickness(16, 0, 16, 16) };
         var subBtn = new Button
         {
-            Content = new TextBlock { Text = _loc.GetString("store_subscribe"), FontSize = 12.5, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = new SolidColorBrush(Colors.Black) },
+            Content = new TextBlock
+            {
+                Text = _loc.GetString("store_subscribe"),
+                FontSize = 12.5,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                Foreground = new SolidColorBrush(Colors.Black)
+            },
             Background = (SolidColorBrush)Application.Current.Resources["OvernodeAccentGoldBrush"],
             CornerRadius = new CornerRadius(6),
             BorderThickness = new Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            Padding = new Thickness(0, 8, 0, 8),
-            Margin = new Thickness(0, 8, 0, 0)
+            Padding = new Thickness(0, 8, 0, 8)
         };
         subBtn.Click += (_, _) => ViewModel.SubscribeBundle(bundle);
-        body.Children.Add(subBtn);
+        footerBorder.Child = subBtn;
+        Grid.SetRow(footerBorder, 2);
+        mainGrid.Children.Add(footerBorder);
 
-        stack.Children.Add(body);
-        border.Child = stack;
+        border.Child = mainGrid;
         return border;
     }
 

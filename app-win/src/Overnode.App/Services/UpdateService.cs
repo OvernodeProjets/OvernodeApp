@@ -1,8 +1,10 @@
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
@@ -31,12 +33,21 @@ public sealed class UpdateService
     {
         get
         {
-            var version = typeof(UpdateService).Assembly.GetName().Version;
-            if (version != null)
+            var assembly = typeof(UpdateService).Assembly;
+            var version = assembly.GetName().Version;
+            if (version != null && (version.Major > 0 || version.Minor > 0 || version.Build > 0))
             {
                 return $"{version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
             }
-            return "1.0.0";
+
+            var infoVer = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            if (!string.IsNullOrWhiteSpace(infoVer))
+            {
+                var clean = infoVer.Split('+')[0].Trim().TrimStart('v');
+                if (!string.IsNullOrWhiteSpace(clean)) return clean;
+            }
+
+            return "1.1.4";
         }
     }
 
@@ -176,42 +187,74 @@ public sealed class UpdateService
         var currentProcess = Process.GetCurrentProcess();
         var currentPid = currentProcess.Id;
         var processPath = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "Overnode.App.exe");
+        var programFilesDir = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var installedExePath = Path.Combine(programFilesDir, "Overnode", "Overnode.App.exe");
 
         var scriptDir = Path.Combine(Path.GetTempPath(), "Overnode-Updates");
         Directory.CreateDirectory(scriptDir);
-        var scriptPath = Path.Combine(scriptDir, $"overnode_restart_{currentPid}.cmd");
+        var scriptPath = Path.Combine(scriptDir, $"overnode_updater_{currentPid}.ps1");
+        var logPath = Path.Combine(scriptDir, $"install_{currentPid}.log");
 
-        var scriptContent = $@"@echo off
-chcp 65001 >nul
-:WAIT_PROCESS
-tasklist /fi ""PID eq {currentPid}"" | find ""{currentPid}"" >nul
-if %ERRORLEVEL%==0 (
-    timeout /t 1 /nobreak >nul
-    goto WAIT_PROCESS
-)
+        var psScript = $$"""
+# Overnode Elevated Updater Script
+$ErrorActionPreference = 'SilentlyContinue'
+$targetPid = {{currentPid}}
+$msi = '{{msiPath.Replace("'", "''")}}'
+$installedExe = '{{installedExePath.Replace("'", "''")}}'
+$fallbackExe = '{{processPath.Replace("'", "''")}}'
+$logPath = '{{logPath.Replace("'", "''")}}'
 
-echo Installation de la mise à jour Overnode...
-start /wait msiexec.exe /i ""{msiPath}"" /passive
+# 1. Wait for current Overnode process to terminate cleanly
+if ($targetPid -gt 0) {
+    Wait-Process -Id $targetPid -Timeout 20 -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 600
+}
 
-echo Redémarrage d'Overnode...
-start """" ""{processPath}""
+# 2. Run MSI installation passively with no restart
+$msiArgs = @('/i', "$msi", '/passive', '/norestart', '/lv*', "$logPath")
+$proc = Start-Process -FilePath msiexec.exe -ArgumentList $msiArgs -PassThru -Wait
 
-del ""%~f0""
-";
+# 3. Determine executable to launch
+$targetExe = if (Test-Path $installedExe) { $installedExe } else { $fallbackExe }
 
-        File.WriteAllText(scriptPath, scriptContent);
+# 4. Relaunch the updated application
+if (Test-Path $targetExe) {
+    Start-Process -FilePath $targetExe
+}
+
+# 5. Clean up temporary updater files
+Start-Sleep -Seconds 2
+Remove-Item -Path $msi -Force -ErrorAction SilentlyContinue
+Remove-Item -Path $MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyContinue
+""";
+
+        File.WriteAllText(scriptPath, psScript);
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = $"/c \"{scriptPath}\"",
-            UseShellExecute = false,
-            CreateNoWindow = true
+            FileName = "powershell.exe",
+            Arguments = $"-ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File \"{scriptPath}\"",
+            UseShellExecute = true,
+            Verb = "runas"
         };
 
-        Process.Start(startInfo);
+        try
+        {
+            Process.Start(startInfo);
+        }
+        catch (Win32Exception winEx) when (winEx.NativeErrorCode == 1223)
+        {
+            // ERROR_CANCELLED: User clicked 'No' on UAC prompt
+            throw new InvalidOperationException("La mise à jour nécessite les droits administrateur pour s'installer dans Program Files. L'opération a été annulée.", winEx);
+        }
+        catch (Exception)
+        {
+            // Fallback without runas verb if execution policy or restrictions prevent elevation verb
+            startInfo.Verb = "";
+            Process.Start(startInfo);
+        }
 
-        // Terminate old process cleanly
+        // Terminate old process cleanly to allow MSI to overwrite files
         Environment.Exit(0);
     }
 }

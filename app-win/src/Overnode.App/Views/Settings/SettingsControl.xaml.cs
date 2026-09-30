@@ -37,6 +37,7 @@ public sealed partial class SettingsControl : UserControl
 
         UpdateLocalization();
         UpdateLanguageButtons();
+        ExternalEditorToggle.IsOn = Services.ExternalEditorManager.Shared.AlwaysOpenInExternalEditor;
     }
 
     public void Refresh()
@@ -44,6 +45,7 @@ public sealed partial class SettingsControl : UserControl
         UpdateLocalization();
         UpdateLanguageButtons();
         UpdateUserInfo();
+        ExternalEditorToggle.IsOn = Services.ExternalEditorManager.Shared.AlwaysOpenInExternalEditor;
     }
 
     private void UpdateLocalization()
@@ -209,7 +211,7 @@ public sealed partial class SettingsControl : UserControl
 
     private void OnExternalEditorToggled(object sender, RoutedEventArgs e)
     {
-        // Saved locally for preferences
+        Services.ExternalEditorManager.Shared.AlwaysOpenInExternalEditor = ExternalEditorToggle.IsOn;
     }
 
     private async void OnCheckUpdatesClicked(object sender, RoutedEventArgs e)
@@ -222,6 +224,10 @@ public sealed partial class SettingsControl : UserControl
             if (!hasUpdate)
             {
                 UpToDateText.Text = _loc.GetString("update_up_to_date");
+            }
+            else
+            {
+                UpToDateText.Text = _loc.GetString("update_badge");
             }
         }
         catch (Exception ex)

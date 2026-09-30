@@ -89,10 +89,30 @@ public sealed partial class DailyRewardView : UserControl
             MilestoneBadge.Visibility = Visibility.Collapsed;
         }
 
-        ClaimButton.IsEnabled = st.CanClaim && !ViewModel.IsClaiming;
-        ClaimButtonText.Text = st.CanClaim ? "Réclamer maintenant" : "Déjà réclamé aujourd'hui";
+        bool canClaim = st.CanClaim && !ViewModel.IsClaiming;
+        ClaimButton.IsEnabled = canClaim;
         ClaimSpinner.Visibility = ViewModel.IsClaiming ? Visibility.Visible : Visibility.Collapsed;
         ClaimIcon.Visibility = ViewModel.IsClaiming ? Visibility.Collapsed : Visibility.Visible;
+
+        if (st.CanClaim)
+        {
+            ClaimButtonText.Text = "Réclamer maintenant";
+            ClaimButton.Background = (SolidColorBrush)Application.Current.Resources["OvernodeAccentGoldBrush"];
+            ClaimButton.BorderThickness = new Thickness(0);
+            ClaimButtonText.Foreground = new SolidColorBrush(Colors.Black);
+            ClaimIcon.Foreground = new SolidColorBrush(Colors.Black);
+            ClaimIcon.Glyph = "\uE735";
+        }
+        else
+        {
+            ClaimButtonText.Text = "Déjà réclamé aujourd'hui";
+            ClaimButton.Background = new SolidColorBrush(ColorHelper.FromArgb(25, 255, 255, 255));
+            ClaimButton.BorderBrush = (SolidColorBrush)Application.Current.Resources["OvernodeBorderSubtleBrush"];
+            ClaimButton.BorderThickness = new Thickness(1);
+            ClaimButtonText.Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"];
+            ClaimIcon.Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeAccentSuccessBrush"];
+            ClaimIcon.Glyph = "\uE73E";
+        }
 
         if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
         {

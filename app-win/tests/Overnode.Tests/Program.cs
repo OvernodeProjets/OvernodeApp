@@ -124,6 +124,8 @@ public class Program
         Run("Store Pricing & Bundles", secondaryTests.Test_Store_Pricing_And_Bundles);
         Run("Support Ticket Models & Messages", secondaryTests.Test_Support_Ticket_Models);
         Run("NavigationTab Glyphs & Keys", secondaryTests.Test_NavigationTabs_And_Glyphs);
+        Run("ExternalEditorManager Settings & Toggle", secondaryTests.Test_ExternalEditorManager_Settings_And_Toggle);
+        Run("Subdomain Domain Restriction (overnode.fr)", () => secondaryTests.Test_Subdomain_Domain_Restriction().GetAwaiter().GetResult());
 
         // 9. In-App Updater Tests
         UpdateTests.RunAll(Run);

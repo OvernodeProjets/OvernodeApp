@@ -95,7 +95,7 @@
                                            FontSize="13"
                                            FontWeight="SemiBold"
                                            Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
-                                <TextBlock Text="Actif (Cloudflare DNS)" FontSize="10" Foreground="#40C780" />
+                                <TextBlock Text="Actif" FontSize="10" Foreground="#40C780" />
                             </StackPanel>
 
                             <!-- Copy button -->

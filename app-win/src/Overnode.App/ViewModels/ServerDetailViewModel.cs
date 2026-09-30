@@ -82,7 +82,7 @@ public partial class ServerDetailViewModel : ObservableObject
     private ObservableCollection<ServerSubdomain> _subdomains = new();
 
     [ObservableProperty]
-    private List<string> _availableDomains = new() { "overnode.fr", "overnode.cloud", "play.overnode.fr" };
+    private List<string> _availableDomains = new() { "overnode.fr" };
 
     [ObservableProperty]
     private ObservableCollection<ServerSubuser> _subusers = new();
@@ -98,6 +98,19 @@ public partial class ServerDetailViewModel : ObservableObject
     private bool _isDeleting;
 
     private readonly ServerWebSocketManager _wsManager = ServerWebSocketManager.Shared;
+    private readonly System.Threading.SynchronizationContext? _syncContext = System.Threading.SynchronizationContext.Current;
+
+    private void RunOnUI(Action action)
+    {
+        if (_syncContext != null && System.Threading.SynchronizationContext.Current != _syncContext)
+        {
+            _syncContext.Post(_ => action(), null);
+        }
+        else
+        {
+            action();
+        }
+    }
 
     public ServerDetailViewModel(ServerInstance server, ServerTab initialTab = ServerTab.Console)
     {
@@ -133,29 +146,35 @@ public partial class ServerDetailViewModel : ObservableObject
 
     private void OnWebSocketStatusChanged(string status)
     {
-        Server.State = status;
-        OnPropertyChanged(nameof(Server));
+        RunOnUI(() =>
+        {
+            Server.State = status;
+            OnPropertyChanged(nameof(Server));
+        });
     }
 
     private void OnWebSocketStatsUpdated(LivePteroStats stats)
     {
-        if (stats.CpuAbsolute.HasValue)
+        RunOnUI(() =>
         {
-            Server.CpuUsedPercent = Math.Round(stats.CpuAbsolute.Value, 1);
-        }
-        if (stats.MemoryBytes.HasValue)
-        {
-            Server.MemoryUsedMB = Math.Round(stats.MemoryBytes.Value / 1024.0 / 1024.0);
-        }
-        if (stats.DiskBytes.HasValue)
-        {
-            Server.DiskUsedMB = Math.Round(stats.DiskBytes.Value / 1024.0 / 1024.0);
-        }
-        if (!string.IsNullOrEmpty(stats.State))
-        {
-            Server.State = stats.State;
-        }
-        OnPropertyChanged(nameof(Server));
+            if (stats.CpuAbsolute.HasValue)
+            {
+                Server.CpuUsedPercent = Math.Round(stats.CpuAbsolute.Value, 1);
+            }
+            if (stats.MemoryBytes.HasValue)
+            {
+                Server.MemoryUsedMB = Math.Round(stats.MemoryBytes.Value / 1024.0 / 1024.0);
+            }
+            if (stats.DiskBytes.HasValue)
+            {
+                Server.DiskUsedMB = Math.Round(stats.DiskBytes.Value / 1024.0 / 1024.0);
+            }
+            if (!string.IsNullOrEmpty(stats.State))
+            {
+                Server.State = stats.State;
+            }
+            OnPropertyChanged(nameof(Server));
+        });
     }
 
     public void Cleanup()
@@ -214,22 +233,28 @@ public partial class ServerDetailViewModel : ObservableObject
 
     public void AppendConsoleLine(string line)
     {
-        string timestamp = DateTime.Now.ToString("HH:mm:ss");
-        ConsoleLines.Add($"[{timestamp}] {line}");
-        if (ConsoleLines.Count > 500)
+        RunOnUI(() =>
         {
-            ConsoleLines.RemoveAt(0);
-        }
+            string timestamp = DateTime.Now.ToString("HH:mm:ss");
+            ConsoleLines.Add($"[{timestamp}] {line}");
+            if (ConsoleLines.Count > 500)
+            {
+                ConsoleLines.RemoveAt(0);
+            }
+        });
     }
 
     public void AppendRawConsoleLine(string line)
     {
         if (string.IsNullOrWhiteSpace(line)) return;
-        ConsoleLines.Add(line.TrimEnd());
-        if (ConsoleLines.Count > 1000)
+        RunOnUI(() =>
         {
-            ConsoleLines.RemoveAt(0);
-        }
+            ConsoleLines.Add(line.TrimEnd());
+            if (ConsoleLines.Count > 1000)
+            {
+                ConsoleLines.RemoveAt(0);
+            }
+        });
     }
 
     public async Task LoadCurrentTabDataAsync()
@@ -305,23 +330,18 @@ public partial class ServerDetailViewModel : ObservableObject
         };
         OnPropertyChanged(nameof(Server));
 
-        // 1. Send via WebSocket if authenticated
-        if (_wsManager.IsAuthenticated)
-        {
-            _wsManager.SendPowerSignal(signal);
-        }
+        // 1. Send via WebSocket
+        _wsManager.SendPowerSignal(signal);
 
         // 2. Send via REST API fallback
-        bool success = false;
         try
         {
             await _serverService.SendPowerSignalAsync(Server.Identifier, signal.ToSignalString(), Server.Id > 0 ? Server.Id.ToString() : null);
-            success = true;
             AppendConsoleLine($"[Action] Power signal {signal.ToSignalString().ToUpperInvariant()} acknowledged.");
         }
         catch (Exception ex)
         {
-            if (!_wsManager.IsAuthenticated)
+            if (!_wsManager.IsAuthenticated && !_wsManager.IsConnected)
             {
                 Server.State = previousState;
                 OnPropertyChanged(nameof(Server));
@@ -334,14 +354,13 @@ public partial class ServerDetailViewModel : ObservableObject
             IsPowerLoading = false;
         }
 
-        if (success || _wsManager.IsAuthenticated)
+        _ = Task.Run(async () =>
         {
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(2000);
-                await RefreshLiveStatsAsync();
-            });
-        }
+            await Task.Delay(1500);
+            await RefreshLiveStatsAsync();
+            await Task.Delay(2000);
+            await RefreshLiveStatsAsync();
+        });
     }
 
     [RelayCommand]

@@ -51,7 +51,7 @@ public sealed class ServerWebSocketManager
 
     private ServerWebSocketManager() { }
 
-    private class WsCredsResponse
+    public class WsCredsResponse
     {
         public class InnerData
         {
@@ -194,7 +194,7 @@ public sealed class ServerWebSocketManager
                     {
                         string line = argsEnum.Current.GetString() ?? string.Empty;
                         string clean = _ansiRegex.Replace(line, string.Empty);
-                        ConsoleOutputReceived?.Invoke(clean);
+                        try { ConsoleOutputReceived?.Invoke(clean); } catch { }
                     }
                     break;
 
@@ -202,7 +202,7 @@ public sealed class ServerWebSocketManager
                     if (argsEnum.MoveNext() && argsEnum.Current.ValueKind == JsonValueKind.String)
                     {
                         string st = argsEnum.Current.GetString() ?? string.Empty;
-                        StatusChanged?.Invoke(st);
+                        try { StatusChanged?.Invoke(st); } catch { }
                     }
                     break;
 
@@ -224,7 +224,7 @@ public sealed class ServerWebSocketManager
 
                         if (stats != null)
                         {
-                            StatsUpdated?.Invoke(stats);
+                            try { StatsUpdated?.Invoke(stats); } catch { }
                         }
                     }
                     break;
@@ -259,7 +259,12 @@ public sealed class ServerWebSocketManager
 
     public void SendCommand(string command)
     {
-        if (string.IsNullOrWhiteSpace(command) || !IsConnected) return;
+        if (string.IsNullOrWhiteSpace(command)) return;
+
+        if (!IsConnected && !string.IsNullOrWhiteSpace(_currentServerId))
+        {
+            Connect(_currentServerId);
+        }
 
         _ = SendJsonAsync(new
         {
@@ -270,7 +275,10 @@ public sealed class ServerWebSocketManager
 
     public void SendPowerSignal(ServerPowerSignal signal)
     {
-        if (!IsConnected) return;
+        if (!IsConnected && !string.IsNullOrWhiteSpace(_currentServerId))
+        {
+            Connect(_currentServerId);
+        }
 
         _ = SendJsonAsync(new
         {

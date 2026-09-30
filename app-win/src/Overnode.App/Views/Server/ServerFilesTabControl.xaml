@@ -151,6 +151,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Click="OnFileRowClicked"
+                                    DoubleTapped="OnFileRowDoubleTapped"
                                     HorizontalAlignment="Stretch"
                                     HorizontalContentAlignment="Stretch"
                                     Padding="12,9"
@@ -163,6 +164,11 @@
                                         <MenuFlyoutItem Text="Ouvrir / Éditer" Click="OnContextMenuOpenClicked">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xE70F;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="Ouvrir avec l'éditeur externe" Click="OnContextMenuOpenExternalClicked">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE7AC;" />
                                             </MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
                                         <MenuFlyoutSeparator />

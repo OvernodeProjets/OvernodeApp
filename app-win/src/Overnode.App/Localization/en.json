@@ -127,7 +127,7 @@
   "subdomains_subtitle": "Link a memorable domain address to join your server.",
   "subdomains_create_button": "New Subdomain",
   "subdomains_empty": "No custom subdomains linked to this server.",
-  "subdomains_cloudflare_active": "Protected by Cloudflare DNS",
+  "subdomains_cloudflare_active": "Active",
   "subdomains_modal_title": "Create a Subdomain",
   "subdomains_prefix_label": "Prefix and Domain",
   "subusers_title": "Access Management",

@@ -127,7 +127,7 @@
   "subdomains_subtitle": "Associez une adresse mémorisable pour rejoindre votre serveur.",
   "subdomains_create_button": "Nouveau Sous-domaine",
   "subdomains_empty": "Aucun sous-domaine associé à ce serveur.",
-  "subdomains_cloudflare_active": "Protégé par Cloudflare DNS",
+  "subdomains_cloudflare_active": "Actif",
   "subdomains_modal_title": "Créer un sous-domaine",
   "subdomains_prefix_label": "Préfixe et domaine",
   "subusers_title": "Gestion des Accès",

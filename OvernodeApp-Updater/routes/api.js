@@ -12,7 +12,7 @@ function isWindowsPlatform(platform) {
 
 // GET /api/v1/update/check?version=1.0.0&platform=darwin-arm64 (macOS)
 // GET /api/v1/update/check?version=1.0.0&platform=win-x64 (Windows)
-router.get('/v1/update/check', (req, res) => {
+router.get('/v1/update/check', async (req, res) => {
   const clientVersion = (req.query.version || '0.0.0').trim();
   const clientPlatform = (req.query.platform || 'darwin-arm64').trim();
   const isWindows = isWindowsPlatform(clientPlatform);
@@ -21,7 +21,26 @@ router.get('/v1/update/check', (req, res) => {
   db.recordUpdateCheck(clientVersion, clientPlatform);
 
   const deployment = db.getDeployment(clientPlatform);
-  const latestVersion = deployment.currentVersion;
+  let latestVersion = deployment.currentVersion;
+  let rawDownloadUrl = deployment.downloadUrl;
+  let releaseNotes = deployment.releaseNotes;
+  let sha256 = deployment.sha256 || '';
+  let mandatory = Boolean(deployment.mandatory);
+  let publishedAt = deployment.publishedAt;
+
+  // Check if GitHub has a newer release asset
+  try {
+    const releases = await github.fetchGitHubReleases();
+    const latestPlatformRel = releases.find(r => r.isRelease && (isWindows ? (r.msiUrl || r.windowsDownloadUrl) : (r.dmgUrl || r.zipUrl)));
+    if (latestPlatformRel && github.compareVersions(latestPlatformRel.version, latestVersion) > 0) {
+      latestVersion = latestPlatformRel.version;
+      rawDownloadUrl = isWindows ? (latestPlatformRel.msiUrl || latestPlatformRel.windowsDownloadUrl) : (latestPlatformRel.dmgUrl || latestPlatformRel.downloadUrl);
+      releaseNotes = latestPlatformRel.body || releaseNotes;
+      publishedAt = latestPlatformRel.publishedAt || publishedAt;
+    }
+  } catch (err) {
+    console.warn('[Update Check] GitHub releases check fallback:', err.message);
+  }
 
   const comparison = github.compareVersions(latestVersion, clientVersion);
   const updateAvailable = comparison > 0;
@@ -37,11 +56,11 @@ router.get('/v1/update/check', (req, res) => {
     clientVersion,
     latestVersion,
     downloadUrl: proxyDownloadUrl,
-    rawDownloadUrl: deployment.downloadUrl,
-    releaseNotes: deployment.releaseNotes,
-    mandatory: Boolean(deployment.mandatory),
-    sha256: deployment.sha256 || '',
-    publishedAt: deployment.publishedAt,
+    rawDownloadUrl,
+    releaseNotes,
+    mandatory,
+    sha256,
+    publishedAt,
     platform: clientPlatform
   });
 });

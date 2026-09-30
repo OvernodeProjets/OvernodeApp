@@ -1,8 +1,10 @@
 using System;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Overnode.App.Localization;
 using Overnode.App.Models;
+using Overnode.App.Services;
 using Overnode.App.ViewModels;
 
 namespace Overnode.App.Views.Server;
@@ -11,10 +13,20 @@ public sealed partial class ServerFilesTabControl : UserControl
 {
     public ServerDetailViewModel? ViewModel => DataContext as ServerDetailViewModel;
 
+    private DateTime _lastClickTime = DateTime.MinValue;
+    private string? _lastClickedPath;
+
     public ServerFilesTabControl()
     {
         this.InitializeComponent();
         LocalizationManager.Instance.LanguageChanged += (s, e) => UpdateLocalization();
+        ExternalEditorManager.Shared.FileSynced += OnExternalFileSynced;
+
+        Unloaded += (s, e) =>
+        {
+            ExternalEditorManager.Shared.FileSynced -= OnExternalFileSynced;
+        };
+
         DataContextChanged += (s, e) =>
         {
             if (ViewModel != null)
@@ -138,12 +150,74 @@ public sealed partial class ServerFilesTabControl : UserControl
         }
     }
 
+    private void OnExternalFileSynced(string serverId, string fileName)
+    {
+        if (ViewModel != null && ViewModel.Server.Identifier == serverId)
+        {
+            DispatcherQueue?.TryEnqueue(() =>
+            {
+                FileSuccessText.Text = $"Fichier synchronisé : {fileName}";
+                FileSuccessBanner.Visibility = Visibility.Visible;
+
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(3000);
+                    DispatcherQueue?.TryEnqueue(() =>
+                    {
+                        if (FileSuccessText.Text.Contains(fileName))
+                        {
+                            FileSuccessBanner.Visibility = Visibility.Collapsed;
+                        }
+                    });
+                });
+            });
+        }
+    }
+
     private async void OnFileRowClicked(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null)
         {
-            await ViewModel.OpenFileAsync(item);
-            UpdateUI();
+            if (!item.IsFile)
+            {
+                await ViewModel.OpenFileAsync(item);
+                UpdateUI();
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+            string fullPath = ViewModel.CurrentDirectory == "/" ? $"/{item.Name}" : $"{ViewModel.CurrentDirectory}/{item.Name}";
+            bool isDoubleClick = (now - _lastClickTime < TimeSpan.FromMilliseconds(500)) && _lastClickedPath == fullPath;
+            _lastClickTime = now;
+            _lastClickedPath = fullPath;
+
+            if (isDoubleClick || ExternalEditorManager.Shared.AlwaysOpenInExternalEditor)
+            {
+                await OpenFileInExternalEditorAsync(item, fullPath);
+            }
+            else
+            {
+                await ViewModel.OpenFileAsync(item);
+                UpdateUI();
+            }
+        }
+    }
+
+    private async void OnFileRowDoubleTapped(object sender, Microsoft.UI.Xaml.Input.DoubleTappedRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null)
+        {
+            e.Handled = true;
+            if (item.IsFile)
+            {
+                string fullPath = ViewModel.CurrentDirectory == "/" ? $"/{item.Name}" : $"{ViewModel.CurrentDirectory}/{item.Name}";
+                await OpenFileInExternalEditorAsync(item, fullPath);
+            }
+            else
+            {
+                await ViewModel.OpenFileAsync(item);
+                UpdateUI();
+            }
         }
     }
 
@@ -153,6 +227,57 @@ public sealed partial class ServerFilesTabControl : UserControl
         {
             await ViewModel.OpenFileAsync(item);
             UpdateUI();
+        }
+    }
+
+    private async void OnContextMenuOpenExternalClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && item.IsFile)
+        {
+            string fullPath = ViewModel.CurrentDirectory == "/" ? $"/{item.Name}" : $"{ViewModel.CurrentDirectory}/{item.Name}";
+            await OpenFileInExternalEditorAsync(item, fullPath);
+        }
+    }
+
+    private async Task OpenFileInExternalEditorAsync(ServerFileItem item, string fullPath)
+    {
+        if (ViewModel == null) return;
+
+        try
+        {
+            FileSuccessText.Text = $"Ouverture de {item.Name} dans l'éditeur externe...";
+            FileSuccessBanner.Visibility = Visibility.Visible;
+            FileErrorBanner.Visibility = Visibility.Collapsed;
+
+            string content = await ServerFilesService.Shared.ReadFileAsync(ViewModel.Server.Identifier, fullPath);
+            await ExternalEditorManager.Shared.OpenAndWatchFileAsync(
+                ViewModel.Server.Identifier,
+                fullPath,
+                item.Name,
+                content,
+                async (newContent) =>
+                {
+                    await ServerFilesService.Shared.WriteFileAsync(ViewModel.Server.Identifier, fullPath, newContent);
+                }
+            );
+
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2500);
+                DispatcherQueue?.TryEnqueue(() =>
+                {
+                    if (FileSuccessText.Text.StartsWith("Ouverture"))
+                    {
+                        FileSuccessBanner.Visibility = Visibility.Collapsed;
+                    }
+                });
+            });
+        }
+        catch (Exception ex)
+        {
+            FileErrorText.Text = $"Erreur éditeur externe : {ex.Message}";
+            FileErrorBanner.Visibility = Visibility.Visible;
+            FileSuccessBanner.Visibility = Visibility.Collapsed;
         }
     }
 

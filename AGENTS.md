@@ -41,3 +41,7 @@ The detailed rules live in `.agents/rules/`. Read the relevant file before actin
 - **CRITICAL**: Ne JAMAIS afficher `console.overnode.fr` à l'utilisateur dans l'interface. Utiliser "Console Cloud" ou "Overnode".
 - **CRITICAL**: Respecter la charte Overnode (Dark theme `#0B0D13`, accents dorés `#E5B842`, police système).
 - **CRITICAL**: Gérer l'authentification avec persistance sécurisée des sessions (Keychain sur macOS, DPAPI/PasswordVault sur Windows) et écran natif de saisie TOTP pour le double facteur (2FA).
+- **CRITICAL**: Pour les sous-domaines serveur, seul **`overnode.fr`** doit être proposé et autorisé. Ne JAMAIS mentionner "Cloudflare" ou "Cloudflare DNS" sur l'interface (utiliser sobrement "Actif").
+- **CRITICAL**: Les boutons désactivés ou états inactifs (ex: "Déjà réclamé aujourd'hui") ne doivent JAMAIS afficher de texte sombre/noir sur fond sombre. Toujours garantir un contraste élevé et lisible.
+- **CRITICAL**: L'édition de fichiers distants via éditeur externe doit être synchronisée automatiquement (`writeFile`) en arrière-plan à chaque sauvegarde locale (`ExternalEditorManager`).
+

@@ -4,7 +4,7 @@
            Version="$(var.Version)"
            UpgradeCode="4C66C9E8-3165-4EE6-9F0B-D5D5BF8A88E1"
            Scope="perMachine">
-    <MajorUpgrade DowngradeErrorMessage="Une version plus récente d'Overnode est déjà installée." AllowSameVersionUpgrades="yes" />
+    <MajorUpgrade DowngradeErrorMessage="Une version plus récente d'Overnode est déjà installée." AllowSameVersionUpgrades="yes" Schedule="afterInstallInitialize" />
     
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
