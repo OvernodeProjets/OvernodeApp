@@ -430,7 +430,7 @@
       <div class="brand-badge">UPDATER</div>
       <div>
         <div class="brand-title">OvernodeApp-Updater</div>
-        <div class="brand-sub">Gestionnaire de distribution de l'application macOS</div>
+        <div class="brand-sub">Gestionnaire de distribution des applications macOS &amp; Windows</div>
       </div>
     </div>
     <div class="user-nav">
@@ -536,34 +536,41 @@
                    value="<%= latestRelease ? latestRelease.version : deployment.currentVersion %>" placeholder="1.1.0">
           </div>
           <div class="form-group">
-            <label for="downloadUrl">URL de l'archive (.dmg ou .zip)</label>
+            <label for="downloadUrl">URL macOS (.dmg ou .zip)</label>
             <input type="text" id="downloadUrl" name="downloadUrl" required 
                    value="<%= latestRelease ? latestRelease.downloadUrl : deployment.downloadUrl %>" 
                    placeholder="https://.../Overnode-v1.1.0-macOS-arm64.dmg">
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="releaseNotes">Notes de version (Changelog affiché dans l'app)</label>
-          <textarea id="releaseNotes" name="releaseNotes" placeholder="Détail des nouveautés et correctifs..."><%= latestRelease ? latestRelease.body : deployment.releaseNotes %></textarea>
-        </div>
-
-        <div class="form-grid">
+        <div class="form-grid" style="margin-top: 16px;">
+          <div class="form-group">
+            <label for="windowsDownloadUrl">URL Windows (.msi)</label>
+            <input type="text" id="windowsDownloadUrl" name="windowsDownloadUrl" 
+                   value="<%= latestRelease ? (latestRelease.windowsDownloadUrl || latestRelease.msiUrl || '') : (deployment.windowsDownloadUrl || '') %>" 
+                   placeholder="https://.../Overnode-v1.1.0-Windows-x64.msi">
+          </div>
           <div class="form-group">
             <label for="sha256">Somme de contrôle SHA256 (optionnel)</label>
             <input type="text" id="sha256" name="sha256" value="<%= deployment.sha256 || '' %>" placeholder="Hash SHA256 pour vérifier l'intégrité">
           </div>
-          <div class="form-group" style="display: flex; align-items: center;">
-            <label class="checkbox-label">
-              <input type="checkbox" name="mandatory" id="mandatory">
-              <span>Mise à jour obligatoire (invite bloquante dans l'app)</span>
-            </label>
-          </div>
         </div>
 
-        <button type="submit" class="btn-push">
+        <div class="form-group" style="margin-top: 16px;">
+          <label for="releaseNotes">Notes de version (Changelog affiché dans l'app)</label>
+          <textarea id="releaseNotes" name="releaseNotes" placeholder="Détail des nouveautés et correctifs..."><%= latestRelease ? latestRelease.body : deployment.releaseNotes %></textarea>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; margin-top: 12px;">
+          <label class="checkbox-label">
+            <input type="checkbox" name="mandatory" id="mandatory">
+            <span>Mise à jour obligatoire (invite bloquante dans l'app)</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-push" style="margin-top: 20px;">
           <span>🚀</span>
-          <span>Push to app</span>
+          <span>Push to app (macOS &amp; Windows)</span>
         </button>
       </form>
     </div>
@@ -571,7 +578,7 @@
     <!-- Available Releases Table -->
     <div class="table-container">
       <div class="table-header">
-        <span>Releases & Commits GitHub détectés</span>
+        <span>Releases &amp; Commits GitHub détectés</span>
         <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 13px;">↻ Rafraîchir</a>
       </div>
       <table>
@@ -579,7 +586,7 @@
           <tr>
             <th>Version / Réf</th>
             <th>Titre / Notes</th>
-            <th>Fichier</th>
+            <th>Fichiers Détectés</th>
             <th>Date</th>
             <th>Statut</th>
             <th>Action</th>
@@ -594,7 +601,17 @@
               <td style="max-width: 320px;">
                 <strong><%= rel.name %></strong>
               </td>
-              <td><%= rel.assetName || 'DMG / ZIP' %></td>
+              <td>
+                <% if (rel.dmgUrl || rel.zipUrl) { %>
+                  <span style="display: inline-block; font-size: 11px; padding: 2px 6px; background: rgba(56,189,248,0.15); border-radius: 4px; color: #38bdf8; margin-right: 4px;">macOS</span>
+                <% } %>
+                <% if (rel.msiUrl || rel.windowsDownloadUrl) { %>
+                  <span style="display: inline-block; font-size: 11px; padding: 2px 6px; background: rgba(16,185,129,0.15); border-radius: 4px; color: #34d399;">Windows MSI</span>
+                <% } %>
+                <% if (!rel.dmgUrl && !rel.zipUrl && !rel.msiUrl) { %>
+                  <span style="color: #94a3b8; font-size: 11px;"><%= rel.assetName || 'Archive' %></span>
+                <% } %>
+              </td>
               <td><%= new Date(rel.publishedAt).toLocaleDateString('fr-FR') %></td>
               <td>
                 <% if (rel.version === deployment.currentVersion) { %>
@@ -605,7 +622,7 @@
               </td>
               <td>
                 <button type="button" class="btn-select" 
-                  onclick="selectRelease('<%= rel.version %>', '<%= rel.downloadUrl %>', '<%= encodeURIComponent(rel.body) %>')">
+                  onclick="selectRelease('<%= rel.version %>', '<%= rel.downloadUrl %>', '<%= rel.windowsDownloadUrl || rel.msiUrl || '' %>', '<%= encodeURIComponent(rel.body) %>')">
                   Sélectionner
                 </button>
               </td>
@@ -617,18 +634,22 @@
 
     <!-- API Integration Endpoint Info -->
     <div class="api-card">
-      <strong style="color: #ffffff;">Intégration API de l'application macOS :</strong>
-      <p style="color: #94a3b8; margin-top: 4px;">L'application native Overnode interroge ce point de terminaison à chaque lancement :</p>
+      <strong style="color: #ffffff;">Intégration API des applications natives :</strong>
+      <p style="color: #94a3b8; margin-top: 4px;">Les applications Overnode interrogent ce point de terminaison à chaque lancement :</p>
       <div class="code-block">
-        GET /api/v1/update/check?version=1.0.0&platform=darwin-arm64
+macOS   : GET /api/v1/update/check?version=1.0.0&amp;platform=darwin-arm64
+Windows : GET /api/v1/update/check?version=1.0.0&amp;platform=win-x64
       </div>
     </div>
   </main>
 
   <script>
-    function selectRelease(version, url, encodedBody) {
+    function selectRelease(version, url, winUrl, encodedBody) {
       document.getElementById('version').value = version;
       document.getElementById('downloadUrl').value = url;
+      if (document.getElementById('windowsDownloadUrl')) {
+        document.getElementById('windowsDownloadUrl').value = winUrl || '';
+      }
       try {
         document.getElementById('releaseNotes').value = decodeURIComponent(encodedBody);
       } catch (e) {

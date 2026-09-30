@@ -36,8 +36,10 @@ public sealed partial class MainWindow : Window
     private readonly Views.AuthView _authView = new();
     private readonly Views.TwoFactorVerificationView _twoFactorView = new();
     private readonly Views.DashboardView _dashboardView = new();
+    private readonly Views.Components.UpdateModalControl _updateModal = new();
 
     public AuthViewModel AuthVM { get; }
+    public UpdateViewModel UpdateVM => UpdateViewModel.Shared;
 
     public MainWindow()
     {
@@ -55,13 +57,18 @@ public sealed partial class MainWindow : Window
         _authView.Initialize(AuthVM);
         _twoFactorView.Initialize(AuthVM.TwoFactorVM);
         _dashboardView.AuthVM = AuthVM;
+        _updateModal.Initialize(UpdateVM);
 
         RootGrid.Children.Add(_authView);
         RootGrid.Children.Add(_twoFactorView);
         RootGrid.Children.Add(_dashboardView);
+        RootGrid.Children.Add(_updateModal);
 
         UpdateActiveView();
         ConfigureWindow();
+
+        // Silent background update check on startup
+        _ = System.Threading.Tasks.Task.Run(() => UpdateVM.CheckForUpdatesAsync(silent: true));
 
         if (Environment.GetEnvironmentVariable("OVERNODE_CAPTURE_SCREEN") == "1")
         {
@@ -155,7 +162,11 @@ public sealed partial class MainWindow : Window
                     File.AppendAllText(LogPath, $"[{DateTime.Now}] Centered at {centeredX}, {centeredY}\n");
                 }
 
-                var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app_icon.png");
+                var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app_icon.ico");
+                if (!File.Exists(iconPath))
+                {
+                    iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app_icon.png");
+                }
                 if (File.Exists(iconPath))
                 {
                     appWindow.SetIcon(iconPath);

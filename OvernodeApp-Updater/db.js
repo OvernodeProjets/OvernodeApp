@@ -155,8 +155,9 @@ function verifyConsoleCode(providedCode) {
 // 3. Deployment Management
 const DEFAULT_DEPLOYMENT = {
   currentVersion: '1.0.0',
-  downloadUrl: 'https://github.com/overnode-network/OvernodeApp/releases/download/v1.0.0/Overnode-v1.0.0-macOS-arm64.zip',
-  releaseNotes: 'Version initiale stable de l\'application Overnode pour macOS Apple Silicon.',
+  downloadUrl: 'https://github.com/OvernodeProjets/OvernodeApp/releases/download/v1.0.0/Overnode-v1.0.0-macOS-arm64.dmg',
+  windowsDownloadUrl: 'https://github.com/OvernodeProjets/OvernodeApp/releases/download/v1.0.0/Overnode-v1.0.0-Windows-x64.msi',
+  releaseNotes: 'Version initiale stable de l\'application Overnode.',
   publishedAt: new Date().toISOString(),
   sha256: '',
   mandatory: false,
@@ -164,13 +165,39 @@ const DEFAULT_DEPLOYMENT = {
   history: []
 };
 
-function getDeployment() {
-  return readJSON(DEPLOYMENT_FILE, DEFAULT_DEPLOYMENT);
+function isWindowsPlatform(platform) {
+  if (!platform) return false;
+  const p = platform.toLowerCase();
+  return p.startsWith('win') || p.includes('windows');
+}
+
+function getDeployment(platform) {
+  const deployment = readJSON(DEPLOYMENT_FILE, DEFAULT_DEPLOYMENT);
+  const isWin = isWindowsPlatform(platform);
+  if (isWin) {
+    let winUrl = deployment.windowsDownloadUrl;
+    if (!winUrl && deployment.windows && deployment.windows.downloadUrl) {
+      winUrl = deployment.windows.downloadUrl;
+    }
+    if (!winUrl && deployment.downloadUrl) {
+      winUrl = deployment.downloadUrl
+        .replace(/\.(dmg|zip)$/i, '.msi')
+        .replace(/macOS-arm64/i, 'Windows-x64');
+    }
+    return {
+      ...deployment,
+      downloadUrl: winUrl || deployment.downloadUrl,
+      rawDownloadUrl: winUrl || deployment.downloadUrl,
+      platform: 'win-x64'
+    };
+  }
+  return deployment;
 }
 
 function pushNewVersion(opts) {
   var version = opts.version;
   var downloadUrl = opts.downloadUrl;
+  var windowsDownloadUrl = opts.windowsDownloadUrl;
   var releaseNotes = opts.releaseNotes;
   var sha256 = opts.sha256;
   var mandatory = opts.mandatory;
@@ -182,6 +209,7 @@ function pushNewVersion(opts) {
   deployment.history.unshift({
     version: deployment.currentVersion,
     downloadUrl: deployment.downloadUrl,
+    windowsDownloadUrl: deployment.windowsDownloadUrl || null,
     releaseNotes: deployment.releaseNotes,
     publishedAt: deployment.publishedAt,
     pushedBy: deployment.pushedBy || 'system'
@@ -192,6 +220,11 @@ function pushNewVersion(opts) {
 
   deployment.currentVersion = version.replace(/^v/, '');
   deployment.downloadUrl = downloadUrl;
+  if (windowsDownloadUrl) {
+    deployment.windowsDownloadUrl = windowsDownloadUrl;
+  } else if (downloadUrl && downloadUrl.endsWith('.dmg')) {
+    deployment.windowsDownloadUrl = downloadUrl.replace(/\.dmg$/, '.msi').replace(/macOS-arm64/i, 'Windows-x64');
+  }
   deployment.releaseNotes = releaseNotes || ('Mise a jour v' + deployment.currentVersion);
   deployment.sha256 = sha256 || '';
   deployment.mandatory = Boolean(mandatory);
@@ -204,11 +237,14 @@ function pushNewVersion(opts) {
 
 // 4. Stats Management
 function recordUpdateCheck(clientVersion, clientPlatform) {
-  const stats = readJSON(STATS_FILE, { totalChecks: 0, lastCheckAt: null, versions: {} });
+  const stats = readJSON(STATS_FILE, { totalChecks: 0, lastCheckAt: null, versions: {}, platforms: {} });
   stats.totalChecks = (stats.totalChecks || 0) + 1;
   stats.lastCheckAt = new Date().toISOString();
   const vKey = clientVersion || 'unknown';
   stats.versions[vKey] = (stats.versions[vKey] || 0) + 1;
+  const pKey = clientPlatform || 'unknown';
+  if (!stats.platforms) stats.platforms = {};
+  stats.platforms[pKey] = (stats.platforms[pKey] || 0) + 1;
   writeJSON(STATS_FILE, stats);
 }
 

@@ -4,16 +4,23 @@ const axios = require('axios');
 const db = require('../db');
 const github = require('../github');
 
-// macOS App checks for updates:
-// GET /api/v1/update/check?version=1.0.0&platform=darwin-arm64
+function isWindowsPlatform(platform) {
+  if (!platform) return false;
+  const p = platform.toLowerCase();
+  return p.startsWith('win') || p.includes('windows');
+}
+
+// GET /api/v1/update/check?version=1.0.0&platform=darwin-arm64 (macOS)
+// GET /api/v1/update/check?version=1.0.0&platform=win-x64 (Windows)
 router.get('/v1/update/check', (req, res) => {
   const clientVersion = (req.query.version || '0.0.0').trim();
   const clientPlatform = (req.query.platform || 'darwin-arm64').trim();
+  const isWindows = isWindowsPlatform(clientPlatform);
 
   // Log stats
   db.recordUpdateCheck(clientVersion, clientPlatform);
 
-  const deployment = db.getDeployment();
+  const deployment = db.getDeployment(clientPlatform);
   const latestVersion = deployment.currentVersion;
 
   const comparison = github.compareVersions(latestVersion, clientVersion);
@@ -22,7 +29,8 @@ router.get('/v1/update/check', (req, res) => {
   // Use the updater server direct download proxy to allow downloading from private GitHub repository without 404
   const host = req.get('host') || 'zBvoGzjDABxGuLuKux59LtECbKIpNPcp.overnode.fr';
   const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
-  const proxyDownloadUrl = `${proto}://${host}/api/v1/update/download`;
+  const defaultType = isWindows ? 'msi' : 'dmg';
+  const proxyDownloadUrl = `${proto}://${host}/api/v1/update/download?platform=${encodeURIComponent(clientPlatform)}&type=${defaultType}`;
 
   res.json({
     updateAvailable,
@@ -40,15 +48,42 @@ router.get('/v1/update/check', (req, res) => {
 
 // Proxy download endpoint: streams release assets directly from GitHub using server token
 router.get('/v1/update/download', async (req, res) => {
-  const deployment = db.getDeployment();
-  const requestedType = req.query.type || 'dmg'; // 'dmg' or 'zip'
+  const clientPlatform = (req.query.platform || '').trim();
+  const isWindows = isWindowsPlatform(clientPlatform);
+  const deployment = db.getDeployment(clientPlatform);
+  const requestedType = req.query.type || (isWindows ? 'msi' : 'dmg'); // 'msi', 'dmg', 'zip', 'exe'
 
   try {
     const releases = await github.fetchGitHubReleases();
     const rel = releases.find(r => r.isRelease && r.version === deployment.currentVersion) || releases.find(r => r.isRelease) || releases[0];
     
     if (rel && rel.id && typeof rel.id === 'number') {
-      const targetAssetId = requestedType === 'zip' ? (rel.zipAssetId || rel.assetId) : (rel.dmgAssetId || rel.assetId);
+      let targetAssetId;
+      let filename;
+      let contentType;
+
+      if (isWindows) {
+        if (requestedType === 'zip') {
+          targetAssetId = rel.winZipAssetId || rel.zipAssetId || rel.assetId;
+          filename = `Overnode-v${deployment.currentVersion}-Windows-x64.zip`;
+          contentType = 'application/zip';
+        } else if (requestedType === 'exe') {
+          targetAssetId = rel.exeAssetId || rel.assetId;
+          filename = `Overnode-v${deployment.currentVersion}-Windows-x64.exe`;
+          contentType = 'application/vnd.microsoft.portable-executable';
+        } else {
+          // Default Windows installer is MSI
+          targetAssetId = rel.msiAssetId || rel.assetId;
+          filename = `Overnode-v${deployment.currentVersion}-Windows-x64.msi`;
+          contentType = 'application/x-msi';
+        }
+      } else {
+        targetAssetId = requestedType === 'zip' ? (rel.zipAssetId || rel.assetId) : (rel.dmgAssetId || rel.assetId);
+        filename = (requestedType === 'zip') 
+          ? `Overnode-v${deployment.currentVersion}-macOS-arm64.zip` 
+          : `Overnode-v${deployment.currentVersion}-macOS-arm64.dmg`;
+        contentType = requestedType === 'zip' ? 'application/zip' : 'application/x-apple-diskimage';
+      }
       
       if (targetAssetId) {
         const streamUrl = `https://api.github.com/repos/${github.GITHUB_REPO}/releases/assets/${targetAssetId}`;
@@ -61,12 +96,8 @@ router.get('/v1/update/download', async (req, res) => {
           timeout: 60000
         });
 
-        const filename = (requestedType === 'zip') 
-          ? `Overnode-v${deployment.currentVersion}-macOS-arm64.zip` 
-          : `Overnode-v${deployment.currentVersion}-macOS-arm64.dmg`;
-
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.setHeader('Content-Type', requestedType === 'zip' ? 'application/zip' : 'application/x-apple-diskimage');
+        res.setHeader('Content-Type', contentType);
         return ghResponse.data.pipe(res);
       }
     }

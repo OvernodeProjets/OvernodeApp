@@ -1,0 +1,176 @@
+<UserControl
+    x:Class="Overnode.App.Views.Components.UpdateModalControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="#B2000000">
+        <Border Background="{StaticResource OvernodeCardBrush}"
+                BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="32"
+                MaxWidth="500"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+            
+            <StackPanel Spacing="20">
+                <!-- Header Badge & Title -->
+                <StackPanel HorizontalAlignment="Center" Spacing="8">
+                    <!-- Badge -->
+                    <Border Background="#26F59E0B"
+                            BorderBrush="#4DF59E0B"
+                            BorderThickness="1"
+                            CornerRadius="20"
+                            Padding="12,4"
+                            HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE735;" FontSize="11" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                            <TextBlock x:Name="BadgeText"
+                                       Text="MISE À JOUR DISPONIBLE"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Title -->
+                    <TextBlock x:Name="TitleText"
+                               Text="Nouvelle version d'Overnode"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource OvernodeTextPrimaryBrush}"
+                               HorizontalAlignment="Center" />
+
+                    <!-- Version Evolution -->
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock x:Name="CurrentVersionText"
+                                   Text="v1.0.0"
+                                   FontSize="13"
+                                   FontFamily="Consolas, Cascadia Code, monospace"
+                                   Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                        <FontIcon Glyph="&#xE72A;" FontSize="11" Foreground="{StaticResource OvernodeAccentGoldBrush}" VerticalAlignment="Center" />
+                        <TextBlock x:Name="LatestVersionText"
+                                   Text="v1.1.0"
+                                   FontSize="13"
+                                   FontWeight="Bold"
+                                   FontFamily="Consolas, Cascadia Code, monospace"
+                                   Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Release Notes Box -->
+                <StackPanel Spacing="8">
+                    <TextBlock x:Name="NotesTitleText"
+                               Text="Nouveautés &amp; Correctifs"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+
+                    <Border Background="{StaticResource OvernodeSecondaryCardBrush}"
+                            BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="14"
+                            Height="130">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <TextBlock x:Name="ReleaseNotesContentText"
+                                       Text="Cette mise à jour apporte des améliorations de performance et de stabilité."
+                                       FontSize="12.5"
+                                       TextWrapping="Wrap"
+                                       LineHeight="18"
+                                       Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+
+                <!-- Error Banner -->
+                <Border x:Name="ErrorBanner"
+                        Visibility="Collapsed"
+                        Background="#26EF4444"
+                        BorderBrush="#4DEF4444"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="12,10">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE783;" FontSize="13" Foreground="{StaticResource OvernodeAccentDangerBrush}" VerticalAlignment="Center" />
+                        <TextBlock x:Name="ErrorMessageText"
+                                   Text="Erreur de téléchargement"
+                                   FontSize="12"
+                                   Foreground="{StaticResource OvernodeAccentDangerBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Progress Section (when downloading) -->
+                <StackPanel x:Name="ProgressSection" Visibility="Collapsed" Spacing="8">
+                    <Grid>
+                        <TextBlock x:Name="DownloadingLabelText"
+                                   Text="Téléchargement de la mise à jour..."
+                                   FontSize="12"
+                                   FontWeight="Medium"
+                                   Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                        <TextBlock x:Name="ProgressPercentText"
+                                   Text="0%"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   FontFamily="Consolas, Cascadia Code, monospace"
+                                   Foreground="{StaticResource OvernodeAccentGoldBrush}"
+                                   HorizontalAlignment="Right" />
+                    </Grid>
+                    <ProgressBar x:Name="DownloadProgressBar"
+                                 Minimum="0"
+                                 Maximum="100"
+                                 Value="0"
+                                 Height="6"
+                                 Foreground="{StaticResource OvernodeAccentGoldBrush}"
+                                 Background="#33FFFFFF" />
+                </StackPanel>
+
+                <!-- Restarting Section (when ready) -->
+                <StackPanel x:Name="RestartingSection" Visibility="Collapsed" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                    <ProgressRing IsActive="True" Width="16" Height="16" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                    <TextBlock x:Name="RestartingText"
+                               Text="Installation &amp; redémarrage..."
+                               FontSize="13"
+                               FontWeight="Medium"
+                               Foreground="{StaticResource OvernodeAccentGoldBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Action Buttons -->
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                    <Button x:Name="LaterButton"
+                            Content="Plus tard"
+                            FontSize="13"
+                            Padding="16,8"
+                            CornerRadius="8"
+                            Background="#1AFFFFFF"
+                            BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                            BorderThickness="1"
+                            Foreground="{StaticResource OvernodeTextSecondaryBrush}"
+                            Click="OnLaterClicked" />
+
+                    <Button x:Name="UpdateNowButton"
+                            Padding="20,8"
+                            CornerRadius="8"
+                            Background="{StaticResource OvernodeAccentGoldBrush}"
+                            BorderThickness="0"
+                            Click="OnUpdateNowClicked">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE896;" FontSize="13" Foreground="#000000" VerticalAlignment="Center" />
+                            <TextBlock x:Name="UpdateNowBtnText"
+                                       Text="Mettre à jour"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="#000000"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

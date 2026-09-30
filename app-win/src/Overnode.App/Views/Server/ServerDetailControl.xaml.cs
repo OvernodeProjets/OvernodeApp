@@ -38,6 +38,9 @@ public sealed partial class ServerDetailControl : UserControl
             FilesTab.DataContext = ViewModel;
             SubdomainsTab.DataContext = ViewModel;
             SubusersTab.DataContext = ViewModel;
+            PackageTab.DataContext = ViewModel;
+            PluginsTab.DataContext = ViewModel;
+            LogsTab.DataContext = ViewModel;
             SettingsTab.DataContext = ViewModel;
 
             ViewModel.PropertyChanged += (ps, pe) =>
@@ -46,9 +49,11 @@ public sealed partial class ServerDetailControl : UserControl
                 {
                     SwitchTab(ViewModel.SelectedTab);
                 }
-                else if (pe.PropertyName == nameof(ServerDetailViewModel.Server))
+                else if (pe.PropertyName == nameof(ServerDetailViewModel.Server) ||
+                         pe.PropertyName == nameof(ServerDetailViewModel.IsPowerLoading) ||
+                         pe.PropertyName == nameof(ServerDetailViewModel.ErrorMessage))
                 {
-                    UpdateHeaderUI();
+                    DispatcherQueue.TryEnqueue(() => UpdateHeaderUI());
                 }
             };
 
@@ -86,11 +91,26 @@ public sealed partial class ServerDetailControl : UserControl
             StatusDot.Fill = OfflineBrush;
         }
 
-        // Button enabled states
-        StartBtn.IsEnabled = srv.CanStart && state != "running" && !ViewModel.IsPowerLoading;
-        RestartBtn.IsEnabled = srv.CanRestart && state == "running" && !ViewModel.IsPowerLoading;
-        StopBtn.IsEnabled = srv.CanStop && state != "offline" && !ViewModel.IsPowerLoading;
-        KillBtn.IsEnabled = srv.CanStop && !ViewModel.IsPowerLoading;
+        // Button enabled and loading states
+        bool isPowerLoading = ViewModel.IsPowerLoading;
+        StartBtn.IsEnabled = srv.CanStart && state != "running" && state != "starting" && !isPowerLoading;
+        RestartBtn.IsEnabled = srv.CanRestart && state == "running" && !isPowerLoading;
+        StopBtn.IsEnabled = srv.CanStop && state != "offline" && !isPowerLoading;
+        KillBtn.IsEnabled = srv.CanStop && !isPowerLoading;
+
+        StartIcon.Visibility = isPowerLoading ? Visibility.Collapsed : Visibility.Visible;
+        StartProgress.Visibility = isPowerLoading ? Visibility.Visible : Visibility.Collapsed;
+        StartProgress.IsActive = isPowerLoading;
+
+        if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+        {
+            ErrorBannerText.Text = ViewModel.ErrorMessage;
+            ErrorBanner.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            ErrorBanner.Visibility = Visibility.Collapsed;
+        }
     }
 
     public void SwitchTab(ServerTab tab)
@@ -100,6 +120,9 @@ public sealed partial class ServerDetailControl : UserControl
         FilesTab.Visibility = tab == ServerTab.Files ? Visibility.Visible : Visibility.Collapsed;
         SubdomainsTab.Visibility = tab == ServerTab.Subdomains ? Visibility.Visible : Visibility.Collapsed;
         SubusersTab.Visibility = tab == ServerTab.Subusers ? Visibility.Visible : Visibility.Collapsed;
+        PackageTab.Visibility = tab == ServerTab.Package ? Visibility.Visible : Visibility.Collapsed;
+        PluginsTab.Visibility = tab == ServerTab.Plugins ? Visibility.Visible : Visibility.Collapsed;
+        LogsTab.Visibility = tab == ServerTab.Logs ? Visibility.Visible : Visibility.Collapsed;
         SettingsTab.Visibility = tab == ServerTab.Settings ? Visibility.Visible : Visibility.Collapsed;
 
         if (tab == ServerTab.Console)
@@ -121,6 +144,18 @@ public sealed partial class ServerDetailControl : UserControl
         else if (tab == ServerTab.Subusers)
         {
             SubusersTab.UpdateUI();
+        }
+        else if (tab == ServerTab.Package)
+        {
+            PackageTab.UpdateUI();
+        }
+        else if (tab == ServerTab.Plugins)
+        {
+            PluginsTab.UpdateUI();
+        }
+        else if (tab == ServerTab.Logs)
+        {
+            LogsTab.UpdateUI();
         }
         else if (tab == ServerTab.Settings)
         {
@@ -176,5 +211,14 @@ public sealed partial class ServerDetailControl : UserControl
             await ViewModel.SendPowerSignalAsync(ServerPowerSignal.Kill);
             UpdateHeaderUI();
         }
+    }
+
+    private void OnErrorDismissClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.ErrorMessage = null;
+        }
+        ErrorBanner.Visibility = Visibility.Collapsed;
     }
 }

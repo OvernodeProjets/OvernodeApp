@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Overnode.App.Models;
@@ -40,6 +41,9 @@ public enum ServerTab
     Files,
     Subdomains,
     Subusers,
+    Package,
+    Plugins,
+    Logs,
     Settings
 }
 
@@ -52,6 +56,9 @@ public static class ServerTabExtensions
         ServerTab.Files => "server_tab_files",
         ServerTab.Subdomains => "server_tab_subdomains",
         ServerTab.Subusers => "server_tab_subusers",
+        ServerTab.Package => "server_tab_package",
+        ServerTab.Plugins => "server_tab_plugins",
+        ServerTab.Logs => "server_tab_logs",
         ServerTab.Settings => "server_tab_settings",
         _ => "server_tab_console"
     };
@@ -63,9 +70,91 @@ public static class ServerTabExtensions
         ServerTab.Files => "\uE8B7", // Folder
         ServerTab.Subdomains => "\uE839", // WebSearch / Globe
         ServerTab.Subusers => "\uE716", // People
+        ServerTab.Package => "\uE71D", // Sliders / Package
+        ServerTab.Plugins => "\uE74C", // Puzzle / Extension
+        ServerTab.Logs => "\uE9D9", // History / List
         ServerTab.Settings => "\uE713", // Settings
         _ => "\uE756"
     };
+}
+
+public class RenewalDurationObject
+{
+    [JsonPropertyName("totalMs")]
+    public double? TotalMs { get; set; }
+
+    [JsonPropertyName("totalSeconds")]
+    public double? TotalSeconds { get; set; }
+
+    [JsonPropertyName("days")]
+    public int? Days { get; set; }
+
+    [JsonPropertyName("hours")]
+    public int? Hours { get; set; }
+
+    [JsonPropertyName("minutes")]
+    public int? Minutes { get; set; }
+
+    [JsonPropertyName("seconds")]
+    public int? Seconds { get; set; }
+
+    public string Formatted
+    {
+        get
+        {
+            int d = Days ?? 0;
+            int h = Hours ?? 0;
+            int m = Minutes ?? 0;
+            if (d > 0) return $"{d}j {h}h";
+            if (h > 0) return $"{h}h {m}min";
+            if (m > 0) return $"{m} min";
+            return "Moins d'une minute";
+        }
+    }
+}
+
+public class FlexibleRenewalStringConverter : JsonConverter<string?>
+{
+    public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        switch (reader.TokenType)
+        {
+            case JsonTokenType.Null:
+                return null;
+
+            case JsonTokenType.String:
+                return reader.GetString();
+
+            case JsonTokenType.Number:
+                if (reader.TryGetDouble(out var num))
+                {
+                    int totalSec = num > 10_000_000 ? (int)(num / 1000.0) : (int)num;
+                    int days = totalSec / 86400;
+                    int hours = (totalSec % 86400) / 3600;
+                    int minutes = (totalSec % 3600) / 60;
+                    if (days > 0) return $"{days}j {hours}h";
+                    if (hours > 0) return $"{hours}h {minutes}min";
+                    if (minutes > 0) return $"{minutes} min";
+                    return "Moins d'une minute";
+                }
+                return null;
+
+            case JsonTokenType.StartObject:
+                var duration = System.Text.Json.JsonSerializer.Deserialize<RenewalDurationObject>(ref reader, options);
+                return duration?.Formatted;
+
+            default:
+                return null;
+        }
+    }
+
+    public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
+    {
+        if (value == null)
+            writer.WriteNullValue();
+        else
+            writer.WriteStringValue(value);
+    }
 }
 
 public class ServerRenewalStatus
@@ -89,12 +178,14 @@ public class ServerRenewalStatus
     public bool? IsExpired { get; set; } = false;
 
     [JsonPropertyName("timeRemaining")]
+    [JsonConverter(typeof(FlexibleRenewalStringConverter))]
     public string? TimeRemaining { get; set; }
 
     [JsonPropertyName("renewalCount")]
     public int? RenewalCount { get; set; } = 0;
 
     [JsonPropertyName("availableIn")]
+    [JsonConverter(typeof(FlexibleRenewalStringConverter))]
     public string? AvailableIn { get; set; }
 
     public string CalculatedTimeRemaining
@@ -106,7 +197,7 @@ public class ServerRenewalStatus
 
             if (DateTime.TryParse(NextRenewalAt, out var nextAt))
             {
-                var diff = nextAt - DateTime.UtcNow;
+                var diff = nextAt.ToUniversalTime() - DateTime.UtcNow;
                 if (diff.TotalSeconds <= 0) return "Expiré";
                 if (diff.TotalDays >= 1) return $"{(int)diff.TotalDays}j {diff.Hours}h";
                 if (diff.TotalHours >= 1) return $"{diff.Hours}h {diff.Minutes}min";
@@ -114,6 +205,32 @@ public class ServerRenewalStatus
                 return "Moins d'une minute";
             }
             return "—";
+        }
+    }
+
+    public string? CalculatedAvailableIn
+    {
+        get
+        {
+            if (!string.IsNullOrEmpty(AvailableIn)) return AvailableIn;
+            if (CanRenew != false) return null;
+            if (string.IsNullOrEmpty(NextRenewalAt)) return null;
+
+            if (DateTime.TryParse(NextRenewalAt, out var nextAt))
+            {
+                var diff = nextAt.ToUniversalTime() - DateTime.UtcNow;
+                var availableInSec = diff.TotalSeconds - (24 * 3600);
+                if (availableInSec <= 0) return null;
+
+                int totalSec = (int)availableInSec;
+                int days = totalSec / 86400;
+                int hours = (totalSec % 86400) / 3600;
+                int minutes = (totalSec % 3600) / 60;
+                if (days > 0) return $"{days}j {hours}h";
+                if (hours > 0) return $"{hours}h {minutes}min";
+                return $"{minutes} min";
+            }
+            return null;
         }
     }
 }
@@ -133,6 +250,7 @@ public class ServerRenewalActionResponse
     public string? Error { get; set; }
 
     [JsonPropertyName("availableIn")]
+    [JsonConverter(typeof(FlexibleRenewalStringConverter))]
     public string? AvailableIn { get; set; }
 }
 
@@ -351,6 +469,7 @@ public class PteroStartupVariablesResponse
     public List<VarDatum> Data { get; set; } = new();
 }
 
+[JsonConverter(typeof(ServerPluginItemConverter))]
 public class ServerPluginItem
 {
     [JsonPropertyName("id")]
@@ -372,11 +491,201 @@ public class ServerPluginItem
     public string? Author { get; set; }
 
     [JsonPropertyName("platform")]
-    public string Platform { get; set; } = string.Empty;
+    public string Platform { get; set; } = "spigot";
 
     [JsonPropertyName("downloads")]
     public int? Downloads { get; set; }
 
     [JsonPropertyName("isInstalled")]
     public bool IsInstalled { get; set; } = false;
+}
+
+public class ServerPluginItemConverter : JsonConverter<ServerPluginItem>
+{
+    public override ServerPluginItem? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.StartObject) return null;
+
+        using var doc = JsonDocument.ParseValue(ref reader);
+        var root = doc.RootElement;
+
+        var item = new ServerPluginItem();
+
+        // ID (can be int or string)
+        if (root.TryGetProperty("id", out var idProp))
+        {
+            item.Id = idProp.ValueKind == JsonValueKind.Number ? idProp.GetInt64().ToString() : idProp.GetString() ?? Guid.NewGuid().ToString();
+        }
+        else if (root.TryGetProperty("pluginId", out var pIdProp))
+        {
+            item.Id = pIdProp.ValueKind == JsonValueKind.Number ? pIdProp.GetInt64().ToString() : pIdProp.GetString() ?? Guid.NewGuid().ToString();
+        }
+        else
+        {
+            item.Id = Guid.NewGuid().ToString();
+        }
+
+        // Name
+        if (root.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == JsonValueKind.String)
+        {
+            item.Name = nameProp.GetString() ?? "Plugin";
+        }
+        else if (root.TryGetProperty("pluginName", out var pnProp) && pnProp.ValueKind == JsonValueKind.String)
+        {
+            item.Name = pnProp.GetString() ?? "Plugin";
+        }
+
+        // Description (can be description, tag, or pluginName)
+        if (root.TryGetProperty("description", out var descProp) && descProp.ValueKind == JsonValueKind.String)
+        {
+            item.Description = descProp.GetString();
+        }
+        else if (root.TryGetProperty("tag", out var tagProp) && tagProp.ValueKind == JsonValueKind.String)
+        {
+            item.Description = tagProp.GetString();
+        }
+        else if (root.TryGetProperty("pluginName", out var plNameProp) && plNameProp.ValueKind == JsonValueKind.String)
+        {
+            var pn = plNameProp.GetString();
+            if (!string.IsNullOrEmpty(pn) && pn != item.Name) item.Description = pn;
+        }
+
+        // Icon (iconUrl or icon or icon_url)
+        if (root.TryGetProperty("iconUrl", out var iconProp) && iconProp.ValueKind == JsonValueKind.String)
+        {
+            item.IconUrl = iconProp.GetString();
+        }
+        else if (root.TryGetProperty("icon", out var icon2Prop) && icon2Prop.ValueKind == JsonValueKind.String)
+        {
+            item.IconUrl = icon2Prop.GetString();
+        }
+        else if (root.TryGetProperty("icon_url", out var icon3Prop) && icon3Prop.ValueKind == JsonValueKind.String)
+        {
+            item.IconUrl = icon3Prop.GetString();
+        }
+
+        // Version (can be string or object {"id":"latest"})
+        if (root.TryGetProperty("version", out var verProp))
+        {
+            if (verProp.ValueKind == JsonValueKind.String)
+            {
+                item.Version = verProp.GetString();
+            }
+            else if (verProp.ValueKind == JsonValueKind.Object)
+            {
+                if (verProp.TryGetProperty("name", out var vn) && vn.ValueKind == JsonValueKind.String)
+                    item.Version = vn.GetString();
+                else if (verProp.TryGetProperty("id", out var vi) && vi.ValueKind == JsonValueKind.String)
+                    item.Version = vi.GetString();
+            }
+        }
+        item.Version ??= "latest";
+
+        // Author (can be string or object {"name":"..."})
+        if (root.TryGetProperty("author", out var authProp))
+        {
+            if (authProp.ValueKind == JsonValueKind.String)
+            {
+                item.Author = authProp.GetString();
+            }
+            else if (authProp.ValueKind == JsonValueKind.Object)
+            {
+                if (authProp.TryGetProperty("name", out var an) && an.ValueKind == JsonValueKind.String)
+                    item.Author = an.GetString();
+            }
+        }
+
+        // Platform
+        if (root.TryGetProperty("platform", out var platProp) && platProp.ValueKind == JsonValueKind.String)
+        {
+            item.Platform = platProp.GetString() ?? "spigot";
+        }
+        else
+        {
+            item.Platform = "spigot";
+        }
+
+        // Downloads
+        if (root.TryGetProperty("downloads", out var downProp) && downProp.ValueKind == JsonValueKind.Number)
+        {
+            item.Downloads = downProp.GetInt32();
+        }
+
+        // IsInstalled
+        if (root.TryGetProperty("isInstalled", out var instProp))
+        {
+            item.IsInstalled = instProp.ValueKind == JsonValueKind.True;
+        }
+
+        return item;
+    }
+
+    public override void Write(Utf8JsonWriter writer, ServerPluginItem value, JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("id", value.Id);
+        writer.WriteString("name", value.Name);
+        writer.WriteString("description", value.Description);
+        writer.WriteString("iconUrl", value.IconUrl);
+        writer.WriteString("version", value.Version);
+        writer.WriteString("author", value.Author);
+        writer.WriteString("platform", value.Platform);
+        if (value.Downloads.HasValue) writer.WriteNumber("downloads", value.Downloads.Value);
+        writer.WriteBoolean("isInstalled", value.IsInstalled);
+        writer.WriteEndObject();
+    }
+}
+
+public class ActivityLogsResponse
+{
+    public class RawLog
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+
+        [JsonPropertyName("timestamp")]
+        public string Timestamp { get; set; } = string.Empty;
+
+        [JsonPropertyName("action")]
+        public string Action { get; set; } = string.Empty;
+
+        [JsonPropertyName("username")]
+        public string? Username { get; set; }
+
+        [JsonPropertyName("details")]
+        public JsonElement? Details { get; set; }
+    }
+
+    [JsonPropertyName("data")]
+    public List<RawLog> Data { get; set; } = new();
+}
+
+public class InstalledPluginsResponse
+{
+    public class PluginEntry
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("description")]
+        public string? Description { get; set; }
+
+        [JsonPropertyName("iconUrl")]
+        public string? IconUrl { get; set; }
+
+        [JsonPropertyName("version")]
+        public string? Version { get; set; }
+
+        [JsonPropertyName("author")]
+        public string? Author { get; set; }
+
+        [JsonPropertyName("platform")]
+        public string? Platform { get; set; }
+    }
+
+    [JsonPropertyName("plugins")]
+    public List<PluginEntry> Plugins { get; set; } = new();
 }

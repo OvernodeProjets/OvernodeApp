@@ -1,0 +1,177 @@
+name: Build, Verify & Release Overnode Windows (x64 Native)
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version de release personnalisée (optionnel, ex: 1.1.0)'
+        required: false
+      create_release:
+        description: 'Créer une release GitHub officielle'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-build:
+    name: Verify & Build Windows Native MSI
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Unique Release Version & Tag
+        shell: pwsh
+        run: |
+          if ("${{ github.ref }}" -like "refs/tags/v*") {
+            $TAG = "${{ github.ref_name }}"
+            $VERSION = $TAG.TrimStart('v')
+          } elseif ("${{ inputs.version }}") {
+            $VERSION = "${{ inputs.version }}"
+            $TAG = "v$VERSION"
+          } else {
+            # Unique non-conflicting version for each run on main
+            $VERSION = "1.1.${{ github.run_number }}"
+            $TAG = "v$VERSION"
+          }
+          Write-Host "==> Version unique résolue : $VERSION (Tag: $TAG)"
+          "RELEASE_VERSION=$VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "RELEASE_TAG=$TAG" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run Windows Native Unit Tests
+        shell: pwsh
+        run: |
+          Write-Host "==> Exécution de la suite de tests Windows..."
+          dotnet run --project app-win/tests/Overnode.Tests/Overnode.Tests.csproj
+
+      - name: Publish Windows Native Application (Self-Contained win-x64)
+        shell: pwsh
+        run: |
+          Write-Host "==> Publication de l'application Overnode Windows Native (win-x64)..."
+          $publishPath = "app-win/build/publish"
+          if (Test-Path $publishPath) { Remove-Item -Recurse -Force $publishPath }
+          dotnet publish app-win/src/Overnode.App/Overnode.App.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained `
+            -o $publishPath `
+            -p:PublishSingleFile=false `
+            -p:Version="${{ env.RELEASE_VERSION }}" `
+            -p:FileVersion="${{ env.RELEASE_VERSION }}.0" `
+            -p:AssemblyVersion="${{ env.RELEASE_VERSION }}.0"
+
+      - name: Verify Binary & Embedded App Icon
+        shell: pwsh
+        run: |
+          $exe = "app-win/build/publish/Overnode.App.exe"
+          if (!(Test-Path $exe)) {
+            Write-Error "Overnode.App.exe was not generated in publish output!"
+            exit 1
+          }
+          Add-Type -AssemblyName System.Drawing
+          $icon = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path $exe))
+          if ($icon -eq $null) {
+            Write-Error "No embedded icon found in $exe!"
+            exit 1
+          }
+          Write-Host "✓ Verified: Native executable generated with embedded icon ($($icon.Width)x$($icon.Height))."
+          $icon.Dispose()
+
+      - name: Setup WiX Toolset
+        shell: pwsh
+        run: |
+          Write-Host "==> Installation de WiX Toolset..."
+          dotnet tool install --global wix
+          wix eula accept wix7 || true
+
+      - name: Build Native Windows MSI Installer
+        shell: pwsh
+        run: |
+          $version = "${{ env.RELEASE_VERSION }}"
+          $msiPath = "app-win/build/Overnode-v${version}-Windows-x64.msi"
+          $publishFull = (Resolve-Path "app-win/build/publish").Path
+          Write-Host "==> Génération de l'installeur MSI : $msiPath..."
+          wix build app-win/installer/Package.wxs `
+            -arch x64 `
+            -d PublishDir="$publishFull" `
+            -d Version="$version" `
+            -o "$msiPath"
+
+          if (!(Test-Path $msiPath)) {
+            Write-Error "MSI package was not generated!"
+            exit 1
+          }
+          Write-Host "✓ Verified: MSI installer generated successfully ($((Get-Item $msiPath).Length) bytes)."
+
+      - name: Package Release Archive (.zip) & Compute SHA256 Checksums
+        shell: pwsh
+        run: |
+          $version = "${{ env.RELEASE_VERSION }}"
+          $zipPath = "app-win/build/Overnode-v${version}-Windows-x64.zip"
+          $msiPath = "app-win/build/Overnode-v${version}-Windows-x64.msi"
+          $checksumPath = "app-win/build/checksums-windows.sha256"
+
+          Write-Host "==> Création de l'archive ZIP portable..."
+          Compress-Archive -Path "app-win/build/publish/*" -DestinationPath "$zipPath" -Force
+
+          Write-Host "==> Calcul des sommes de contrôle SHA256..."
+          $msiHash = (Get-FileHash -Path "$msiPath" -Algorithm SHA256).Hash.ToLower()
+          $zipHash = (Get-FileHash -Path "$zipPath" -Algorithm SHA256).Hash.ToLower()
+
+          "$msiHash  Overnode-v${version}-Windows-x64.msi`n$zipHash  Overnode-v${version}-Windows-x64.zip" | Out-File -FilePath "$checksumPath" -Encoding utf8
+
+          Get-Content "$checksumPath"
+
+          "MSI_PATH=$msiPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "ZIP_PATH=$zipPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "CHECKSUM_PATH=$checksumPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Upload Artifacts (.msi, .zip & checksums)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Overnode-v${{ env.RELEASE_VERSION }}-Windows-x64
+          path: |
+            ${{ env.MSI_PATH }}
+            ${{ env.ZIP_PATH }}
+            ${{ env.CHECKSUM_PATH }}
+
+      - name: Create or Update GitHub Release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Overnode ${{ env.RELEASE_TAG }} (Windows & macOS)
+          body: |
+            ### Mise à jour Overnode ${{ env.RELEASE_TAG }}
+            - **Version :** ${{ env.RELEASE_VERSION }}
+            - **Commit :** ${{ github.sha }}
+            - **Auteur :** ${{ github.actor }}
+            - **Compatibilité :** Windows 10 & Windows 11 (Architecture x64 Native)
+            - **Formats :** Installeur Windows (.msi) et Archive portable (.zip)
+          files: |
+            ${{ env.MSI_PATH }}
+            ${{ env.ZIP_PATH }}
+            ${{ env.CHECKSUM_PATH }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

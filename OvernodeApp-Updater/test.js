@@ -55,9 +55,28 @@ async function runTests() {
   // Test 5: Update check stats
   console.log('5. Testing update check stats...');
   db.recordUpdateCheck('1.0.0', 'darwin-arm64');
+  db.recordUpdateCheck('1.0.0', 'win-x64');
   const stats = db.getStats();
-  assert(stats.totalChecks >= 1, 'Stats totalChecks should be >= 1');
+  assert(stats.totalChecks >= 2, 'Stats totalChecks should be >= 2');
+  assert(stats.platforms && stats.platforms['win-x64'] >= 1, 'Windows platform stats should be recorded');
   console.log('   ✓ Update check stats passed');
+
+  // Test 6: Windows platform deployment support
+  console.log('6. Testing Windows platform deployment...');
+  db.pushNewVersion({
+    version: '1.3.0',
+    downloadUrl: 'https://github.com/OvernodeProjets/OvernodeApp/releases/download/v1.3.0/Overnode-v1.3.0-macOS-arm64.dmg',
+    windowsDownloadUrl: 'https://github.com/OvernodeProjets/OvernodeApp/releases/download/v1.3.0/Overnode-v1.3.0-Windows-x64.msi',
+    releaseNotes: 'Multi-platform release v1.3.0',
+    mandatory: false,
+    pushedBy: testUsername
+  });
+  const macDeployment = db.getDeployment('darwin-arm64');
+  assert.strictEqual(macDeployment.downloadUrl, 'https://github.com/OvernodeProjets/OvernodeApp/releases/download/v1.3.0/Overnode-v1.3.0-macOS-arm64.dmg');
+  
+  const winDeployment = db.getDeployment('win-x64');
+  assert.strictEqual(winDeployment.downloadUrl, 'https://github.com/OvernodeProjets/OvernodeApp/releases/download/v1.3.0/Overnode-v1.3.0-Windows-x64.msi');
+  console.log('   ✓ Windows deployment test passed');
 
   console.log('🎉 All OvernodeApp-Updater tests passed successfully!');
 }

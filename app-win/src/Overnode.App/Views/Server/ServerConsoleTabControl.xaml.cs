@@ -20,6 +20,7 @@ public sealed partial class ServerConsoleTabControl : UserControl
     private static readonly SolidColorBrush NormalBrush = new(Color.FromArgb(255, 203, 213, 225));
 
     public ServerDetailViewModel? ViewModel => DataContext as ServerDetailViewModel;
+    private ServerDetailViewModel? _boundViewModel;
 
     public ServerConsoleTabControl()
     {
@@ -31,12 +32,25 @@ public sealed partial class ServerConsoleTabControl : UserControl
 
     private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
     {
-        if (ViewModel != null)
+        if (_boundViewModel != null)
         {
-            ConsoleItemsControl.ItemsSource = ViewModel.ConsoleLines;
-            ViewModel.ConsoleLines.CollectionChanged += OnConsoleLinesChanged;
+            _boundViewModel.ConsoleLines.CollectionChanged -= OnConsoleLinesChanged;
+            _boundViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+
+        _boundViewModel = DataContext as ServerDetailViewModel;
+        if (_boundViewModel != null)
+        {
+            ConsoleItemsControl.ItemsSource = _boundViewModel.ConsoleLines;
+            _boundViewModel.ConsoleLines.CollectionChanged += OnConsoleLinesChanged;
+            _boundViewModel.PropertyChanged += OnViewModelPropertyChanged;
             UpdateStatsUI();
         }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(() => UpdateStatsUI());
     }
 
     private void OnConsoleLinesChanged(object? sender, NotifyCollectionChangedEventArgs e)

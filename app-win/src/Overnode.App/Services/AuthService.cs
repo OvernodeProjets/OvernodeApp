@@ -379,11 +379,15 @@ public sealed class AuthService
         {
             try
             {
-                var (state, mem, cpu, disk) = await ServerService.Shared.FetchLiveResourcesAsync(server.Identifier);
-                server.State = state;
-                server.MemoryUsedMB = Math.Round(mem);
-                server.CpuUsedPercent = Math.Round(cpu, 1);
-                server.DiskUsedMB = Math.Round(disk);
+                var res = await ServerService.Shared.FetchLiveResourcesAsync(server.Identifier, server.Id);
+                if (res != null)
+                {
+                    var (state, mem, cpu, disk) = res.Value;
+                    server.State = state;
+                    server.MemoryUsedMB = Math.Round(mem);
+                    server.CpuUsedPercent = Math.Round(cpu, 1);
+                    server.DiskUsedMB = Math.Round(disk);
+                }
             }
             catch { }
             return server;

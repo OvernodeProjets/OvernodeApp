@@ -23,9 +23,14 @@
     <Compile Include="..\..\src\Overnode.App\Services\ServerConfigService.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Services\ServerDeployService.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Services\APIClient.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\QuickActionServerStorage.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\DiscordRPCService.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\ServerWebSocketManager.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\UpdateService.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\ViewModels\TwoFactorViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\ViewModels\ServerDetailViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\ViewModels\CreateServerViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\ViewModels\UpdateViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Localization\LocalizationManager.cs" Link="Localization\%(Filename)%(Extension)" />
     <Content Include="..\..\src\Overnode.App\Localization\*.json" Link="Localization\%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -97,6 +97,8 @@ public partial class ServerDetailViewModel : ObservableObject
     [ObservableProperty]
     private bool _isDeleting;
 
+    private readonly ServerWebSocketManager _wsManager = ServerWebSocketManager.Shared;
+
     public ServerDetailViewModel(ServerInstance server, ServerTab initialTab = ServerTab.Console)
     {
         _server = server;
@@ -106,10 +108,62 @@ public partial class ServerDetailViewModel : ObservableObject
         AppendConsoleLine($"[System] Session connected to {server.Name} ({server.Identifier})");
         AppendConsoleLine($"[System] Current state: {server.State.ToUpperInvariant()}");
 
+        SetupWebSocket();
+
         if (Environment.GetEnvironmentVariable("OVERNODE_DEMO") == "1")
         {
             LoadDemoData();
         }
+    }
+
+    private void SetupWebSocket()
+    {
+        if (Environment.GetEnvironmentVariable("OVERNODE_DEMO") == "1") return;
+
+        _wsManager.ConsoleOutputReceived += OnWebSocketConsoleOutput;
+        _wsManager.StatusChanged += OnWebSocketStatusChanged;
+        _wsManager.StatsUpdated += OnWebSocketStatsUpdated;
+        _wsManager.Connect(Server.Identifier);
+    }
+
+    private void OnWebSocketConsoleOutput(string line)
+    {
+        AppendRawConsoleLine(line);
+    }
+
+    private void OnWebSocketStatusChanged(string status)
+    {
+        Server.State = status;
+        OnPropertyChanged(nameof(Server));
+    }
+
+    private void OnWebSocketStatsUpdated(LivePteroStats stats)
+    {
+        if (stats.CpuAbsolute.HasValue)
+        {
+            Server.CpuUsedPercent = Math.Round(stats.CpuAbsolute.Value, 1);
+        }
+        if (stats.MemoryBytes.HasValue)
+        {
+            Server.MemoryUsedMB = Math.Round(stats.MemoryBytes.Value / 1024.0 / 1024.0);
+        }
+        if (stats.DiskBytes.HasValue)
+        {
+            Server.DiskUsedMB = Math.Round(stats.DiskBytes.Value / 1024.0 / 1024.0);
+        }
+        if (!string.IsNullOrEmpty(stats.State))
+        {
+            Server.State = stats.State;
+        }
+        OnPropertyChanged(nameof(Server));
+    }
+
+    public void Cleanup()
+    {
+        _wsManager.ConsoleOutputReceived -= OnWebSocketConsoleOutput;
+        _wsManager.StatusChanged -= OnWebSocketStatusChanged;
+        _wsManager.StatsUpdated -= OnWebSocketStatsUpdated;
+        _wsManager.Disconnect();
     }
 
     private void LoadDemoData()
@@ -168,6 +222,16 @@ public partial class ServerDetailViewModel : ObservableObject
         }
     }
 
+    public void AppendRawConsoleLine(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line)) return;
+        ConsoleLines.Add(line.TrimEnd());
+        if (ConsoleLines.Count > 1000)
+        {
+            ConsoleLines.RemoveAt(0);
+        }
+    }
+
     public async Task LoadCurrentTabDataAsync()
     {
         if (Environment.GetEnvironmentVariable("OVERNODE_DEMO") == "1") return;
@@ -188,6 +252,15 @@ public partial class ServerDetailViewModel : ObservableObject
             case ServerTab.Subusers:
                 await LoadSubusersAsync();
                 break;
+            case ServerTab.Package:
+                InitPackageResources();
+                break;
+            case ServerTab.Plugins:
+                await LoadPluginsAsync();
+                break;
+            case ServerTab.Logs:
+                await LoadLogsAsync();
+                break;
             case ServerTab.Settings:
                 await LoadSettingsAsync();
                 break;
@@ -196,11 +269,24 @@ public partial class ServerDetailViewModel : ObservableObject
 
     public async Task RefreshLiveStatsAsync()
     {
-        var (state, mem, cpu, disk) = await _serverService.FetchLiveResourcesAsync(Server.Identifier);
-        Server.State = state;
-        Server.MemoryUsedMB = mem;
-        Server.CpuUsedPercent = cpu;
-        Server.DiskUsedMB = disk;
+        var result = await _serverService.FetchLiveResourcesAsync(Server.Identifier, Server.Id);
+        if (result != null)
+        {
+            var (state, mem, cpu, disk) = result.Value;
+            if (string.Equals(Server.State, "starting", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(state, "offline", StringComparison.OrdinalIgnoreCase))
+            {
+                // Wings hasn't reported starting yet, keep starting
+            }
+            else if (!string.IsNullOrEmpty(state))
+            {
+                Server.State = state;
+            }
+            Server.MemoryUsedMB = mem;
+            Server.CpuUsedPercent = cpu;
+            Server.DiskUsedMB = disk;
+            OnPropertyChanged(nameof(Server));
+        }
     }
 
     [RelayCommand]
@@ -210,27 +296,51 @@ public partial class ServerDetailViewModel : ObservableObject
         ErrorMessage = null;
         AppendConsoleLine($"[Action] Power signal: {signal.ToSignalString().ToUpperInvariant()} sent...");
 
+        var previousState = Server.State;
+        Server.State = signal switch
+        {
+            ServerPowerSignal.Start or ServerPowerSignal.Restart => "starting",
+            ServerPowerSignal.Stop or ServerPowerSignal.Kill => "stopping",
+            _ => Server.State
+        };
+        OnPropertyChanged(nameof(Server));
+
+        // 1. Send via WebSocket if authenticated
+        if (_wsManager.IsAuthenticated)
+        {
+            _wsManager.SendPowerSignal(signal);
+        }
+
+        // 2. Send via REST API fallback
+        bool success = false;
         try
         {
-            await _serverService.SendPowerSignalAsync(Server.Identifier, signal.ToSignalString());
-            Server.State = signal switch
-            {
-                ServerPowerSignal.Start or ServerPowerSignal.Restart => "starting",
-                ServerPowerSignal.Stop or ServerPowerSignal.Kill => "stopping",
-                _ => Server.State
-            };
+            await _serverService.SendPowerSignalAsync(Server.Identifier, signal.ToSignalString(), Server.Id > 0 ? Server.Id.ToString() : null);
+            success = true;
             AppendConsoleLine($"[Action] Power signal {signal.ToSignalString().ToUpperInvariant()} acknowledged.");
-            await Task.Delay(1000);
-            await RefreshLiveStatsAsync();
         }
         catch (Exception ex)
         {
+            if (!_wsManager.IsAuthenticated)
+            {
+                Server.State = previousState;
+                OnPropertyChanged(nameof(Server));
+            }
             ErrorMessage = ex.Message;
             AppendConsoleLine($"[Error] Failed to send signal: {ex.Message}");
         }
         finally
         {
             IsPowerLoading = false;
+        }
+
+        if (success || _wsManager.IsAuthenticated)
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+                await RefreshLiveStatsAsync();
+            });
         }
     }
 
@@ -243,9 +353,17 @@ public partial class ServerDetailViewModel : ObservableObject
         CommandInput = string.Empty;
         AppendConsoleLine($"> {cmd}");
 
+        // 1. Send via WebSocket immediately if authenticated
+        if (_wsManager.IsAuthenticated)
+        {
+            _wsManager.SendCommand(cmd);
+            return;
+        }
+
+        // 2. Send via REST API fallback
         try
         {
-            await _serverService.SendCommandAsync(Server.Identifier, cmd);
+            await _serverService.SendCommandAsync(Server.Identifier, cmd, Server.Id > 0 ? Server.Id.ToString() : null);
         }
         catch (Exception ex)
         {
@@ -590,6 +708,212 @@ public partial class ServerDetailViewModel : ObservableObject
         catch (Exception ex)
         {
             ErrorMessage = ex.Message;
+        }
+    }
+
+    // MARK: - Package & Quotas
+    [ObservableProperty]
+    private double _packageRamMB = 1024;
+
+    [ObservableProperty]
+    private double _packageCpuPercent = 100;
+
+    [ObservableProperty]
+    private double _packageDiskMB = 2048;
+
+    [ObservableProperty]
+    private double _maxAvailableRamMB = 4096;
+
+    [ObservableProperty]
+    private double _maxAvailableCpuPercent = 200;
+
+    [ObservableProperty]
+    private double _maxAvailableDiskMB = 10240;
+
+    [ObservableProperty]
+    private bool _isSavingPackage;
+
+    public void InitPackageResources()
+    {
+        PackageRamMB = Server.MemoryLimitMB > 0 ? Server.MemoryLimitMB : 1024;
+        PackageCpuPercent = Server.CpuLimitPercent > 0 ? Server.CpuLimitPercent : 100;
+        PackageDiskMB = Server.DiskLimitMB > 0 ? Server.DiskLimitMB : 2048;
+        MaxAvailableRamMB = Math.Max(PackageRamMB, 4096);
+        MaxAvailableCpuPercent = Math.Max(PackageCpuPercent, 200);
+        MaxAvailableDiskMB = Math.Max(PackageDiskMB, 10240);
+    }
+
+    [RelayCommand]
+    public void SetMaxPackageResources()
+    {
+        PackageRamMB = MaxAvailableRamMB;
+        PackageCpuPercent = MaxAvailableCpuPercent;
+        PackageDiskMB = MaxAvailableDiskMB;
+    }
+
+    [RelayCommand]
+    public async Task SavePackageChangesAsync()
+    {
+        IsSavingPackage = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            await _configService.ModifyServerResourcesAsync(
+                Server.Identifier,
+                (int)PackageRamMB,
+                (int)PackageDiskMB,
+                (int)PackageCpuPercent);
+
+            Server.MemoryLimitMB = PackageRamMB;
+            Server.DiskLimitMB = PackageDiskMB;
+            Server.CpuLimitPercent = PackageCpuPercent;
+            SuccessMessage = LocalizationManager.Instance.GetString("package_save_changes");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsSavingPackage = false;
+        }
+    }
+
+    // MARK: - Plugins
+    [ObservableProperty]
+    private ObservableCollection<ServerPluginItem> _installedPlugins = new();
+
+    [ObservableProperty]
+    private ObservableCollection<ServerPluginItem> _pluginSearchResults = new();
+
+    [ObservableProperty]
+    private string _pluginSearchQuery = string.Empty;
+
+    [ObservableProperty]
+    private bool _isSearchingPlugins;
+
+    [ObservableProperty]
+    private int _pluginSubTab; // 0 = Installed, 1 = Search
+
+    [RelayCommand]
+    public async Task LoadPluginsAsync(bool force = false)
+    {
+        if (IsLoading && !force) return;
+        IsLoading = true;
+        ErrorMessage = null;
+        try
+        {
+            var loaded = await _configService.FetchInstalledPluginsAsync(Server.Identifier);
+            if (loaded.Count == 0 && Server.Id > 0 && Server.Id.ToString() != Server.Identifier)
+            {
+                var fallback = await _configService.FetchInstalledPluginsAsync(Server.Id.ToString());
+                if (fallback.Count > 0)
+                {
+                    loaded = fallback;
+                }
+            }
+            InstalledPlugins = new ObservableCollection<ServerPluginItem>(loaded);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task SearchPluginsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(PluginSearchQuery)) return;
+        IsSearchingPlugins = true;
+        ErrorMessage = null;
+        try
+        {
+            var results = await _configService.SearchPluginsAsync(PluginSearchQuery.Trim());
+            PluginSearchResults = new ObservableCollection<ServerPluginItem>(results);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsSearchingPlugins = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task InstallPluginAsync(ServerPluginItem plugin)
+    {
+        if (plugin == null) return;
+        ErrorMessage = null;
+        SuccessMessage = null;
+        try
+        {
+            await _configService.InstallPluginAsync(Server.Identifier, plugin.Id, plugin.Platform ?? "spigot");
+            plugin.IsInstalled = true;
+            SuccessMessage = $"{plugin.Name} installé avec succès.";
+            await LoadPluginsAsync(true);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    public async Task UninstallPluginAsync(ServerPluginItem plugin)
+    {
+        if (plugin == null) return;
+        ErrorMessage = null;
+        SuccessMessage = null;
+        try
+        {
+            await _configService.UntrackPluginAsync(Server.Identifier, plugin.Id, plugin.Platform ?? "modrinth");
+            InstalledPlugins.Remove(plugin);
+            SuccessMessage = $"{plugin.Name} désinstallé.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    // MARK: - Activity Logs
+    [ObservableProperty]
+    private ObservableCollection<ServerActivityLog> _activityLogs = new();
+
+    [RelayCommand]
+    public async Task LoadLogsAsync(bool force = false)
+    {
+        if (IsLoading && !force) return;
+        IsLoading = true;
+        ErrorMessage = null;
+        try
+        {
+            var logs = await _configService.FetchLogsAsync(Server.Identifier);
+            if (logs.Count == 0 && Server.Id > 0 && Server.Id.ToString() != Server.Identifier)
+            {
+                var fallback = await _configService.FetchLogsAsync(Server.Id.ToString());
+                if (fallback.Count > 0)
+                {
+                    logs = fallback;
+                }
+            }
+            ActivityLogs = new ObservableCollection<ServerActivityLog>(logs);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 }

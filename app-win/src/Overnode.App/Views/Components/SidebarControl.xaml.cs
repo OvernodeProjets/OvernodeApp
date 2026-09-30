@@ -104,6 +104,9 @@ public sealed partial class SidebarControl : UserControl
         ServerTabFilesText.Text = loc.GetString("server_tab_files");
         ServerTabSubdomainsText.Text = loc.GetString("server_tab_subdomains");
         ServerTabSubusersText.Text = loc.GetString("server_tab_subusers");
+        ServerTabPackageText.Text = loc.GetString("server_tab_package");
+        ServerTabPluginsText.Text = loc.GetString("server_tab_plugins");
+        ServerTabLogsText.Text = loc.GetString("server_tab_logs");
         ServerTabSettingsText.Text = loc.GetString("server_tab_settings");
     }
 
@@ -143,6 +146,9 @@ public sealed partial class SidebarControl : UserControl
         SetButtonActive(ServerTabFilesBtn, ServerTabFilesText, SelectedServerTab == ServerTab.Files);
         SetButtonActive(ServerTabSubdomainsBtn, ServerTabSubdomainsText, SelectedServerTab == ServerTab.Subdomains);
         SetButtonActive(ServerTabSubusersBtn, ServerTabSubusersText, SelectedServerTab == ServerTab.Subusers);
+        SetButtonActive(ServerTabPackageBtn, ServerTabPackageText, SelectedServerTab == ServerTab.Package);
+        SetButtonActive(ServerTabPluginsBtn, ServerTabPluginsText, SelectedServerTab == ServerTab.Plugins);
+        SetButtonActive(ServerTabLogsBtn, ServerTabLogsText, SelectedServerTab == ServerTab.Logs);
         SetButtonActive(ServerTabSettingsBtn, ServerTabSettingsText, SelectedServerTab == ServerTab.Settings);
     }
 

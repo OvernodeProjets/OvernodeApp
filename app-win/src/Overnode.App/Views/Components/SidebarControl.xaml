@@ -235,6 +235,27 @@
                             </StackPanel>
                         </Button>
 
+                        <Button x:Name="ServerTabPackageBtn" Click="OnServerTabClicked" Tag="Package" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE71D;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock x:Name="ServerTabPackageText" Text="Offre &amp; Quotas" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="ServerTabPluginsBtn" Click="OnServerTabClicked" Tag="Plugins" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE74C;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock x:Name="ServerTabPluginsText" Text="Plugins" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="ServerTabLogsBtn" Click="OnServerTabClicked" Tag="Logs" Style="{StaticResource SidebarNavButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE9D9;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                <TextBlock x:Name="ServerTabLogsText" Text="Journaux" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
                         <Button x:Name="ServerTabSettingsBtn" Click="OnServerTabClicked" Tag="Settings" Style="{StaticResource SidebarNavButtonStyle}">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <FontIcon Glyph="&#xE713;" FontSize="13" Width="18" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />

@@ -17,6 +17,8 @@ Applications natives pour Overnode :
 - `cd app-mac && swift test` - Lancer les tests unitaires macOS
 - `cd app-mac && swift build -c release` - Compiler l'application macOS
 - `cd app-mac && ./build_app.sh` - Générer le bundle macOS Overnode.app complet
+- `cd app-win && dotnet test tests/Overnode.Tests/Overnode.Tests.csproj` - Lancer les tests unitaires Windows
+- `cd app-win && dotnet build src/Overnode.App/Overnode.App.csproj` - Compiler l'application Windows
 - `cd OvernodeApp-Updater && npm start` - Démarrer le portail web de gestion des mises à jour
 
 ## Rules

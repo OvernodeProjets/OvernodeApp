@@ -50,7 +50,7 @@ router.get('/', async (req, res) => {
 
 // "Push to app" Action
 router.post('/deploy', (req, res) => {
-  const { version, downloadUrl, releaseNotes, sha256, mandatory } = req.body;
+  const { version, downloadUrl, windowsDownloadUrl, releaseNotes, sha256, mandatory } = req.body;
 
   if (!version || !downloadUrl) {
     return res.redirect('/?error=Version+et+URL+de+t%C3%A9l%C3%A9chargement+requises');
@@ -60,6 +60,7 @@ router.post('/deploy', (req, res) => {
     db.pushNewVersion({
       version,
       downloadUrl,
+      windowsDownloadUrl: windowsDownloadUrl || null,
       releaseNotes,
       sha256,
       mandatory: mandatory === 'on' || mandatory === 'true',

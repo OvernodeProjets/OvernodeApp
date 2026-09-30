@@ -15,6 +15,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+    <ApplicationIcon>Assets\app_icon.ico</ApplicationIcon>
+    <AssemblyTitle>Overnode</AssemblyTitle>
+    <Product>Overnode</Product>
+    <Company>Overnode</Company>
+    <Description>Application Native Overnode Cloud</Description>
+    <Copyright>Copyright © Overnode 2026</Copyright>
     <NoWarn>$(NoWarn);MVVMTK0045</NoWarn>
   </PropertyGroup>
 

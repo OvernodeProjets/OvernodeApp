@@ -112,6 +112,32 @@ public sealed class APIClient
         return result;
     }
 
+    public async Task<(T? data, string? rawError, int statusCode)> PostWithResponseFallbackAsync<T>(string endpoint, object? body = null)
+    {
+        HttpContent? content = null;
+        if (body != null)
+        {
+            string json = JsonSerializer.Serialize(body);
+            content = new StringContent(json, Encoding.UTF8, "application/json");
+        }
+
+        using var response = await _httpClient.PostAsync(endpoint, content);
+        PersistCurrentCookies();
+
+        string respString = await response.Content.ReadAsStringAsync();
+        int statusCode = (int)response.StatusCode;
+
+        try
+        {
+            var result = JsonSerializer.Deserialize<T>(respString, _jsonOptions);
+            return (result, response.IsSuccessStatusCode ? null : respString, statusCode);
+        }
+        catch
+        {
+            return (default, respString, statusCode);
+        }
+    }
+
     public async Task PostEmptyAsync(string endpoint, object? body = null)
     {
         HttpContent? content = null;
@@ -134,6 +160,25 @@ public sealed class APIClient
     public async Task DeleteEmptyAsync(string endpoint)
     {
         using var response = await _httpClient.DeleteAsync(endpoint);
+        PersistCurrentCookies();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            string errorBody = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException($"HTTP {(int)response.StatusCode}: {errorBody}", null, response.StatusCode);
+        }
+    }
+
+    public async Task DeleteWithBodyAsync(string endpoint, object? body = null)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+        if (body != null)
+        {
+            string json = JsonSerializer.Serialize(body);
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+        }
+
+        using var response = await _httpClient.SendAsync(request);
         PersistCurrentCookies();
 
         if (!response.IsSuccessStatusCode)

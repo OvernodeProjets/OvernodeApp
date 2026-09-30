@@ -303,6 +303,7 @@ public sealed partial class DashboardView : UserControl
             case NavigationTab.Settings:
                 SettingsViewContent.Visibility = Visibility.Visible;
                 SettingsViewContent.CurrentUser = AuthVM?.CurrentUser;
+                SettingsViewContent.SetServers(ViewModel.Servers);
                 SettingsViewContent.Refresh();
                 break;
         }

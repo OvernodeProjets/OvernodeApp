@@ -209,6 +209,75 @@
                 </StackPanel>
             </Border>
 
+            <!-- Quick Action Server Selection Card -->
+            <Border Background="{StaticResource OvernodeCardBrush}"
+                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="20">
+                <StackPanel Spacing="16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Background="#1AF59E0B" Margin="0,0,12,0" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE72C;" FontSize="16" Foreground="{StaticResource OvernodeAccentGoldBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock x:Name="QuickActionTitle"
+                                       Text="Action Rapide (Quick Action)"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                            <TextBlock x:Name="QuickActionDesc"
+                                       Text="Choisissez le serveur Overnode contrôlable directement depuis les raccourcis d'actions rapides."
+                                       FontSize="12"
+                                       Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Rectangle Height="1" Fill="{StaticResource OvernodeBorderSubtleBrush}" />
+
+                    <!-- Server Selection Row -->
+                    <Grid>
+                        <TextBlock x:Name="QuickActionSelectLabel"
+                                   Text="Serveur sélectionné"
+                                   FontSize="13"
+                                   FontWeight="Medium"
+                                   Foreground="{StaticResource OvernodeTextPrimaryBrush}"
+                                   VerticalAlignment="Center" />
+
+                        <ComboBox x:Name="QuickActionServerCombo"
+                                  HorizontalAlignment="Right"
+                                  MinWidth="240"
+                                  SelectionChanged="OnQuickActionServerChanged" />
+                    </Grid>
+
+                    <!-- Server Status Preview -->
+                    <Border x:Name="QuickActionStatusCard"
+                            Visibility="Collapsed"
+                            Background="{StaticResource OvernodeSecondaryCardBrush}"
+                            BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12,10">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <Ellipse x:Name="QuickActionStatusDot" Width="8" Height="8" Fill="#40C780" VerticalAlignment="Center" />
+                                <TextBlock x:Name="QuickActionStatusText" Text="Statut : En ligne" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="•" Foreground="{StaticResource OvernodeTextMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="QuickActionRamText" Text="RAM : 1024 MB" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="•" Foreground="{StaticResource OvernodeTextMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="QuickActionCpuText" Text="CPU : 100%" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
             <!-- Software Updates Card -->
             <Border Background="{StaticResource OvernodeCardBrush}"
                     BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"

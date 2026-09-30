@@ -52,6 +52,15 @@ public partial class App : Application
             File.AppendAllText(LogPath, $"[{DateTime.Now}] MainWindow created\n");
             _window.Activate();
             File.AppendAllText(LogPath, $"[{DateTime.Now}] Window activated OK\n");
+
+            // Start Discord Rich Presence in background
+            try
+            {
+                Services.DiscordRPCService.Shared.Start();
+            }
+            catch
+            {
+            }
         }
         catch (Exception ex)
         {

@@ -74,6 +74,19 @@ public class Program
         var mgmtTests = new ServerManagementTests();
         Run("ServerPowerSignal String & Glyph Extensions", mgmtTests.Test_ServerPowerSignal_Extensions);
         Run("ServerRenewalStatus Time Remaining Calculation", mgmtTests.Test_ServerRenewalStatus_TimeCalculation);
+        Run("FlexibleRenewalStringConverter Object Payload", mgmtTests.Test_FlexibleRenewalStringConverter_ObjectPayload);
+        Run("FlexibleRenewalStringConverter String & Number Payload", mgmtTests.Test_FlexibleRenewalStringConverter_StringAndNumberPayload);
+        Run("ServerRenewalActionResponse Error Payload & Duration", mgmtTests.Test_ServerRenewalActionResponse_ErrorPayload);
+        Run("ServerTab macOS Parity (9 tabs, glyphs, i18n)", mgmtTests.Test_ServerTab_Parity_AllNineTabs);
+        Run("InstalledPluginsResponse Deserialization", mgmtTests.Test_InstalledPluginsResponse_Deserialization);
+        Run("Spigot Search Deserialization (numeric ID & objects)", mgmtTests.Test_SpigotPluginSearch_Deserialization_With_NumericId_And_Objects);
+        Run("ActivityLogsResponse Deserialization", mgmtTests.Test_ActivityLogsResponse_Deserialization);
+        Run("QuickActionServerStorage Save/Load/Clear", mgmtTests.Test_QuickActionServerStorage);
+        Run("DiscordRPCService Initialization", mgmtTests.Test_DiscordRPCService_Initialization);
+        Run("ServerWebSocketManager Initialization", mgmtTests.Test_ServerWebSocketManager_Initialization);
+        Run("ServerInstance Identifier Fallback (UUID/ID)", mgmtTests.Test_ServerInstance_IdentifierFallback);
+        Run("PteroServerWrapper UUID Fallback", mgmtTests.Test_PteroServerWrapper_UuidFallback);
+        Run("Server Power State Transitions (Start/Stop)", mgmtTests.Test_ServerPower_StateTransitions);
         Run("ServerFileItem Size & Icon Formatting", mgmtTests.Test_ServerFileItem_Formatting);
         Run("PteroFileList Response Deserialization", mgmtTests.Test_PteroFileList_Deserialization);
         Run("ServerSubdomain & ServerSubuser Models", mgmtTests.Test_ServerSubdomain_And_Subuser);
@@ -111,6 +124,9 @@ public class Program
         Run("Store Pricing & Bundles", secondaryTests.Test_Store_Pricing_And_Bundles);
         Run("Support Ticket Models & Messages", secondaryTests.Test_Support_Ticket_Models);
         Run("NavigationTab Glyphs & Keys", secondaryTests.Test_NavigationTabs_And_Glyphs);
+
+        // 9. In-App Updater Tests
+        UpdateTests.RunAll(Run);
 
         Console.WriteLine($"\n---------------------------------------");
         Console.WriteLine($"Total: {passed + failed} | Passed: {passed} | Failed: {failed}");

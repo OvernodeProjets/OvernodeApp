@@ -31,6 +31,9 @@ public class PteroServerWrapper
         [JsonPropertyName("identifier")]
         public string Identifier { get; set; } = string.Empty;
 
+        [JsonPropertyName("uuid")]
+        public string? Uuid { get; set; }
+
         [JsonPropertyName("name")]
         public string Name { get; set; } = "Server";
 
@@ -77,10 +80,17 @@ public class PteroServerWrapper
 
     public ServerInstance ToServerInstance()
     {
+        string resolvedIdentifier = !string.IsNullOrWhiteSpace(Attributes.Identifier)
+            ? Attributes.Identifier
+            : (!string.IsNullOrWhiteSpace(Attributes.Uuid) && Attributes.Uuid.Length >= 8
+                ? Attributes.Uuid.Substring(0, 8)
+                : (Attributes.Id > 0 ? Attributes.Id.ToString() : string.Empty));
+
         return new ServerInstance
         {
             Id = Attributes.Id,
-            Identifier = Attributes.Identifier,
+            Identifier = resolvedIdentifier,
+            Uuid = Attributes.Uuid,
             Name = Attributes.Name,
             Node = Attributes.Node,
             Suspended = Attributes.Suspended ?? false,

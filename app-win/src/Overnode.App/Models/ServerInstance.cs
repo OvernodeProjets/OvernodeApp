@@ -9,8 +9,23 @@ public class ServerInstance
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
+    private string _identifier = string.Empty;
+
     [JsonPropertyName("identifier")]
-    public string Identifier { get; set; } = string.Empty;
+    public string Identifier
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_identifier)) return _identifier;
+            if (!string.IsNullOrWhiteSpace(Uuid) && Uuid.Length >= 8) return Uuid[..8];
+            if (Id > 0) return Id.ToString();
+            return string.Empty;
+        }
+        set => _identifier = value;
+    }
+
+    [JsonPropertyName("uuid")]
+    public string? Uuid { get; set; }
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = "Server";
