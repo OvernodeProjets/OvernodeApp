@@ -28,6 +28,7 @@
     <Compile Include="..\..\src\Overnode.App\Services\ServerWebSocketManager.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Services\UpdateService.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Services\ExternalEditorManager.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\TrayIconManager.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\ViewModels\TwoFactorViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\ViewModels\ServerDetailViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\ViewModels\CreateServerViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />

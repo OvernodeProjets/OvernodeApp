@@ -133,6 +133,16 @@ public class Program
         // 9. In-App Updater Tests
         UpdateTests.RunAll(Run);
 
+        // 10. Windows Quick Actions & Tray Tests
+        var trayTests = new TrayQuickActionTests();
+        Run("QuickAction ServerStorage Set & Get", trayTests.Test_QuickActionServerStorage_Basic);
+        Run("QuickAction ServerStorage Notification", trayTests.Test_QuickActionServerStorage_Notification);
+        Run("TrayIconManager UpdateServers & Active Server", trayTests.Test_TrayIconManager_UpdateServersAndActiveServer);
+        Run("TrayIconManager Tooltip Formatting", trayTests.Test_TrayIconManager_TooltipFormatting);
+        Run("TrayIconManager Localized Server States", trayTests.Test_TrayIconManager_LocalizedServerStates);
+        Run("TrayIconManager Menu Command Execution", trayTests.Test_TrayIconManager_MenuCommandExecution);
+        Run("QuickAction Translations Exist (FR & EN)", trayTests.Test_QuickActionTranslationsExist_FrenchAndEnglish);
+
         Console.WriteLine($"\n---------------------------------------");
         Console.WriteLine($"Total: {passed + failed} | Passed: {passed} | Failed: {failed}");
         Console.WriteLine("=======================================");

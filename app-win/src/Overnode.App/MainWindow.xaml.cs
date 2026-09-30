@@ -9,11 +9,12 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics;
 using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
+using Overnode.App.Models;
 using Overnode.App.ViewModels;
 
 namespace Overnode.App;
 
-public sealed partial class MainWindow : Window
+public sealed partial class MainWindow : Window, Services.ITrayTarget
 {
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -33,6 +34,9 @@ public sealed partial class MainWindow : Window
     private readonly Views.TwoFactorVerificationView _twoFactorView = new();
     private readonly Views.DashboardView _dashboardView = new();
     private readonly Views.Components.UpdateModalControl _updateModal = new();
+
+    private AppWindow? _appWindow;
+    private bool _isQuitting;
 
     public AuthViewModel AuthVM { get; }
     public UpdateViewModel UpdateVM => UpdateViewModel.Shared;
@@ -62,6 +66,8 @@ public sealed partial class MainWindow : Window
 
         UpdateActiveView();
         ConfigureWindow();
+
+        Services.TrayIconManager.Shared.Initialize(this);
 
         // Silent background update check on startup
         _ = System.Threading.Tasks.Task.Run(() => UpdateVM.CheckForUpdatesAsync(silent: true));
@@ -114,10 +120,19 @@ public sealed partial class MainWindow : Window
             DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDarkMode, sizeof(int));
 
             var windowId = Win32Interop.GetWindowIdFromWindow(hWnd);
-            var appWindow = AppWindow.GetFromWindowId(windowId);
-            if (appWindow != null)
+            _appWindow = AppWindow.GetFromWindowId(windowId);
+            if (_appWindow != null)
             {
-                appWindow.Title = "Overnode";
+                _appWindow.Closing += (sender, args) =>
+                {
+                    if (!_isQuitting)
+                    {
+                        args.Cancel = true;
+                        _appWindow.Hide();
+                    }
+                };
+
+                _appWindow.Title = "Overnode";
 
                 // DPI-aware sizing: 1180x780 DIPs
                 uint dpi = GetDpiForWindow(hWnd);
@@ -125,13 +140,13 @@ public sealed partial class MainWindow : Window
                 int physWidth = (int)Math.Round(DefaultDipWidth * scale);
                 int physHeight = (int)Math.Round(DefaultDipHeight * scale);
 
-                appWindow.Resize(new SizeInt32(physWidth, physHeight));
-                appWindow.IsShownInSwitchers = true;
+                _appWindow.Resize(new SizeInt32(physWidth, physHeight));
+                _appWindow.IsShownInSwitchers = true;
 
                 // Match Overnode Dark Theme for TitleBar and system buttons
                 if (AppWindowTitleBar.IsCustomizationSupported())
                 {
-                    var titleBar = appWindow.TitleBar;
+                    var titleBar = _appWindow.TitleBar;
                     titleBar.BackgroundColor = ColorHelper.FromArgb(255, 16, 18, 24);
                     titleBar.ForegroundColor = Colors.White;
                     titleBar.InactiveBackgroundColor = ColorHelper.FromArgb(255, 16, 18, 24);
@@ -151,7 +166,7 @@ public sealed partial class MainWindow : Window
                 {
                     var centeredX = (displayArea.WorkArea.Width - physWidth) / 2;
                     var centeredY = (displayArea.WorkArea.Height - physHeight) / 2;
-                    appWindow.Move(new PointInt32(centeredX, centeredY));
+                    _appWindow.Move(new PointInt32(centeredX, centeredY));
                 }
 
                 var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app_icon.ico");
@@ -161,10 +176,10 @@ public sealed partial class MainWindow : Window
                 }
                 if (File.Exists(iconPath))
                 {
-                    appWindow.SetIcon(iconPath);
+                    _appWindow.SetIcon(iconPath);
                 }
 
-                appWindow.Show(true);
+                _appWindow.Show(true);
             }
             ShowWindow(hWnd, 5);
             SetForegroundWindow(hWnd);
@@ -175,11 +190,67 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    public void RestoreWindow()
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                _appWindow?.Show(true);
+                ShowWindow(hWnd, 9); // SW_RESTORE
+                ShowWindow(hWnd, 5); // SW_SHOW
+                SetForegroundWindow(hWnd);
+            }
+            catch { }
+        });
+    }
+
+    public void NavigateToSettings()
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            RestoreWindow();
+            if (AuthVM.IsAuthenticated)
+            {
+                _dashboardView.ViewModel.SelectedTab = NavigationTab.Settings;
+            }
+        });
+    }
+
+    public void QuitApplication()
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            _isQuitting = true;
+            Services.TrayIconManager.Shared.Dispose();
+            try
+            {
+                Services.DiscordRPCService.Shared.Stop();
+            }
+            catch { }
+            Close();
+            Application.Current.Exit();
+        });
+    }
+
+    public IntPtr GetWindowHandle() => WinRT.Interop.WindowNative.GetWindowHandle(this);
+
+    public void EnqueueOnUIThread(Action action) => DispatcherQueue.TryEnqueue(() => action());
+
     private async void CaptureScreenshotAsync()
     {
         try
         {
             await System.Threading.Tasks.Task.Delay(1500);
+
+            if (Environment.GetEnvironmentVariable("OVERNODE_CAPTURE_QUICKACTION") == "1")
+            {
+                _updateModal.Visibility = Visibility.Collapsed;
+                _dashboardView.ScrollToQuickAction();
+                await System.Threading.Tasks.Task.Delay(1000);
+            }
+
             if (Content is FrameworkElement root)
             {
                 var rtb = new RenderTargetBitmap();

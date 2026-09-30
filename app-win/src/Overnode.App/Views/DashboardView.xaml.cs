@@ -230,6 +230,8 @@ public sealed partial class DashboardView : UserControl
         ServersLoadingPanel.Visibility = (ViewModel.IsLoading && ViewModel.Servers.Count == 0)
             ? Visibility.Visible
             : Visibility.Collapsed;
+
+        TrayIconManager.Shared.UpdateServers(ViewModel.Servers);
     }
 
     private void UpdatePlatformStats()
@@ -481,5 +483,10 @@ public sealed partial class DashboardView : UserControl
     private void OnLogoutRequested(object? sender, EventArgs e)
     {
         AuthVM?.LogoutCommand.Execute(null);
+    }
+
+    public void ScrollToQuickAction()
+    {
+        SettingsViewContent.ScrollToQuickAction();
     }
 }

@@ -291,4 +291,13 @@ public sealed partial class SettingsControl : UserControl
             CheckUpdatesBtn.IsEnabled = true;
         }
     }
+
+    public void ScrollToQuickAction()
+    {
+        try
+        {
+            SettingsScrollViewer?.ChangeView(null, 480, null, true);
+        }
+        catch { }
+    }
 }
