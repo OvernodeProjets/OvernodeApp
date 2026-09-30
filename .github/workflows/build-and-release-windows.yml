@@ -4,11 +4,17 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'app-win/**'
+      - '.github/workflows/build-and-release-windows.yml'
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
+    paths:
+      - 'app-win/**'
+      - '.github/workflows/build-and-release-windows.yml'
   workflow_dispatch:
     inputs:
       version:

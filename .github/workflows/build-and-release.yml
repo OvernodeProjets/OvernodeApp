@@ -4,11 +4,19 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'app-mac/**'
+      - 'app/**'
+      - '.github/workflows/build-and-release.yml'
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
+    paths:
+      - 'app-mac/**'
+      - 'app/**'
+      - '.github/workflows/build-and-release.yml'
   workflow_dispatch:
     inputs:
       version:

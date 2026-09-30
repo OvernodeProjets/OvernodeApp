@@ -29,10 +29,6 @@ public sealed partial class MainWindow : Window
 
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 
-    private static readonly string LogPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-        "overnode_crash.log");
-
     private readonly Views.AuthView _authView = new();
     private readonly Views.TwoFactorVerificationView _twoFactorView = new();
     private readonly Views.DashboardView _dashboardView = new();
@@ -117,11 +113,8 @@ public sealed partial class MainWindow : Window
             int useDarkMode = 1;
             DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDarkMode, sizeof(int));
 
-            File.AppendAllText(LogPath, $"[{DateTime.Now}] ConfigureWindow: hWnd = 0x{hWnd.ToInt64():X}\n");
             var windowId = Win32Interop.GetWindowIdFromWindow(hWnd);
-            File.AppendAllText(LogPath, $"[{DateTime.Now}] ConfigureWindow: windowId = {windowId.Value}\n");
             var appWindow = AppWindow.GetFromWindowId(windowId);
-            File.AppendAllText(LogPath, $"[{DateTime.Now}] ConfigureWindow: appWindow is {(appWindow != null ? "not null" : "null")}\n");
             if (appWindow != null)
             {
                 appWindow.Title = "Overnode";
@@ -159,7 +152,6 @@ public sealed partial class MainWindow : Window
                     var centeredX = (displayArea.WorkArea.Width - physWidth) / 2;
                     var centeredY = (displayArea.WorkArea.Height - physHeight) / 2;
                     appWindow.Move(new PointInt32(centeredX, centeredY));
-                    File.AppendAllText(LogPath, $"[{DateTime.Now}] Centered at {centeredX}, {centeredY}\n");
                 }
 
                 var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app_icon.ico");
@@ -173,15 +165,13 @@ public sealed partial class MainWindow : Window
                 }
 
                 appWindow.Show(true);
-                File.AppendAllText(LogPath, $"[{DateTime.Now}] appWindow.Show(true) called, isVisible={appWindow.IsVisible}\n");
             }
             ShowWindow(hWnd, 5);
             SetForegroundWindow(hWnd);
-            File.AppendAllText(LogPath, $"[{DateTime.Now}] Win32 ShowWindow and SetForegroundWindow called\n");
         }
         catch (Exception ex)
         {
-            File.AppendAllText(LogPath, $"[{DateTime.Now}] Exception in ConfigureWindow: {ex}\n");
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now}] Exception in ConfigureWindow: {ex}");
         }
     }
 
@@ -224,12 +214,12 @@ public sealed partial class MainWindow : Window
                     await readStream.CopyToAsync(fileStream);
                 }
 
-                File.AppendAllText(LogPath, $"[{DateTime.Now}] Window screenshot saved: {filePath} ({rtb.PixelWidth}x{rtb.PixelHeight})\n");
+                System.Diagnostics.Debug.WriteLine($"[{DateTime.Now}] Window screenshot saved: {filePath} ({rtb.PixelWidth}x{rtb.PixelHeight})");
             }
         }
         catch (Exception ex)
         {
-            File.AppendAllText(LogPath, $"[{DateTime.Now}] Screenshot capture error: {ex}\n");
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now}] Screenshot capture error: {ex}");
         }
     }
 }

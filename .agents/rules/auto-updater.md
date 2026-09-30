@@ -22,11 +22,13 @@ Règles pour le système de mise à jour automatique, le site de gestion et la C
   - Toute tentative sans code console valide DOIT être rejetée.
 - **Workflow GitHub Actions macOS**:
   - Exécution sur runner macOS Apple Silicon (`macos-14` / `macos-15`).
+  - Filtrage de chemins strict : déclenché uniquement lors de modifications dans `app-mac/**` (ou tags `v*` / `workflow_dispatch`).
   - Vérification obligatoire de l'architecture `arm64` via `file` / `lipo`.
   - Signature de production Apple avec l'adresse e-mail `app@overnode.fr`.
   - Archivage `.zip`, image `.dmg` et calcul de somme de contrôle SHA256 pour la release.
 - **Workflow GitHub Actions Windows**:
   - Exécution sur runner Windows (`windows-latest`).
+  - Filtrage de chemins strict : déclenché uniquement lors de modifications dans `app-win/**` (ou tags `v*` / `workflow_dispatch`).
   - Compilation et publication self-contained `win-x64` (.NET 10).
   - Vérification de l'icône d'application PE intégrée (`app_icon.ico`).
   - Packaging MSI natif via WiX Toolset v4+ avec raccourcis Menu Démarrer et Bureau.
