@@ -49,5 +49,18 @@
       <ComponentRef Id="ProgramMenuShortcutDir" />
       <ComponentRef Id="DesktopShortcutComponent" />
     </Feature>
+
+    <!-- Launch application automatically upon install/upgrade completion -->
+    <CustomAction Id="LaunchAppAfterInstall"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]Overnode.App.exe&quot;"
+                  Execute="immediate"
+                  Return="asyncNoWait" />
+
+    <InstallExecuteSequence>
+      <Custom Action="LaunchAppAfterInstall"
+              After="InstallFinalize"
+              Condition="NOT (REMOVE=&quot;ALL&quot;)" />
+    </InstallExecuteSequence>
   </Package>
 </Wix>
