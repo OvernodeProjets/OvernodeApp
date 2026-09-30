@@ -79,7 +79,17 @@ jobs:
             -p:FileVersion="${{ env.RELEASE_VERSION }}.0" `
             -p:AssemblyVersion="${{ env.RELEASE_VERSION }}.0"
 
-      - name: Verify Binary & Embedded App Icon
+          # CRITICAL for WinUI 3 unpackaged: Ensure resources.pri is present in publish output
+          if (!(Test-Path "$publishPath/resources.pri")) {
+            $priSource = Get-ChildItem -Path "app-win/src/Overnode.App/bin/Release" -Filter "*Overnode.App.pri" -Recurse | Select-Object -First 1
+            if ($priSource) {
+              Copy-Item $priSource.FullName "$publishPath/resources.pri" -Force
+              Copy-Item $priSource.FullName "$publishPath/Overnode.App.pri" -Force
+              Write-Host "✓ Copied resources.pri from $($priSource.FullName) to publish directory."
+            }
+          }
+
+      - name: Verify Binary, Resources & Embedded App Icon
         shell: pwsh
         run: |
           $exe = "app-win/build/publish/Overnode.App.exe"
@@ -87,6 +97,14 @@ jobs:
             Write-Error "Overnode.App.exe was not generated in publish output!"
             exit 1
           }
+
+          $pri = "app-win/build/publish/resources.pri"
+          if (!(Test-Path $pri)) {
+            Write-Error "CRITICAL: resources.pri is missing from publish output! WinUI 3 will fail to load XAML."
+            exit 1
+          }
+          Write-Host "✓ Verified: resources.pri found ($((Get-Item $pri).Length) bytes)."
+
           Add-Type -AssemblyName System.Drawing
           $icon = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path $exe))
           if ($icon -eq $null) {

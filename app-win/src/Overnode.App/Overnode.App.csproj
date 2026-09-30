@@ -43,4 +43,10 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.2" />
   </ItemGroup>
+
+  <Target Name="EnsurePriInPublish" AfterTargets="Publish">
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pri" DestinationFiles="$(PublishDir)resources.pri" Condition="Exists('$(TargetDir)$(TargetName).pri') and !Exists('$(PublishDir)resources.pri')" ContinueOnError="true" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pri" DestinationFiles="$(PublishDir)$(TargetName).pri" Condition="Exists('$(TargetDir)$(TargetName).pri') and !Exists('$(PublishDir)$(TargetName).pri')" ContinueOnError="true" />
+    <Copy SourceFiles="$(TargetDir)resources.pri" DestinationFiles="$(PublishDir)resources.pri" Condition="Exists('$(TargetDir)resources.pri') and !Exists('$(PublishDir)resources.pri')" ContinueOnError="true" />
+  </Target>
 </Project>
