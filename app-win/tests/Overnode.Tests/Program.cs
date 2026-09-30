@@ -125,6 +125,8 @@ public class Program
         Run("Support Ticket Models & Messages", secondaryTests.Test_Support_Ticket_Models);
         Run("NavigationTab Glyphs & Keys", secondaryTests.Test_NavigationTabs_And_Glyphs);
         Run("ExternalEditorManager Settings & Toggle", secondaryTests.Test_ExternalEditorManager_Settings_And_Toggle);
+        Run("ExternalEditorManager Resolution & Detection", secondaryTests.Test_ExternalEditorManager_Resolution_And_Detection);
+        Run("ExternalEditorManager Save & Sync", () => secondaryTests.Test_ExternalEditorManager_Save_And_Sync().GetAwaiter().GetResult());
         Run("Subdomain Domain Restriction (overnode.fr)", () => secondaryTests.Test_Subdomain_Domain_Restriction().GetAwaiter().GetResult());
 
         // 9. In-App Updater Tests

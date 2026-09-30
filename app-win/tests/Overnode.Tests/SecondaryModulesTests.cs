@@ -180,4 +180,88 @@ public class SecondaryModulesTests
         Assert.AreEqual(1, domains.Count);
         Assert.AreEqual("overnode.fr", domains[0]);
     }
+
+    public void Test_ExternalEditorManager_Resolution_And_Detection()
+    {
+        var manager = Overnode.App.Services.ExternalEditorManager.Instance;
+        var detected = manager.GetDetectedEditors();
+        Assert.IsNotNull(detected);
+        Assert.IsTrue(detected.Count > 0);
+
+        string resolved = manager.ResolveEditorExecutable();
+        Assert.IsNotNull(resolved);
+        Assert.IsTrue(resolved.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+        Assert.IsFalse(resolved.EndsWith("cmd.exe", StringComparison.OrdinalIgnoreCase));
+        Assert.IsFalse(resolved.EndsWith(".bat", StringComparison.OrdinalIgnoreCase));
+        Assert.IsFalse(resolved.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase));
+
+        // Test custom path setting
+        string? original = manager.SelectedEditorAppPath;
+        try
+        {
+            manager.SelectedEditorAppPath = resolved;
+            Assert.AreEqual(resolved, manager.SelectedEditorAppPath);
+            Assert.IsNotNull(manager.SelectedEditorAppName);
+        }
+        finally
+        {
+            manager.SelectedEditorAppPath = original;
+        }
+    }
+
+    public async Task Test_ExternalEditorManager_Save_And_Sync()
+    {
+        var manager = Overnode.App.Services.ExternalEditorManager.Instance;
+        string tempDir = Path.Combine(Path.GetTempPath(), "OvernodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string testFile = Path.Combine(tempDir, "server.properties");
+
+        try
+        {
+            await File.WriteAllTextAsync(testFile, "motd=InitialServer\nport=25565");
+
+            string? syncedContent = null;
+            var tcs = new TaskCompletionSource<bool>();
+
+            using var session = new Overnode.App.Services.ExternalEditorManager.ExternalEditSession(
+                "test-server-123",
+                "/server.properties",
+                "server.properties",
+                testFile,
+                "motd=InitialServer\nport=25565",
+                newContent =>
+                {
+                    syncedContent = newContent;
+                    tcs.TrySetResult(true);
+                    return Task.CompletedTask;
+                },
+                (sId, fName) => { }
+            );
+
+            session.Start();
+
+            // Simulate local file edit and save
+            await Task.Delay(100);
+            await File.WriteAllTextAsync(testFile, "motd=UpdatedServerOvernode\nport=25565");
+
+            // Wait for watcher / polling to detect and trigger sync
+            var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(3000));
+            Assert.IsTrue(completedTask == tcs.Task, "Timed out waiting for external editor save sync");
+            Assert.AreEqual("motd=UpdatedServerOvernode\nport=25565", syncedContent);
+
+            // Test atomic save simulation
+            string tempAtomicFile = Path.Combine(tempDir, "server.properties.tmp");
+            await File.WriteAllTextAsync(tempAtomicFile, "motd=AtomicSaveServer\nport=25565");
+            File.Move(tempAtomicFile, testFile, overwrite: true);
+            await session.SyncBackAsync();
+            Assert.AreEqual("motd=AtomicSaveServer\nport=25565", syncedContent);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                try { Directory.Delete(tempDir, true); } catch { }
+            }
+        }
+    }
 }

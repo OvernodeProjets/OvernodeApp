@@ -188,6 +188,29 @@
                                    Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                     </StackPanel>
 
+                    <!-- Active Editor Application Selector -->
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                            <TextBlock x:Name="ExternalEditorChoiceLabel"
+                                       Text="Application d'édition"
+                                       FontSize="13"
+                                       FontWeight="Medium"
+                                       Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                            <TextBlock x:Name="ExternalEditorActivePathText"
+                                       Text="Détection automatique..."
+                                       FontSize="11"
+                                       Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                        </StackPanel>
+                        <ComboBox x:Name="ExternalEditorComboBox"
+                                  Grid.Column="1"
+                                  MinWidth="240"
+                                  SelectionChanged="OnExternalEditorComboBoxSelectionChanged" />
+                    </Grid>
+
                     <Grid>
                         <StackPanel VerticalAlignment="Center" Spacing="2">
                             <TextBlock x:Name="AlwaysOpenLabel"

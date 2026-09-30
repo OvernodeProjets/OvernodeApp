@@ -38,6 +38,7 @@ public sealed partial class SettingsControl : UserControl
         UpdateLocalization();
         UpdateLanguageButtons();
         ExternalEditorToggle.IsOn = Services.ExternalEditorManager.Shared.AlwaysOpenInExternalEditor;
+        PopulateExternalEditorsCombo();
     }
 
     public void Refresh()
@@ -46,6 +47,7 @@ public sealed partial class SettingsControl : UserControl
         UpdateLanguageButtons();
         UpdateUserInfo();
         ExternalEditorToggle.IsOn = Services.ExternalEditorManager.Shared.AlwaysOpenInExternalEditor;
+        PopulateExternalEditorsCombo();
     }
 
     private void UpdateLocalization()
@@ -56,6 +58,7 @@ public sealed partial class SettingsControl : UserControl
         LogoutButtonText.Text = _loc.GetString("nav_logout");
         ExternalEditorTitle.Text = _loc.GetString("settings_external_editor_title");
         ExternalEditorDesc.Text = _loc.GetString("settings_external_editor_desc");
+        ExternalEditorChoiceLabel.Text = _loc.GetString("settings_external_editor_current");
         AlwaysOpenLabel.Text = _loc.GetString("settings_external_editor_always_toggle");
         AlwaysOpenDesc.Text = _loc.GetString("settings_external_editor_always_desc");
         UpdatesTitle.Text = _loc.GetString("update_section_title");
@@ -212,6 +215,55 @@ public sealed partial class SettingsControl : UserControl
     private void OnExternalEditorToggled(object sender, RoutedEventArgs e)
     {
         Services.ExternalEditorManager.Shared.AlwaysOpenInExternalEditor = ExternalEditorToggle.IsOn;
+    }
+
+    private void PopulateExternalEditorsCombo()
+    {
+        ExternalEditorComboBox.SelectionChanged -= OnExternalEditorComboBoxSelectionChanged;
+        ExternalEditorComboBox.Items.Clear();
+
+        var manager = Services.ExternalEditorManager.Shared;
+        var detected = manager.GetDetectedEditors();
+        string currentResolved = manager.ResolveEditorExecutable();
+        string activeName = Path.GetFileNameWithoutExtension(currentResolved);
+
+        var autoItem = new ComboBoxItem
+        {
+            Content = $"Automatique ({activeName})",
+            Tag = ""
+        };
+        ExternalEditorComboBox.Items.Add(autoItem);
+
+        int selectedIndex = 0;
+        for (int i = 0; i < detected.Count; i++)
+        {
+            var ed = detected[i];
+            var item = new ComboBoxItem
+            {
+                Content = ed.Name,
+                Tag = ed.Path
+            };
+            ExternalEditorComboBox.Items.Add(item);
+
+            if (!string.IsNullOrEmpty(manager.SelectedEditorAppPath) &&
+                string.Equals(manager.SelectedEditorAppPath, ed.Path, StringComparison.OrdinalIgnoreCase))
+            {
+                selectedIndex = i + 1;
+            }
+        }
+
+        ExternalEditorComboBox.SelectedIndex = selectedIndex;
+        ExternalEditorActivePathText.Text = currentResolved;
+        ExternalEditorComboBox.SelectionChanged += OnExternalEditorComboBoxSelectionChanged;
+    }
+
+    private void OnExternalEditorComboBoxSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ExternalEditorComboBox.SelectedItem is ComboBoxItem item && item.Tag is string path)
+        {
+            Services.ExternalEditorManager.Shared.SelectedEditorAppPath = string.IsNullOrEmpty(path) ? null : path;
+            ExternalEditorActivePathText.Text = Services.ExternalEditorManager.Shared.ResolveEditorExecutable();
+        }
     }
 
     private async void OnCheckUpdatesClicked(object sender, RoutedEventArgs e)

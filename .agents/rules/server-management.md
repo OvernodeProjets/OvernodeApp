@@ -31,9 +31,9 @@ Règles pour la gestion des serveurs dans les applications natives Overnode (mac
   - Un rate limiter (cooldown d'au moins 5 secondes) doit obligatoirement être appliqué sur `refreshServersOnNavigatingToServersSection` pour éviter de spammer les endpoints API.
 - **Édition externe & Synchronisation (External Editor)**:
   - L'ouverture d'un fichier serveur dans un éditeur externe s'effectue via `ExternalEditorManager`.
-  - Sous Windows, ouvre le fichier dans l'application associée par défaut à l'extension dans le shell Windows via staging local temporaire.
-  - Lors d'une modification enregistrée en local (détectée via `FileSystemWatcher` avec debounce), la synchronisation vers le serveur (`writeFile`) doit être déclenchée automatiquement en arrière-plan sans bloquer l'UI, et une confirmation visuelle doit être affichée.
-  - L'option "Toujours ouvrir avec un éditeur externe" doit être configurable dans les Paramètres et respectée au double-clic ou à l'ouverture de fichier.
+  - Sous Windows, les fichiers sont ouverts dans un éditeur de texte/code dédié (VS Code, Notepad++, Bloc-notes). Ne JAMAIS exécuter de fichier script (.bat, .cmd, .sh, .ps1) directement via le shell (`ProcessStartInfo.UseShellExecute`) et ne JAMAIS ouvrir de fenêtre d'invite de commandes (`cmd`). Toujours utiliser `CreateNoWindow = true` et `UseShellExecute = false`.
+  - Lors d'une modification enregistrée en local (détectée via `FileSystemWatcher` avec gestion de `Renamed` pour les écritures atomiques et polling d'intégrité de secours), la synchronisation vers le serveur (`writeFile`) doit être déclenchée automatiquement en arrière-plan sans bloquer l'UI, et une confirmation visuelle doit être affichée.
+  - L'option "Toujours ouvrir avec un éditeur externe" ainsi que le choix de l'éditeur de code doivent être configurables dans les Paramètres et respectés au double-clic ou à l'ouverture de fichier.
 - **Téléversement de Fichiers & Dossiers (Drag & Drop)**:
   - L'upload s'effectue exclusivement par glisser-déposer dans l'onglet Fichiers, sans bouton ni logo additionnel sur l'interface.
   - La sécurité et la conformité des fichiers sont vérifiées par `FileUploadSecurity` :

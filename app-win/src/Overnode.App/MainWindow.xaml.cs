@@ -196,8 +196,10 @@ public sealed partial class MainWindow : Window
                 await rtb.RenderAsync(root);
                 var pixelBuffer = await rtb.GetPixelsAsync();
 
-                string artifactDir = @"C:\Users\jesui\.gemini\antigravity\brain\e8a1065e-c266-4499-80b2-6f1938130351";
-                string filePath = Path.Combine(artifactDir, "overnode_window.png");
+                string filePath = Environment.GetEnvironmentVariable("OVERNODE_SCREENSHOT_PATH")
+                    ?? @"C:\Users\jesui\.gemini\antigravity\brain\849e978a-0067-4dda-91bc-fea6fbc03247\screenshot.png";
+                string? dir = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
                 using var fileStream = File.Create(filePath);
                 var memStream = new InMemoryRandomAccessStream();

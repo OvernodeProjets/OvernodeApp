@@ -257,7 +257,26 @@ public sealed partial class ServerFilesTabControl : UserControl
                 content,
                 async (newContent) =>
                 {
-                    await ServerFilesService.Shared.WriteFileAsync(ViewModel.Server.Identifier, fullPath, newContent);
+                    try
+                    {
+                        await ServerFilesService.Shared.WriteFileAsync(ViewModel.Server.Identifier, fullPath, newContent);
+                        DispatcherQueue?.TryEnqueue(() =>
+                        {
+                            if (ViewModel.SelectedFile?.Name == item.Name)
+                            {
+                                ViewModel.FileEditorContent = newContent;
+                            }
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        DispatcherQueue?.TryEnqueue(() =>
+                        {
+                            FileErrorText.Text = $"Échec de synchronisation de {item.Name} : {ex.Message}";
+                            FileErrorBanner.Visibility = Visibility.Visible;
+                        });
+                        throw;
+                    }
                 }
             );
 
