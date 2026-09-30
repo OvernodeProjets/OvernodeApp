@@ -102,4 +102,43 @@ public class ServerAndDashboardTests
         Assert.AreEqual(50.0, res.CpuPercentage);
         Assert.AreEqual(50.0, res.ServersPercentage);
     }
+
+    public void Test_ServerInstance_Reactive_State_And_Resources_Notifications()
+    {
+        var server = new ServerInstance
+        {
+            Id = 99,
+            Identifier = "react99",
+            Name = "Reactive Node",
+            State = "offline",
+            MemoryLimitMB = 2048,
+            CpuLimitPercent = 100,
+            DiskLimitMB = 5120
+        };
+
+        var changedProps = new List<string>();
+        server.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName != null) changedProps.Add(e.PropertyName);
+        };
+
+        // Transition to running
+        server.State = "running";
+        Assert.IsTrue(server.IsOnline, "Server should be online");
+        Assert.AreEqual("#22C55E", server.StatusColorHex);
+        Assert.AreEqual("server_status_online", server.StatusKey);
+        Assert.IsTrue(changedProps.Contains(nameof(ServerInstance.State)), "State PropertyChanged missing");
+        Assert.IsTrue(changedProps.Contains(nameof(ServerInstance.IsOnline)), "IsOnline PropertyChanged missing");
+        Assert.IsTrue(changedProps.Contains(nameof(ServerInstance.StatusKey)), "StatusKey PropertyChanged missing");
+        Assert.IsTrue(changedProps.Contains(nameof(ServerInstance.StatusColorHex)), "StatusColorHex PropertyChanged missing");
+
+        // Update live metrics
+        changedProps.Clear();
+        server.MemoryUsedMB = 1024;
+        Assert.AreEqual(0.5, server.MemoryPercent);
+        Assert.AreEqual(50.0, server.MemoryPercentValue);
+        Assert.IsTrue(changedProps.Contains(nameof(ServerInstance.MemoryUsedMB)));
+        Assert.IsTrue(changedProps.Contains(nameof(ServerInstance.MemoryPercent)));
+        Assert.IsTrue(changedProps.Contains(nameof(ServerInstance.MemoryDisplay)));
+    }
 }

@@ -13,7 +13,7 @@ public sealed partial class DashboardServerCardControl : UserControl
 {
     public static readonly DependencyProperty ServerProperty =
         DependencyProperty.Register(nameof(Server), typeof(ServerInstance), typeof(DashboardServerCardControl),
-            new PropertyMetadata(null, (d, e) => ((DashboardServerCardControl)d).UpdateUI()));
+            new PropertyMetadata(null, (d, e) => ((DashboardServerCardControl)d).OnServerChanged(e.OldValue as ServerInstance, e.NewValue as ServerInstance)));
 
     public ServerInstance? Server
     {
@@ -45,7 +45,33 @@ public sealed partial class DashboardServerCardControl : UserControl
             UpdateUI();
         };
 
+        this.Unloaded += (s, e) =>
+        {
+            if (Server != null)
+            {
+                Server.PropertyChanged -= OnServerPropertyChanged;
+            }
+        };
+
         LocalizationManager.Instance.LanguageChanged += (s, e) => UpdateUI();
+    }
+
+    private void OnServerChanged(ServerInstance? oldServer, ServerInstance? newServer)
+    {
+        if (oldServer != null)
+        {
+            oldServer.PropertyChanged -= OnServerPropertyChanged;
+        }
+        if (newServer != null)
+        {
+            newServer.PropertyChanged += OnServerPropertyChanged;
+        }
+        UpdateUI();
+    }
+
+    private void OnServerPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        DispatcherQueue?.TryEnqueue(UpdateUI);
     }
 
     private void UpdateUI()

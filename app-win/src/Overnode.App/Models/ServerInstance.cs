@@ -1,13 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Overnode.App.Models;
 
-public class ServerInstance
+public class ServerInstance : ObservableObject
 {
+    private int _id;
     [JsonPropertyName("id")]
-    public int Id { get; set; }
+    public int Id
+    {
+        get => _id;
+        set => SetProperty(ref _id, value);
+    }
 
     private string _identifier = string.Empty;
 
@@ -21,47 +27,205 @@ public class ServerInstance
             if (Id > 0) return Id.ToString();
             return string.Empty;
         }
-        set => _identifier = value;
+        set
+        {
+            if (SetProperty(ref _identifier, value))
+            {
+                OnPropertyChanged(nameof(Identifier));
+            }
+        }
     }
 
+    private string? _uuid;
     [JsonPropertyName("uuid")]
-    public string? Uuid { get; set; }
+    public string? Uuid
+    {
+        get => _uuid;
+        set
+        {
+            if (SetProperty(ref _uuid, value))
+            {
+                OnPropertyChanged(nameof(Identifier));
+            }
+        }
+    }
 
+    private string _name = "Server";
     [JsonPropertyName("name")]
-    public string Name { get; set; } = "Server";
+    public string Name
+    {
+        get => _name;
+        set => SetProperty(ref _name, value);
+    }
 
+    private string? _node;
     [JsonPropertyName("node")]
-    public string? Node { get; set; }
+    public string? Node
+    {
+        get => _node;
+        set => SetProperty(ref _node, value);
+    }
 
+    private bool _suspended;
     [JsonPropertyName("suspended")]
-    public bool Suspended { get; set; }
+    public bool Suspended
+    {
+        get => _suspended;
+        set
+        {
+            if (SetProperty(ref _suspended, value))
+            {
+                OnPropertyChanged(nameof(StatusKey));
+                OnPropertyChanged(nameof(StatusColorHex));
+            }
+        }
+    }
 
+    private string _state = "offline";
     [JsonPropertyName("state")]
-    public string State { get; set; } = "offline";
+    public string State
+    {
+        get => _state;
+        set
+        {
+            if (SetProperty(ref _state, value))
+            {
+                OnPropertyChanged(nameof(IsOnline));
+                OnPropertyChanged(nameof(StatusKey));
+                OnPropertyChanged(nameof(StatusColorHex));
+            }
+        }
+    }
 
+    private bool _isOwner = true;
     [JsonPropertyName("isOwner")]
-    public bool IsOwner { get; set; } = true;
+    public bool IsOwner
+    {
+        get => _isOwner;
+        set
+        {
+            if (SetProperty(ref _isOwner, value))
+            {
+                OnPropertyChanged(nameof(IsShared));
+                OnPropertyChanged(nameof(CanDelete));
+                OnPropertyChanged(nameof(CanRenew));
+            }
+        }
+    }
 
+    private List<string> _permissions = new() { "*" };
     [JsonPropertyName("permissions")]
-    public List<string> Permissions { get; set; } = new() { "*" };
+    public List<string> Permissions
+    {
+        get => _permissions;
+        set
+        {
+            if (SetProperty(ref _permissions, value))
+            {
+                OnPropertyChanged(nameof(CanStart));
+                OnPropertyChanged(nameof(CanStop));
+                OnPropertyChanged(nameof(CanRestart));
+                OnPropertyChanged(nameof(CanConsole));
+                OnPropertyChanged(nameof(CanManageFiles));
+            }
+        }
+    }
 
+    private double _memoryUsedMB;
     [JsonPropertyName("memoryUsedMB")]
-    public double MemoryUsedMB { get; set; }
+    public double MemoryUsedMB
+    {
+        get => _memoryUsedMB;
+        set
+        {
+            if (SetProperty(ref _memoryUsedMB, value))
+            {
+                OnPropertyChanged(nameof(MemoryPercent));
+                OnPropertyChanged(nameof(MemoryPercentValue));
+                OnPropertyChanged(nameof(MemoryDisplay));
+            }
+        }
+    }
 
+    private double _memoryLimitMB;
     [JsonPropertyName("memoryLimitMB")]
-    public double MemoryLimitMB { get; set; }
+    public double MemoryLimitMB
+    {
+        get => _memoryLimitMB;
+        set
+        {
+            if (SetProperty(ref _memoryLimitMB, value))
+            {
+                OnPropertyChanged(nameof(MemoryPercent));
+                OnPropertyChanged(nameof(MemoryPercentValue));
+                OnPropertyChanged(nameof(MemoryDisplay));
+            }
+        }
+    }
 
+    private double _cpuUsedPercent;
     [JsonPropertyName("cpuUsedPercent")]
-    public double CpuUsedPercent { get; set; }
+    public double CpuUsedPercent
+    {
+        get => _cpuUsedPercent;
+        set
+        {
+            if (SetProperty(ref _cpuUsedPercent, value))
+            {
+                OnPropertyChanged(nameof(CpuPercent));
+                OnPropertyChanged(nameof(CpuPercentValue));
+                OnPropertyChanged(nameof(CpuDisplay));
+            }
+        }
+    }
 
+    private double _cpuLimitPercent;
     [JsonPropertyName("cpuLimitPercent")]
-    public double CpuLimitPercent { get; set; }
+    public double CpuLimitPercent
+    {
+        get => _cpuLimitPercent;
+        set
+        {
+            if (SetProperty(ref _cpuLimitPercent, value))
+            {
+                OnPropertyChanged(nameof(CpuPercent));
+                OnPropertyChanged(nameof(CpuPercentValue));
+                OnPropertyChanged(nameof(CpuDisplay));
+            }
+        }
+    }
 
+    private double _diskUsedMB;
     [JsonPropertyName("diskUsedMB")]
-    public double DiskUsedMB { get; set; }
+    public double DiskUsedMB
+    {
+        get => _diskUsedMB;
+        set
+        {
+            if (SetProperty(ref _diskUsedMB, value))
+            {
+                OnPropertyChanged(nameof(DiskPercent));
+                OnPropertyChanged(nameof(DiskPercentValue));
+                OnPropertyChanged(nameof(DiskDisplay));
+            }
+        }
+    }
 
+    private double _diskLimitMB;
     [JsonPropertyName("diskLimitMB")]
-    public double DiskLimitMB { get; set; }
+    public double DiskLimitMB
+    {
+        get => _diskLimitMB;
+        set
+        {
+            if (SetProperty(ref _diskLimitMB, value))
+            {
+                OnPropertyChanged(nameof(DiskPercent));
+                OnPropertyChanged(nameof(DiskPercentValue));
+                OnPropertyChanged(nameof(DiskDisplay));
+            }
+        }
+    }
 
     // Helpers
     [JsonIgnore]

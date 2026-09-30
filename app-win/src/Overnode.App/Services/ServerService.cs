@@ -141,7 +141,26 @@ public class ServerService
             return ("running", 512, 25.5, 1200);
         }
 
-        // 1. Try /api/v5/servers/status from Toledo backend which has real live status and resources
+        // 1. Direct Wings WebSocket live query (authoritative real-time state & metrics, exactly like macOS)
+        if (!string.IsNullOrWhiteSpace(identifier))
+        {
+            try
+            {
+                var wsLive = await ServerWebSocketManager.FetchSingleServerLiveStatsAsync(identifier);
+                if (wsLive != null)
+                {
+                    return (
+                        wsLive.Value.state,
+                        wsLive.Value.memBytes / 1024.0 / 1024.0,
+                        wsLive.Value.cpu,
+                        wsLive.Value.diskBytes / 1024.0 / 1024.0
+                    );
+                }
+            }
+            catch { }
+        }
+
+        // 2. Try /api/v5/servers/status from Toledo backend
         try
         {
             var servers = await _client.GetAsync<System.Collections.Generic.List<Models.ServerInstance>>("/api/v5/servers/status");
@@ -157,32 +176,7 @@ public class ServerService
                 }
             }
         }
-        catch
-        {
-            // Fallback to client proxy
-        }
-
-        // 2. Direct client resources endpoint fallback
-        if (!string.IsNullOrWhiteSpace(identifier))
-        {
-            try
-            {
-                var res = await _client.GetAsync<LiveResourceApiResponse>($"/api/client/servers/{identifier}/resources");
-                if (res?.Attributes != null)
-                {
-                    var state = res.Attributes.CurrentState ?? "offline";
-                    var r = res.Attributes.Resources;
-                    var mem = (r?.MemoryBytes ?? 0) / 1024.0 / 1024.0;
-                    var cpu = r?.CpuAbsolute ?? 0;
-                    var disk = (r?.DiskBytes ?? 0) / 1024.0 / 1024.0;
-                    return (state, mem, cpu, disk);
-                }
-            }
-            catch
-            {
-                // Both attempts failed
-            }
-        }
+        catch { }
 
         return null;
     }

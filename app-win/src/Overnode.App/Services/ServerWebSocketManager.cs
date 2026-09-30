@@ -66,6 +66,147 @@ public sealed class ServerWebSocketManager
         public InnerData? Data { get; set; }
     }
 
+    public static async Task<(string state, double cpu, double memBytes, double diskBytes)?> FetchSingleServerLiveStatsAsync(string serverId)
+    {
+        if (string.IsNullOrWhiteSpace(serverId)) return null;
+
+        try
+        {
+            var creds = await APIClient.Shared.GetAsync<WsCredsResponse>($"/api/server/{serverId}/websocket");
+            if (creds?.Data == null || string.IsNullOrWhiteSpace(creds.Data.Socket) || string.IsNullOrWhiteSpace(creds.Data.Token))
+            {
+                return null;
+            }
+
+            if (!Uri.TryCreate(creds.Data.Socket, UriKind.Absolute, out var socketUri))
+            {
+                return null;
+            }
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3.5));
+            using var ws = new ClientWebSocket();
+
+            try
+            {
+                string origin = APIClient.Shared.BaseUri.ToString().TrimEnd('/');
+                ws.Options.SetRequestHeader("Origin", origin);
+            }
+            catch { }
+
+            ws.Options.RemoteCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
+            ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(10);
+
+            await ws.ConnectAsync(socketUri, cts.Token);
+
+            var authPayload = JsonSerializer.Serialize(new
+            {
+                @event = "auth",
+                args = new[] { creds.Data.Token }
+            });
+            await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(authPayload)), WebSocketMessageType.Text, true, cts.Token);
+
+            string recordedState = "offline";
+            bool receivedStatus = false;
+            var buffer = new byte[16 * 1024];
+            var messageBuffer = new StringBuilder();
+
+            while (!cts.IsCancellationRequested && ws.State == WebSocketState.Open)
+            {
+                var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    break;
+                }
+
+                messageBuffer.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+                if (result.EndOfMessage)
+                {
+                    string fullMessage = messageBuffer.ToString();
+                    messageBuffer.Clear();
+
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(fullMessage);
+                        var root = doc.RootElement;
+                        if (root.TryGetProperty("event", out var eventProp))
+                        {
+                            string? evt = eventProp.GetString();
+                            if (evt == "auth success")
+                            {
+                                var statsReq = JsonSerializer.Serialize(new
+                                {
+                                    @event = "send stats",
+                                    args = new object?[] { null }
+                                });
+                                await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(statsReq)), WebSocketMessageType.Text, true, cts.Token);
+                            }
+                            else if (evt == "status")
+                            {
+                                if (root.TryGetProperty("args", out var argsProp) && argsProp.ValueKind == JsonValueKind.Array)
+                                {
+                                    var enumerator = argsProp.EnumerateArray();
+                                    if (enumerator.MoveNext() && enumerator.Current.ValueKind == JsonValueKind.String)
+                                    {
+                                        recordedState = enumerator.Current.GetString() ?? "offline";
+                                        receivedStatus = true;
+                                    }
+                                }
+                            }
+                            else if (evt == "stats")
+                            {
+                                if (root.TryGetProperty("args", out var argsProp) && argsProp.ValueKind == JsonValueKind.Array)
+                                {
+                                    var enumerator = argsProp.EnumerateArray();
+                                    if (enumerator.MoveNext())
+                                    {
+                                        var arg = enumerator.Current;
+                                        LivePteroStats? stats = null;
+                                        if (arg.ValueKind == JsonValueKind.String)
+                                        {
+                                            stats = JsonSerializer.Deserialize<LivePteroStats>(arg.GetString() ?? "{}");
+                                        }
+                                        else if (arg.ValueKind == JsonValueKind.Object)
+                                        {
+                                            stats = JsonSerializer.Deserialize<LivePteroStats>(arg.GetRawText());
+                                        }
+
+                                        if (stats != null)
+                                        {
+                                            string finalState = !string.IsNullOrEmpty(stats.State) ? stats.State : recordedState;
+                                            double cpu = stats.CpuAbsolute ?? 0;
+                                            double mem = stats.MemoryBytes ?? 0;
+                                            double disk = stats.DiskBytes ?? 0;
+
+                                            try
+                                            {
+                                                await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Done", CancellationToken.None);
+                                            }
+                                            catch { }
+
+                                            return (finalState, cpu, mem, disk);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            if (receivedStatus)
+            {
+                return (recordedState, 0, 0, 0);
+            }
+        }
+        catch
+        {
+            // Timeout or network error
+        }
+
+        return null;
+    }
+
     public void Connect(string serverId)
     {
         if (string.IsNullOrWhiteSpace(serverId)) return;

@@ -69,6 +69,7 @@ public class Program
         Run("ServerInstance Permissions Subuser", serverTests.Test_ServerInstance_Permissions_Subuser);
         Run("PteroServerWrapper Deserialization to ServerInstance", serverTests.Test_PteroServerWrapper_Deserialization);
         Run("ResourcesResponse Calculations (RAM, CPU, Disk, Servers)", serverTests.Test_ResourcesResponse_Calculations);
+        Run("ServerInstance Reactive State and Resources Notifications", serverTests.Test_ServerInstance_Reactive_State_And_Resources_Notifications);
 
         // 5. Detailed Server Management Tests
         var mgmtTests = new ServerManagementTests();
