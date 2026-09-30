@@ -78,6 +78,21 @@ async function runTests() {
   assert.strictEqual(winDeployment.downloadUrl, 'https://github.com/OvernodeProjets/OvernodeApp/releases/download/v1.3.0/Overnode-v1.3.0-Windows-x64.msi');
   console.log('   ✓ Windows deployment test passed');
 
+  // Test 7: Independent platform deployment
+  console.log('7. Testing independent platform deployment...');
+  db.pushNewVersion({
+    platform: 'windows',
+    version: '1.4.0',
+    downloadUrl: 'https://example.com/Overnode-v1.4.0-Windows-x64.msi',
+    releaseNotes: 'Windows only v1.4.0',
+    pushedBy: testUsername
+  });
+  const winOnly = db.getDeployment('win-x64');
+  const macUntouched = db.getDeployment('darwin-arm64');
+  assert.strictEqual(winOnly.currentVersion, '1.4.0');
+  assert.strictEqual(macUntouched.currentVersion, '1.3.0');
+  console.log('   ✓ Independent platform push passed');
+
   console.log('🎉 All OvernodeApp-Updater tests passed successfully!');
 }
 

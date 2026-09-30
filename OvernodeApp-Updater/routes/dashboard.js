@@ -14,7 +14,9 @@ router.use(requireAuth);
 
 router.get('/', async (req, res) => {
   try {
-    const deployment = db.getDeployment();
+    const allDeployments = db.getAllDeployments();
+    const macDeployment = allDeployments.macos;
+    const winDeployment = allDeployments.windows;
     const stats = db.getStats();
     
     // Fetch both commits and releases
@@ -23,21 +25,31 @@ router.get('/', async (req, res) => {
 
     const latestRelease = releases[0] || null;
     const latestCommit = commits[0] || null;
+
+    // Detect latest platform-specific releases
+    const latestMacRelease = releases.find(r => r.dmgUrl || r.zipUrl) || latestRelease;
+    const latestWinRelease = releases.find(r => r.msiUrl || r.windowsDownloadUrl) || latestRelease;
     
-    let comparison = 0;
-    if (latestRelease) {
-      comparison = github.compareVersions(latestRelease.version, deployment.currentVersion);
-    }
+    const macComparison = latestMacRelease ? github.compareVersions(latestMacRelease.version, macDeployment.currentVersion) : 0;
+    const winComparison = latestWinRelease ? github.compareVersions(latestWinRelease.version, winDeployment.currentVersion) : 0;
+
+    const activeTab = req.query.platform || 'macos'; // 'macos', 'windows', 'all'
 
     res.render('dashboard', {
       user: { id: req.session.userId, username: req.session.username },
-      deployment,
+      deployment: macDeployment,
+      macDeployment,
+      winDeployment,
       stats,
       releases,
       commits,
       latestRelease,
+      latestMacRelease,
+      latestWinRelease,
       latestCommit,
-      hasNewerRelease: comparison > 0 || (latestCommit && latestCommit.shortSha && !deployment.releaseNotes.includes(latestCommit.shortSha)),
+      hasNewerMacRelease: macComparison > 0,
+      hasNewerWinRelease: winComparison > 0,
+      activeTab,
       repo: github.GITHUB_REPO,
       successMessage: req.query.success || null,
       errorMessage: req.query.error || null
@@ -48,29 +60,33 @@ router.get('/', async (req, res) => {
   }
 });
 
-// "Push to app" Action
+// "Push to app" Action (supports platform: 'macos', 'windows', or 'all')
 router.post('/deploy', (req, res) => {
-  const { version, downloadUrl, windowsDownloadUrl, releaseNotes, sha256, mandatory } = req.body;
+  const { platform, version, downloadUrl, windowsDownloadUrl, releaseNotes, sha256, mandatory } = req.body;
 
-  if (!version || !downloadUrl) {
-    return res.redirect('/?error=Version+et+URL+de+t%C3%A9l%C3%A9chargement+requises');
+  const targetPlatform = platform || 'all';
+
+  if (!version || (!downloadUrl && !windowsDownloadUrl)) {
+    return res.redirect('/?platform=' + encodeURIComponent(targetPlatform) + '&error=Version+et+URL+de+t%C3%A9l%C3%A9chargement+requises');
   }
 
   try {
     db.pushNewVersion({
+      platform: targetPlatform,
       version,
-      downloadUrl,
-      windowsDownloadUrl: windowsDownloadUrl || null,
+      downloadUrl: downloadUrl || windowsDownloadUrl,
+      windowsDownloadUrl: windowsDownloadUrl || downloadUrl,
       releaseNotes,
       sha256,
       mandatory: mandatory === 'on' || mandatory === 'true',
       pushedBy: req.session.username || 'admin'
     });
 
-    console.log(`[Deployment] 🚀 New version v${version} pushed to app by ${req.session.username}`);
-    res.redirect(`/?success=Version+v${encodeURIComponent(version)}+d%C3%A9ploy%C3%A9e+avec+succ%C3%A8s+sur+l%27application`);
+    const platLabel = targetPlatform === 'macos' ? 'macOS' : (targetPlatform === 'windows' ? 'Windows' : 'macOS & Windows');
+    console.log(`[Deployment] 🚀 New version v${version} pushed for ${platLabel} by ${req.session.username}`);
+    res.redirect(`/?platform=${encodeURIComponent(targetPlatform)}&success=Version+v${encodeURIComponent(version)}+d%C3%A9ploy%C3%A9e+avec+succ%C3%A8s+pour+${encodeURIComponent(platLabel)}`);
   } catch (err) {
-    res.redirect('/?error=' + encodeURIComponent(err.message));
+    res.redirect(`/?platform=${encodeURIComponent(targetPlatform)}&error=` + encodeURIComponent(err.message));
   }
 });
 

@@ -173,9 +173,13 @@ function isWindowsPlatform(platform) {
 
 function getDeployment(platform) {
   const deployment = readJSON(DEPLOYMENT_FILE, DEFAULT_DEPLOYMENT);
+  if (!deployment.platforms) deployment.platforms = {};
+
   const isWin = isWindowsPlatform(platform);
+
   if (isWin) {
-    let winUrl = deployment.windowsDownloadUrl;
+    const winPlat = deployment.platforms.windows || {};
+    let winUrl = winPlat.downloadUrl || deployment.windowsDownloadUrl;
     if (!winUrl && deployment.windows && deployment.windows.downloadUrl) {
       winUrl = deployment.windows.downloadUrl;
     }
@@ -184,52 +188,165 @@ function getDeployment(platform) {
         .replace(/\.(dmg|zip)$/i, '.msi')
         .replace(/macOS-arm64/i, 'Windows-x64');
     }
+    const winVer = (winPlat.currentVersion || deployment.windowsVersion || deployment.currentVersion || '1.0.0').replace(/^v/, '');
     return {
-      ...deployment,
+      currentVersion: winVer,
       downloadUrl: winUrl || deployment.downloadUrl,
       rawDownloadUrl: winUrl || deployment.downloadUrl,
+      releaseNotes: winPlat.releaseNotes || deployment.releaseNotes || ('Mise a jour v' + winVer),
+      sha256: winPlat.sha256 || deployment.windowsSha256 || deployment.sha256 || '',
+      mandatory: Boolean(winPlat.mandatory ?? deployment.mandatory),
+      publishedAt: winPlat.publishedAt || deployment.publishedAt,
+      pushedBy: winPlat.pushedBy || deployment.pushedBy || 'admin',
       platform: 'win-x64'
     };
   }
-  return deployment;
+
+  // macOS / Default
+  const macPlat = deployment.platforms.macos || {};
+  const macVer = (macPlat.currentVersion || deployment.currentVersion || '1.0.0').replace(/^v/, '');
+  const macUrl = macPlat.downloadUrl || deployment.downloadUrl;
+  return {
+    currentVersion: macVer,
+    downloadUrl: macUrl,
+    rawDownloadUrl: macUrl,
+    windowsDownloadUrl: deployment.windowsDownloadUrl || deployment.platforms?.windows?.downloadUrl || null,
+    releaseNotes: macPlat.releaseNotes || deployment.releaseNotes || ('Mise a jour v' + macVer),
+    sha256: macPlat.sha256 || deployment.sha256 || '',
+    mandatory: Boolean(macPlat.mandatory ?? deployment.mandatory),
+    publishedAt: macPlat.publishedAt || deployment.publishedAt,
+    pushedBy: macPlat.pushedBy || deployment.pushedBy || 'admin',
+    platform: 'darwin-arm64'
+  };
+}
+
+function getAllDeployments() {
+  const deployment = readJSON(DEPLOYMENT_FILE, DEFAULT_DEPLOYMENT);
+  return {
+    macos: getDeployment('darwin-arm64'),
+    windows: getDeployment('win-x64'),
+    root: deployment
+  };
 }
 
 function pushNewVersion(opts) {
-  var version = opts.version;
+  var targetPlatform = (opts.platform || 'all').toLowerCase(); // 'macos', 'windows', or 'all'
+  var version = (opts.version || '').replace(/^v/, '').trim();
   var downloadUrl = opts.downloadUrl;
   var windowsDownloadUrl = opts.windowsDownloadUrl;
   var releaseNotes = opts.releaseNotes;
-  var sha256 = opts.sha256;
-  var mandatory = opts.mandatory;
-  var pushedBy = opts.pushedBy;
-  
-  const deployment = getDeployment();
+  var sha256 = opts.sha256 || '';
+  var mandatory = Boolean(opts.mandatory);
+  var pushedBy = opts.pushedBy || 'admin';
 
+  const deployment = readJSON(DEPLOYMENT_FILE, DEFAULT_DEPLOYMENT);
+  if (!deployment.platforms) deployment.platforms = {};
   if (!deployment.history) deployment.history = [];
-  deployment.history.unshift({
-    version: deployment.currentVersion,
-    downloadUrl: deployment.downloadUrl,
-    windowsDownloadUrl: deployment.windowsDownloadUrl || null,
-    releaseNotes: deployment.releaseNotes,
-    publishedAt: deployment.publishedAt,
-    pushedBy: deployment.pushedBy || 'system'
-  });
-  if (deployment.history.length > 20) {
-    deployment.history = deployment.history.slice(0, 20);
+
+  const now = new Date().toISOString();
+
+  if (targetPlatform === 'macos' || targetPlatform === 'darwin' || targetPlatform === 'darwin-arm64') {
+    // macOS only push
+    deployment.history.unshift({
+      platform: 'macos',
+      version: deployment.platforms?.macos?.currentVersion || deployment.currentVersion,
+      downloadUrl: deployment.platforms?.macos?.downloadUrl || deployment.downloadUrl,
+      releaseNotes: deployment.platforms?.macos?.releaseNotes || deployment.releaseNotes,
+      publishedAt: deployment.platforms?.macos?.publishedAt || deployment.publishedAt,
+      pushedBy: deployment.platforms?.macos?.pushedBy || 'system'
+    });
+
+    deployment.currentVersion = version;
+    deployment.downloadUrl = downloadUrl;
+    deployment.releaseNotes = releaseNotes || ('Mise a jour macOS v' + version);
+    deployment.sha256 = sha256;
+    deployment.mandatory = mandatory;
+    deployment.publishedAt = now;
+    deployment.pushedBy = pushedBy;
+
+    deployment.platforms.macos = {
+      currentVersion: version,
+      downloadUrl: downloadUrl,
+      releaseNotes: releaseNotes || ('Mise a jour macOS v' + version),
+      sha256: sha256,
+      mandatory: mandatory,
+      publishedAt: now,
+      pushedBy: pushedBy
+    };
+  } else if (targetPlatform === 'windows' || targetPlatform === 'win' || targetPlatform === 'win-x64') {
+    // Windows only push
+    const targetWinUrl = windowsDownloadUrl || downloadUrl;
+    deployment.history.unshift({
+      platform: 'windows',
+      version: deployment.platforms?.windows?.currentVersion || deployment.windowsVersion || deployment.currentVersion,
+      downloadUrl: deployment.platforms?.windows?.downloadUrl || deployment.windowsDownloadUrl || targetWinUrl,
+      releaseNotes: deployment.platforms?.windows?.releaseNotes || deployment.releaseNotes,
+      publishedAt: deployment.platforms?.windows?.publishedAt || deployment.publishedAt,
+      pushedBy: deployment.platforms?.windows?.pushedBy || 'system'
+    });
+
+    deployment.windowsDownloadUrl = targetWinUrl;
+    deployment.windowsVersion = version;
+
+    deployment.platforms.windows = {
+      currentVersion: version,
+      downloadUrl: targetWinUrl,
+      releaseNotes: releaseNotes || ('Mise a jour Windows v' + version),
+      sha256: sha256,
+      mandatory: mandatory,
+      publishedAt: now,
+      pushedBy: pushedBy
+    };
+  } else {
+    // Both platforms push
+    deployment.history.unshift({
+      platform: 'all',
+      version: deployment.currentVersion,
+      downloadUrl: deployment.downloadUrl,
+      windowsDownloadUrl: deployment.windowsDownloadUrl || null,
+      releaseNotes: deployment.releaseNotes,
+      publishedAt: deployment.publishedAt,
+      pushedBy: deployment.pushedBy || 'system'
+    });
+
+    deployment.currentVersion = version;
+    deployment.downloadUrl = downloadUrl;
+    if (windowsDownloadUrl) {
+      deployment.windowsDownloadUrl = windowsDownloadUrl;
+    } else if (downloadUrl && downloadUrl.endsWith('.dmg')) {
+      deployment.windowsDownloadUrl = downloadUrl.replace(/\.dmg$/, '.msi').replace(/macOS-arm64/i, 'Windows-x64');
+    }
+    deployment.windowsVersion = version;
+    deployment.releaseNotes = releaseNotes || ('Mise a jour v' + version);
+    deployment.sha256 = sha256;
+    deployment.mandatory = mandatory;
+    deployment.publishedAt = now;
+    deployment.pushedBy = pushedBy;
+
+    deployment.platforms.macos = {
+      currentVersion: version,
+      downloadUrl: downloadUrl,
+      releaseNotes: releaseNotes || ('Mise a jour macOS v' + version),
+      sha256: sha256,
+      mandatory: mandatory,
+      publishedAt: now,
+      pushedBy: pushedBy
+    };
+
+    deployment.platforms.windows = {
+      currentVersion: version,
+      downloadUrl: deployment.windowsDownloadUrl || downloadUrl,
+      releaseNotes: releaseNotes || ('Mise a jour Windows v' + version),
+      sha256: sha256,
+      mandatory: mandatory,
+      publishedAt: now,
+      pushedBy: pushedBy
+    };
   }
 
-  deployment.currentVersion = version.replace(/^v/, '');
-  deployment.downloadUrl = downloadUrl;
-  if (windowsDownloadUrl) {
-    deployment.windowsDownloadUrl = windowsDownloadUrl;
-  } else if (downloadUrl && downloadUrl.endsWith('.dmg')) {
-    deployment.windowsDownloadUrl = downloadUrl.replace(/\.dmg$/, '.msi').replace(/macOS-arm64/i, 'Windows-x64');
+  if (deployment.history.length > 30) {
+    deployment.history = deployment.history.slice(0, 30);
   }
-  deployment.releaseNotes = releaseNotes || ('Mise a jour v' + deployment.currentVersion);
-  deployment.sha256 = sha256 || '';
-  deployment.mandatory = Boolean(mandatory);
-  deployment.publishedAt = new Date().toISOString();
-  deployment.pushedBy = pushedBy || 'admin';
 
   writeJSON(DEPLOYMENT_FILE, deployment);
   return deployment;
@@ -249,7 +366,7 @@ function recordUpdateCheck(clientVersion, clientPlatform) {
 }
 
 function getStats() {
-  return readJSON(STATS_FILE, { totalChecks: 0, lastCheckAt: null, versions: {} });
+  return readJSON(STATS_FILE, { totalChecks: 0, lastCheckAt: null, versions: {}, platforms: {} });
 }
 
 module.exports = {
@@ -259,6 +376,7 @@ module.exports = {
   verifyUser: verifyUser,
   getUsers: getUsers,
   getDeployment: getDeployment,
+  getAllDeployments: getAllDeployments,
   pushNewVersion: pushNewVersion,
   recordUpdateCheck: recordUpdateCheck,
   getStats: getStats

@@ -88,7 +88,7 @@
 
     main {
       flex: 1;
-      max-width: 1200px;
+      max-width: 1240px;
       width: 100%;
       margin: 0 auto;
       padding: 32px 24px;
@@ -114,12 +114,81 @@
       color: #fca5a5;
     }
 
+    /* Platform Navigation Tabs */
+    .platform-tabs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 28px;
+      background: #111827;
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid #1f293d;
+      width: fit-content;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    .platform-tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .platform-tab-btn:hover {
+      color: #f1f5f9;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .platform-tab-btn.active {
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .platform-tab-btn.active.tab-mac {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(15, 23, 42, 0.95));
+      border-color: rgba(56, 189, 248, 0.5);
+      color: #38bdf8;
+    }
+    .platform-tab-btn.active.tab-win {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(15, 23, 42, 0.95));
+      border-color: rgba(52, 211, 153, 0.5);
+      color: #34d399;
+    }
+    .platform-tab-btn.active.tab-all {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(15, 23, 42, 0.95));
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+    }
+    .tab-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .tab-badge-mac {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .tab-badge-win {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
     /* Grid cards */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 20px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
     .card {
       background: #131b2e;
@@ -134,6 +203,9 @@
       letter-spacing: 0.8px;
       color: #94a3b8;
       margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     .card-val {
       font-size: 26px;
@@ -149,52 +221,13 @@
       margin-top: 6px;
     }
 
-    /* GitHub Commit Card */
-    .commit-card {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
-      border: 1px solid #334155;
-      border-radius: 14px;
-      padding: 20px 24px;
-      margin-bottom: 28px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-    .commit-meta {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .commit-sha-badge {
-      background: rgba(56, 189, 248, 0.15);
-      color: #38bdf8;
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      font-family: 'SF Mono', Menlo, monospace;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .commit-msg {
-      font-size: 14px;
-      font-weight: 600;
-      color: #f8fafc;
-    }
-    .commit-sub {
-      font-size: 12px;
-      color: #94a3b8;
-      margin-top: 2px;
-    }
-
     /* Comparison Banner */
     .compare-banner {
       background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
       border: 1px solid #334155;
       border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 32px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -208,16 +241,16 @@
     .compare-left {
       display: flex;
       align-items: center;
-      gap: 18px;
+      gap: 16px;
     }
     .compare-icon {
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
+      font-size: 22px;
       background: rgba(56, 189, 248, 0.15);
       border: 1px solid rgba(56, 189, 248, 0.3);
     }
@@ -226,7 +259,7 @@
       border-color: rgba(245, 158, 11, 0.4);
     }
     .compare-title {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       color: #ffffff;
     }
@@ -241,7 +274,7 @@
       background: #131b2e;
       border: 1px solid #202c45;
       border-radius: 14px;
-      padding: 28px;
+      padding: 26px;
       margin-bottom: 32px;
     }
     .section-header {
@@ -267,12 +300,17 @@
       border-radius: 6px;
       font-weight: 600;
     }
+    .section-badge-win {
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
 
     .form-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
     .form-group {
       margin-bottom: 14px;
@@ -300,37 +338,48 @@
       box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
     }
     textarea {
-      resize: vertical;
       min-height: 80px;
-      font-family: inherit;
+      resize: vertical;
     }
+
     .checkbox-label {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
       font-size: 13px;
       color: #cbd5e1;
-      cursor: pointer;
-      margin-top: 10px;
     }
+    .checkbox-label input {
+      width: 16px;
+      height: 16px;
+      accent-color: #2563eb;
+    }
+
     .btn-push {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
       color: white;
       border: none;
+      padding: 12px 24px;
       border-radius: 8px;
-      padding: 12px 28px;
-      font-size: 15px;
       font-weight: 700;
+      font-size: 14px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
       transition: all 0.2s;
     }
     .btn-push:hover {
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    }
+    .btn-push-win {
+      background: linear-gradient(135deg, #059669, #34d399);
+    }
+    .btn-push-win:hover {
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
     }
 
     /* Releases Table */
@@ -343,13 +392,39 @@
     }
     .table-header {
       padding: 18px 24px;
-      border-bottom: 1px solid #202c45;
-      font-size: 16px;
-      font-weight: 700;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      font-weight: 600;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
     }
+    .table-filters {
+      display: flex;
+      gap: 6px;
+    }
+    .filter-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover {
+      color: #fff;
+    }
+    .filter-btn.active {
+      background: #2563eb;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -357,70 +432,126 @@
       font-size: 13px;
     }
     th {
-      background: #0f1626;
-      color: #94a3b8;
+      padding: 12px 18px;
+      background: rgba(15, 23, 42, 0.4);
+      color: #64748b;
       font-weight: 600;
-      padding: 12px 20px;
-      border-bottom: 1px solid #202c45;
+      border-bottom: 1px solid #1e293b;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
     }
     td {
-      padding: 14px 20px;
+      padding: 14px 18px;
       border-bottom: 1px solid #1a2336;
       color: #cbd5e1;
+      vertical-align: middle;
     }
-    tr:last-child td { border-bottom: none; }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
     .tag-badge {
-      display: inline-block;
-      padding: 4px 10px;
+      font-family: 'SF Mono', Menlo, monospace;
+      background: #1e293b;
+      padding: 3px 8px;
       border-radius: 6px;
-      font-weight: 600;
-      font-size: 12px;
-      background: rgba(56, 189, 248, 0.15);
       color: #38bdf8;
-      border: 1px solid rgba(56, 189, 248, 0.25);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-mac {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 7px;
+      background: rgba(56, 189, 248, 0.15);
+      border-radius: 4px;
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      margin-right: 4px;
+    }
+    .badge-win {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 7px;
+      background: rgba(16, 185, 129, 0.15);
+      border-radius: 4px;
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      margin-right: 4px;
     }
     .current-badge {
       display: inline-block;
-      padding: 4px 10px;
-      border-radius: 6px;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
       font-weight: 600;
-      font-size: 12px;
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
     }
+    .current-badge-mac {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+    }
+    .current-badge-win {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+
     .btn-select {
-      background: #1e293b;
-      color: #f1f5f9;
-      border: 1px solid #334155;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
       padding: 6px 12px;
       border-radius: 6px;
       font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
-      font-weight: 500;
       transition: all 0.2s;
+      white-space: nowrap;
     }
     .btn-select:hover {
-      background: #2563eb;
-      border-color: #2563eb;
+      background: #38bdf8;
+      color: #0b0f19;
+    }
+    .btn-select-win {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+    .btn-select-win:hover {
+      background: #10b981;
+      color: #0b0f19;
     }
 
-    /* API Info Box */
+    /* API Card */
     .api-card {
-      background: #0d121f;
-      border: 1px solid #1e293b;
+      background: #101625;
+      border: 1px solid #1d283f;
       border-radius: 12px;
       padding: 20px;
-      font-size: 13px;
     }
     .code-block {
-      background: #05070c;
-      padding: 12px;
-      border-radius: 6px;
+      background: #070a12;
+      border: 1px solid #1a2234;
+      border-radius: 8px;
+      padding: 12px 16px;
       font-family: 'SF Mono', Menlo, monospace;
+      font-size: 12px;
       color: #38bdf8;
-      overflow-x: auto;
       margin-top: 8px;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+    .code-win {
+      color: #34d399;
+    }
+
+    .platform-container {
+      display: none;
+    }
+    .platform-container.active {
+      display: block;
     }
   </style>
 </head>
@@ -430,7 +561,7 @@
       <div class="brand-badge">UPDATER</div>
       <div>
         <div class="brand-title">OvernodeApp-Updater</div>
-        <div class="brand-sub">Gestionnaire de distribution des applications macOS &amp; Windows</div>
+        <div class="brand-sub">Distribution et gestion des mises à jour multi-plateformes</div>
       </div>
     </div>
     <div class="user-nav">
@@ -454,210 +585,482 @@
       </div>
     <% } %>
 
-    <!-- Statistics -->
-    <div class="stats-grid">
-      <div class="card">
-        <div class="card-label">Version en production (App)</div>
-        <div class="card-val val-green">v<%= deployment.currentVersion %></div>
-        <div class="card-desc">Déployé le <%= new Date(deployment.publishedAt).toLocaleDateString('fr-FR') %></div>
-      </div>
-      <div class="card">
-        <div class="card-label">Dernier Commit GitHub</div>
-        <div class="card-val val-blue"><%= latestCommit ? latestCommit.shortSha : (latestRelease ? 'v' + latestRelease.version : 'N/A') %></div>
-        <div class="card-desc"><%= repo %></div>
-      </div>
-      <div class="card">
-        <div class="card-label">Statut Déploiement</div>
-        <div class="card-val <%= hasNewerRelease ? 'val-gold' : 'val-green' %>">
-          <%= hasNewerRelease ? 'Mise à jour prête' : 'À jour' %>
-        </div>
-        <div class="card-desc">
-          <%= hasNewerRelease ? 'Nouvelle version / commit détecté' : 'Les clients ont la version la plus récente' %>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">Requêtes de vérification</div>
-        <div class="card-val"><%= stats.totalChecks || 0 %></div>
-        <div class="card-desc">Appels reçus depuis l'app macOS</div>
-      </div>
+    <!-- Navigation par Plateforme (macOS vs Windows) -->
+    <div class="platform-tabs">
+      <button type="button" class="platform-tab-btn tab-mac <%= activeTab === 'macos' ? 'active' : '' %>" onclick="switchPlatform('macos')" id="tabBtn-macos">
+        <span>🍎</span>
+        <span>macOS (Apple Silicon)</span>
+        <span class="tab-badge tab-badge-mac">v<%= macDeployment.currentVersion %></span>
+      </button>
+
+      <button type="button" class="platform-tab-btn tab-win <%= activeTab === 'windows' ? 'active' : '' %>" onclick="switchPlatform('windows')" id="tabBtn-windows">
+        <span>🪟</span>
+        <span>Windows (x64 Native)</span>
+        <span class="tab-badge tab-badge-win">v<%= winDeployment.currentVersion %></span>
+      </button>
+
+      <button type="button" class="platform-tab-btn tab-all <%= activeTab === 'all' ? 'active' : '' %>" onclick="switchPlatform('all')" id="tabBtn-all">
+        <span>🌐</span>
+        <span>Vue Globale (Bi-Plateforme)</span>
+      </button>
     </div>
 
-    <!-- Latest GitHub Commit Card -->
-    <% if (latestCommit) { %>
-      <div class="commit-card">
-        <div class="commit-meta">
-          <span class="commit-sha-badge"><%= latestCommit.shortSha %></span>
+    <!-- ==================== ONGLET 1: MACOS ==================== -->
+    <div class="platform-container <%= activeTab === 'macos' ? 'active' : '' %>" id="view-macos">
+      <div class="stats-grid">
+        <div class="card">
+          <div class="card-label">
+            <span>Version macOS active</span>
+            <span class="tab-badge tab-badge-mac">macOS</span>
+          </div>
+          <div class="card-val val-blue">v<%= macDeployment.currentVersion %></div>
+          <div class="card-desc">Déployé le <%= new Date(macDeployment.publishedAt).toLocaleDateString('fr-FR') %></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Dernière Release macOS GitHub</div>
+          <div class="card-val"><%= latestMacRelease ? 'v' + latestMacRelease.version : 'N/A' %></div>
+          <div class="card-desc"><%= repo %></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Statut Déploiement macOS</div>
+          <div class="card-val <%= hasNewerMacRelease ? 'val-gold' : 'val-green' %>">
+            <%= hasNewerMacRelease ? 'Mise à jour prête' : 'À jour' %>
+          </div>
+          <div class="card-desc">
+            <%= hasNewerMacRelease ? 'Nouveau build macOS détecté' : 'Les clients macOS disposent de la dernière version' %>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Requêtes reçues (macOS)</div>
+          <div class="card-val"><%= (stats.platforms && stats.platforms['darwin-arm64']) || 0 %></div>
+          <div class="card-desc">Vérifications depuis l'app macOS (darwin-arm64)</div>
+        </div>
+      </div>
+
+      <!-- Comparison Banner macOS -->
+      <div class="compare-banner <%= hasNewerMacRelease ? 'has-new' : '' %>">
+        <div class="compare-left">
+          <div class="compare-icon"><%= hasNewerMacRelease ? '🍎' : '✨' %></div>
           <div>
-            <div class="commit-msg"><%= latestCommit.message.split('\n')[0] %></div>
-            <div class="commit-sub">Par <%= latestCommit.authorName %> • <%= new Date(latestCommit.date).toLocaleString('fr-FR') %></div>
+            <div class="compare-title">
+              <% if (hasNewerMacRelease) { %>
+                Nouvelle version macOS v<%= latestMacRelease.version %> disponible sur GitHub !
+              <% } else { %>
+                L'application macOS est synchronisée avec la dernière release.
+              <% } %>
+            </div>
+            <div class="compare-sub">
+              Version déployée activement : <strong>v<%= macDeployment.currentVersion %></strong> — Cliquez sur "Déployer pour macOS" pour mettre à jour les clients macOS.
+            </div>
           </div>
         </div>
-        <button type="button" class="btn-select" 
-          onclick="selectRelease('1.1.0', '<%= latestRelease ? latestRelease.downloadUrl : 'https://github.com/' + repo + '/releases/download/v1.1.0/Overnode-v1.1.0-macOS-arm64.dmg' %>', '<%= encodeURIComponent(latestCommit.message) %>')">
-          Utiliser ce commit pour Push
-        </button>
       </div>
-    <% } %>
 
-    <!-- Comparison Banner -->
-    <div class="compare-banner <%= hasNewerRelease ? 'has-new' : '' %>">
-      <div class="compare-left">
-        <div class="compare-icon"><%= hasNewerRelease ? '🚀' : '✨' %></div>
-        <div>
-          <div class="compare-title">
-            <% if (hasNewerRelease) { %>
-              Une nouvelle version ou commit est disponible sur GitHub !
-            <% } else { %>
-              L'application macOS est synchronisée avec la dernière release.
-            <% } %>
+      <!-- Formulaire Déploiement macOS -->
+      <div class="deploy-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🍎</span>
+            <span>Déployer vers l'application macOS (Apple Silicon)</span>
           </div>
-          <div class="compare-sub">
-            Version déployée activement : <strong>v<%= deployment.currentVersion %></strong> — Cliquez sur "Push to app" ci-dessous pour rendre la nouvelle version disponible aux utilisateurs.
+          <div class="section-badge">macOS arm64</div>
+        </div>
+
+        <form action="/deploy" method="POST" id="deployFormMac">
+          <input type="hidden" name="platform" value="macos">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="mac_version">Version macOS à déployer</label>
+              <input type="text" id="mac_version" name="version" required 
+                     value="<%= latestMacRelease ? latestMacRelease.version : macDeployment.currentVersion %>" placeholder="1.1.0">
+            </div>
+            <div class="form-group">
+              <label for="mac_downloadUrl">URL de l'archive macOS (.dmg ou .zip)</label>
+              <input type="text" id="mac_downloadUrl" name="downloadUrl" required 
+                     value="<%= latestMacRelease ? (latestMacRelease.dmgUrl || latestMacRelease.zipUrl || latestMacRelease.downloadUrl) : macDeployment.downloadUrl %>" 
+                     placeholder="https://.../Overnode-v1.1.0-macOS-arm64.dmg">
+            </div>
           </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="mac_sha256">Somme de contrôle SHA256 macOS (optionnel)</label>
+              <input type="text" id="mac_sha256" name="sha256" value="<%= macDeployment.sha256 || '' %>" placeholder="Hash SHA256 du .dmg">
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; margin-top: 20px;">
+              <label class="checkbox-label">
+                <input type="checkbox" name="mandatory" id="mac_mandatory" <%= macDeployment.mandatory ? 'checked' : '' %>>
+                <span>Mise à jour obligatoire (bloquante dans l'app macOS)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="mac_releaseNotes">Notes de version macOS (Changelog affiché dans l'app)</label>
+            <textarea id="mac_releaseNotes" name="releaseNotes" placeholder="Détail des nouveautés et correctifs pour macOS..."><%= latestMacRelease ? latestMacRelease.body : macDeployment.releaseNotes %></textarea>
+          </div>
+
+          <button type="submit" class="btn-push" style="margin-top: 10px;">
+            <span>🍎</span>
+            <span>Déployer la mise à jour macOS</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- API macOS -->
+      <div class="api-card">
+        <strong style="color: #ffffff;">Intégration API de l'application macOS :</strong>
+        <p style="color: #94a3b8; margin-top: 4px;">Point de terminaison interrogé par les clients macOS :</p>
+        <div class="code-block">
+GET /api/v1/update/check?version=<%= macDeployment.currentVersion %>&amp;platform=darwin-arm64
         </div>
       </div>
     </div>
 
-    <!-- Push to App Section -->
-    <div class="deploy-section">
-      <div class="section-header">
-        <div class="section-title">
-          <span>🚀</span>
-          <span>Déployer vers l'application (Push to app)</span>
+    <!-- ==================== ONGLET 2: WINDOWS ==================== -->
+    <div class="platform-container <%= activeTab === 'windows' ? 'active' : '' %>" id="view-windows">
+      <div class="stats-grid">
+        <div class="card">
+          <div class="card-label">
+            <span>Version Windows active</span>
+            <span class="tab-badge tab-badge-win">Windows</span>
+          </div>
+          <div class="card-val val-green">v<%= winDeployment.currentVersion %></div>
+          <div class="card-desc">Déployé le <%= new Date(winDeployment.publishedAt).toLocaleDateString('fr-FR') %></div>
         </div>
-        <div class="section-badge">ADMINISTRATION</div>
+        <div class="card">
+          <div class="card-label">Dernière Release Windows GitHub</div>
+          <div class="card-val"><%= latestWinRelease ? 'v' + latestWinRelease.version : 'N/A' %></div>
+          <div class="card-desc"><%= repo %></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Statut Déploiement Windows</div>
+          <div class="card-val <%= hasNewerWinRelease ? 'val-gold' : 'val-green' %>">
+            <%= hasNewerWinRelease ? 'Mise à jour prête' : 'À jour' %>
+          </div>
+          <div class="card-desc">
+            <%= hasNewerWinRelease ? 'Nouveau build Windows détecté' : 'Les clients Windows disposent de la dernière version' %>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Requêtes reçues (Windows)</div>
+          <div class="card-val"><%= (stats.platforms && stats.platforms['win-x64']) || 0 %></div>
+          <div class="card-desc">Vérifications depuis l'app Windows (win-x64)</div>
+        </div>
       </div>
 
-      <form action="/deploy" method="POST" id="deployForm">
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="version">Version à déployer</label>
-            <input type="text" id="version" name="version" required 
-                   value="<%= latestRelease ? latestRelease.version : deployment.currentVersion %>" placeholder="1.1.0">
-          </div>
-          <div class="form-group">
-            <label for="downloadUrl">URL macOS (.dmg ou .zip)</label>
-            <input type="text" id="downloadUrl" name="downloadUrl" required 
-                   value="<%= latestRelease ? latestRelease.downloadUrl : deployment.downloadUrl %>" 
-                   placeholder="https://.../Overnode-v1.1.0-macOS-arm64.dmg">
-          </div>
-        </div>
-
-        <div class="form-grid" style="margin-top: 16px;">
-          <div class="form-group">
-            <label for="windowsDownloadUrl">URL Windows (.msi)</label>
-            <input type="text" id="windowsDownloadUrl" name="windowsDownloadUrl" 
-                   value="<%= latestRelease ? (latestRelease.windowsDownloadUrl || latestRelease.msiUrl || '') : (deployment.windowsDownloadUrl || '') %>" 
-                   placeholder="https://.../Overnode-v1.1.0-Windows-x64.msi">
-          </div>
-          <div class="form-group">
-            <label for="sha256">Somme de contrôle SHA256 (optionnel)</label>
-            <input type="text" id="sha256" name="sha256" value="<%= deployment.sha256 || '' %>" placeholder="Hash SHA256 pour vérifier l'intégrité">
+      <!-- Comparison Banner Windows -->
+      <div class="compare-banner <%= hasNewerWinRelease ? 'has-new' : '' %>">
+        <div class="compare-left">
+          <div class="compare-icon"><%= hasNewerWinRelease ? '🪟' : '✨' %></div>
+          <div>
+            <div class="compare-title">
+              <% if (hasNewerWinRelease) { %>
+                Nouvelle version Windows v<%= latestWinRelease.version %> disponible sur GitHub !
+              <% } else { %>
+                L'application Windows est synchronisée avec la dernière release.
+              <% } %>
+            </div>
+            <div class="compare-sub">
+              Version déployée activement : <strong>v<%= winDeployment.currentVersion %></strong> — Cliquez sur "Déployer pour Windows" pour mettre à jour les clients Windows.
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="form-group" style="margin-top: 16px;">
-          <label for="releaseNotes">Notes de version (Changelog affiché dans l'app)</label>
-          <textarea id="releaseNotes" name="releaseNotes" placeholder="Détail des nouveautés et correctifs..."><%= latestRelease ? latestRelease.body : deployment.releaseNotes %></textarea>
+      <!-- Formulaire Déploiement Windows -->
+      <div class="deploy-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🪟</span>
+            <span>Déployer vers l'application Windows (MSI / x64 Native)</span>
+          </div>
+          <div class="section-badge section-badge-win">Windows x64</div>
         </div>
 
-        <div class="form-group" style="display: flex; align-items: center; margin-top: 12px;">
-          <label class="checkbox-label">
-            <input type="checkbox" name="mandatory" id="mandatory">
-            <span>Mise à jour obligatoire (invite bloquante dans l'app)</span>
-          </label>
-        </div>
+        <form action="/deploy" method="POST" id="deployFormWin">
+          <input type="hidden" name="platform" value="windows">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="win_version">Version Windows à déployer</label>
+              <input type="text" id="win_version" name="version" required 
+                     value="<%= latestWinRelease ? latestWinRelease.version : winDeployment.currentVersion %>" placeholder="1.1.0">
+            </div>
+            <div class="form-group">
+              <label for="win_downloadUrl">URL de l'installeur Windows (.msi)</label>
+              <input type="text" id="win_downloadUrl" name="downloadUrl" required 
+                     value="<%= latestWinRelease ? (latestWinRelease.windowsDownloadUrl || latestWinRelease.msiUrl || winDeployment.downloadUrl) : winDeployment.downloadUrl %>" 
+                     placeholder="https://.../Overnode-v1.1.0-Windows-x64.msi">
+            </div>
+          </div>
 
-        <button type="submit" class="btn-push" style="margin-top: 20px;">
-          <span>🚀</span>
-          <span>Push to app (macOS &amp; Windows)</span>
-        </button>
-      </form>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="win_sha256">Somme de contrôle SHA256 Windows (optionnel)</label>
+              <input type="text" id="win_sha256" name="sha256" value="<%= winDeployment.sha256 || '' %>" placeholder="Hash SHA256 du .msi">
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; margin-top: 20px;">
+              <label class="checkbox-label">
+                <input type="checkbox" name="mandatory" id="win_mandatory" <%= winDeployment.mandatory ? 'checked' : '' %>>
+                <span>Mise à jour obligatoire (bloquante dans l'app Windows)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="win_releaseNotes">Notes de version Windows (Changelog affiché dans l'app)</label>
+            <textarea id="win_releaseNotes" name="releaseNotes" placeholder="Détail des nouveautés et correctifs pour Windows..."><%= latestWinRelease ? latestWinRelease.body : winDeployment.releaseNotes %></textarea>
+          </div>
+
+          <button type="submit" class="btn-push btn-push-win" style="margin-top: 10px;">
+            <span>🪟</span>
+            <span>Déployer la mise à jour Windows</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- API Windows -->
+      <div class="api-card">
+        <strong style="color: #ffffff;">Intégration API de l'application Windows :</strong>
+        <p style="color: #94a3b8; margin-top: 4px;">Point de terminaison interrogé par les clients Windows :</p>
+        <div class="code-block code-win">
+GET /api/v1/update/check?version=<%= winDeployment.currentVersion %>&amp;platform=win-x64
+        </div>
+      </div>
     </div>
 
-    <!-- Available Releases Table -->
-    <div class="table-container">
+    <!-- ==================== ONGLET 3: VUE GLOBALE ==================== -->
+    <div class="platform-container <%= activeTab === 'all' ? 'active' : '' %>" id="view-all">
+      <div class="stats-grid">
+        <div class="card">
+          <div class="card-label">
+            <span>macOS en Production</span>
+            <span class="tab-badge tab-badge-mac">Apple Silicon</span>
+          </div>
+          <div class="card-val val-blue">v<%= macDeployment.currentVersion %></div>
+          <div class="card-desc"><%= (stats.platforms && stats.platforms['darwin-arm64']) || 0 %> requêtes enregistrées</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">
+            <span>Windows en Production</span>
+            <span class="tab-badge tab-badge-win">x64 Native</span>
+          </div>
+          <div class="card-val val-green">v<%= winDeployment.currentVersion %></div>
+          <div class="card-desc"><%= (stats.platforms && stats.platforms['win-x64']) || 0 %> requêtes enregistrées</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Total des Vérifications</div>
+          <div class="card-val val-gold"><%= stats.totalChecks || 0 %></div>
+          <div class="card-desc">Toutes plateformes confondues</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Dernier Commit Global</div>
+          <div class="card-val"><%= latestCommit ? latestCommit.shortSha : 'N/A' %></div>
+          <div class="card-desc"><%= repo %></div>
+        </div>
+      </div>
+
+      <!-- Formulaire Déploiement Bi-Plateforme -->
+      <div class="deploy-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🌐</span>
+            <span>Déployer simultanément vers macOS et Windows</span>
+          </div>
+          <div class="section-badge">BI-PLATEFORME</div>
+        </div>
+
+        <form action="/deploy" method="POST" id="deployFormAll">
+          <input type="hidden" name="platform" value="all">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="all_version">Version commune</label>
+              <input type="text" id="all_version" name="version" required 
+                     value="<%= latestRelease ? latestRelease.version : macDeployment.currentVersion %>" placeholder="1.1.0">
+            </div>
+            <div class="form-group">
+              <label for="all_downloadUrl">URL macOS (.dmg ou .zip)</label>
+              <input type="text" id="all_downloadUrl" name="downloadUrl" required 
+                     value="<%= macDeployment.downloadUrl %>" placeholder="https://.../Overnode-v1.1.0-macOS-arm64.dmg">
+            </div>
+            <div class="form-group">
+              <label for="all_windowsDownloadUrl">URL Windows (.msi)</label>
+              <input type="text" id="all_windowsDownloadUrl" name="windowsDownloadUrl" 
+                     value="<%= winDeployment.downloadUrl %>" placeholder="https://.../Overnode-v1.1.0-Windows-x64.msi">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="all_releaseNotes">Notes de version communes</label>
+            <textarea id="all_releaseNotes" name="releaseNotes" placeholder="Détail des nouveautés et correctifs..."><%= latestRelease ? latestRelease.body : macDeployment.releaseNotes %></textarea>
+          </div>
+
+          <button type="submit" class="btn-push" style="margin-top: 10px;">
+            <span>🚀</span>
+            <span>Déployer pour les deux plateformes</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Endpoints API Bi-Plateforme -->
+      <div class="api-card">
+        <strong style="color: #ffffff;">Points de terminaison API :</strong>
+        <div class="code-block">
+macOS   : GET /api/v1/update/check?version=<%= macDeployment.currentVersion %>&amp;platform=darwin-arm64
+Windows : GET /api/v1/update/check?version=<%= winDeployment.currentVersion %>&amp;platform=win-x64
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TABLEAU DES RELEASES GITHUB ==================== -->
+    <div class="table-container" style="margin-top: 32px;">
       <div class="table-header">
-        <span>Releases &amp; Commits GitHub détectés</span>
-        <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 13px;">↻ Rafraîchir</a>
+        <div>
+          <span>Releases &amp; Fichiers GitHub Détectés</span>
+        </div>
+        <div class="table-filters">
+          <button type="button" class="filter-btn active" onclick="filterReleases('all', this)">Toutes</button>
+          <button type="button" class="filter-btn" onclick="filterReleases('macos', this)">🍎 macOS</button>
+          <button type="button" class="filter-btn" onclick="filterReleases('windows', this)">🪟 Windows</button>
+          <a href="/" style="color: #38bdf8; text-decoration: none; font-size: 12px; margin-left: 10px; display: inline-flex; align-items: center;">↻ Actualiser</a>
+        </div>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Version / Réf</th>
+            <th>Version</th>
             <th>Titre / Notes</th>
             <th>Fichiers Détectés</th>
             <th>Date</th>
-            <th>Statut</th>
-            <th>Action</th>
+            <th>Statuts Actifs</th>
+            <th>Actions de Déploiement</th>
           </tr>
         </thead>
-        <tbody>
-          <% releases.forEach(function(rel) { %>
-            <tr>
+        <tbody id="releasesTableBody">
+          <% releases.forEach(function(rel) { 
+               const hasMac = Boolean(rel.dmgUrl || rel.zipUrl);
+               const hasWin = Boolean(rel.msiUrl || rel.windowsDownloadUrl);
+               const isMacActive = rel.version === macDeployment.currentVersion;
+               const isWinActive = rel.version === winDeployment.currentVersion;
+          %>
+            <tr class="rel-row" data-has-mac="<%= hasMac %>" data-has-win="<%= hasWin %>">
               <td>
                 <span class="tag-badge"><%= rel.tag %></span>
               </td>
-              <td style="max-width: 320px;">
+              <td style="max-width: 280px;">
                 <strong><%= rel.name %></strong>
               </td>
               <td>
-                <% if (rel.dmgUrl || rel.zipUrl) { %>
-                  <span style="display: inline-block; font-size: 11px; padding: 2px 6px; background: rgba(56,189,248,0.15); border-radius: 4px; color: #38bdf8; margin-right: 4px;">macOS</span>
+                <% if (hasMac) { %>
+                  <span class="badge-mac">macOS (<%= rel.dmgUrl ? '.dmg' : '.zip' %>)</span>
                 <% } %>
-                <% if (rel.msiUrl || rel.windowsDownloadUrl) { %>
-                  <span style="display: inline-block; font-size: 11px; padding: 2px 6px; background: rgba(16,185,129,0.15); border-radius: 4px; color: #34d399;">Windows MSI</span>
+                <% if (hasWin) { %>
+                  <span class="badge-win">Windows (<%= rel.msiUrl ? '.msi' : '.zip' %>)</span>
                 <% } %>
-                <% if (!rel.dmgUrl && !rel.zipUrl && !rel.msiUrl) { %>
+                <% if (!hasMac && !hasWin) { %>
                   <span style="color: #94a3b8; font-size: 11px;"><%= rel.assetName || 'Archive' %></span>
                 <% } %>
               </td>
               <td><%= new Date(rel.publishedAt).toLocaleDateString('fr-FR') %></td>
               <td>
-                <% if (rel.version === deployment.currentVersion) { %>
-                  <span class="current-badge">✓ Déployée</span>
-                <% } else { %>
-                  <span style="color: #94a3b8;">Disponible</span>
+                <% if (isMacActive) { %>
+                  <span class="current-badge current-badge-mac">✓ Actif macOS</span>
+                <% } %>
+                <% if (isWinActive) { %>
+                  <span class="current-badge current-badge-win" style="margin-top: 4px;">✓ Actif Win</span>
+                <% } %>
+                <% if (!isMacActive && !isWinActive) { %>
+                  <span style="color: #64748b; font-size: 12px;">Disponible</span>
                 <% } %>
               </td>
               <td>
-                <button type="button" class="btn-select" 
-                  onclick="selectRelease('<%= rel.version %>', '<%= rel.downloadUrl %>', '<%= rel.windowsDownloadUrl || rel.msiUrl || '' %>', '<%= encodeURIComponent(rel.body) %>')">
-                  Sélectionner
-                </button>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <% if (hasMac) { %>
+                    <button type="button" class="btn-select" 
+                      onclick="selectMacRelease('<%= rel.version %>', '<%= rel.dmgUrl || rel.zipUrl || rel.downloadUrl %>', '<%= encodeURIComponent(rel.body) %>')">
+                      🍎 Pour macOS
+                    </button>
+                  <% } %>
+                  <% if (hasWin) { %>
+                    <button type="button" class="btn-select btn-select-win" 
+                      onclick="selectWinRelease('<%= rel.version %>', '<%= rel.windowsDownloadUrl || rel.msiUrl || rel.downloadUrl %>', '<%= encodeURIComponent(rel.body) %>')">
+                      🪟 Pour Windows
+                    </button>
+                  <% } %>
+                  <% if (!hasMac && !hasWin) { %>
+                    <button type="button" class="btn-select" 
+                      onclick="selectMacRelease('<%= rel.version %>', '<%= rel.downloadUrl %>', '<%= encodeURIComponent(rel.body) %>')">
+                      Sélectionner
+                    </button>
+                  <% } %>
+                </div>
               </td>
             </tr>
           <% }); %>
         </tbody>
       </table>
     </div>
-
-    <!-- API Integration Endpoint Info -->
-    <div class="api-card">
-      <strong style="color: #ffffff;">Intégration API des applications natives :</strong>
-      <p style="color: #94a3b8; margin-top: 4px;">Les applications Overnode interrogent ce point de terminaison à chaque lancement :</p>
-      <div class="code-block">
-macOS   : GET /api/v1/update/check?version=1.0.0&amp;platform=darwin-arm64
-Windows : GET /api/v1/update/check?version=1.0.0&amp;platform=win-x64
-      </div>
-    </div>
   </main>
 
   <script>
-    function selectRelease(version, url, winUrl, encodedBody) {
-      document.getElementById('version').value = version;
-      document.getElementById('downloadUrl').value = url;
-      if (document.getElementById('windowsDownloadUrl')) {
-        document.getElementById('windowsDownloadUrl').value = winUrl || '';
+    function switchPlatform(platform) {
+      document.querySelectorAll('.platform-container').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.platform-tab-btn').forEach(el => el.classList.remove('active'));
+
+      const container = document.getElementById('view-' + platform);
+      const tabBtn = document.getElementById('tabBtn-' + platform);
+      if (container) container.classList.add('active');
+      if (tabBtn) tabBtn.classList.add('active');
+
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', '?platform=' + platform);
       }
+    }
+
+    function selectMacRelease(version, url, encodedBody) {
+      switchPlatform('macos');
+      document.getElementById('mac_version').value = version;
+      document.getElementById('mac_downloadUrl').value = url;
       try {
-        document.getElementById('releaseNotes').value = decodeURIComponent(encodedBody);
+        document.getElementById('mac_releaseNotes').value = decodeURIComponent(encodedBody);
       } catch (e) {
-        document.getElementById('releaseNotes').value = encodedBody;
+        document.getElementById('mac_releaseNotes').value = encodedBody;
       }
-      document.getElementById('deployForm').scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('deployFormMac').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function selectWinRelease(version, url, encodedBody) {
+      switchPlatform('windows');
+      document.getElementById('win_version').value = version;
+      document.getElementById('win_downloadUrl').value = url;
+      try {
+        document.getElementById('win_releaseNotes').value = decodeURIComponent(encodedBody);
+      } catch (e) {
+        document.getElementById('win_releaseNotes').value = encodedBody;
+      }
+      document.getElementById('deployFormWin').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function filterReleases(type, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const rows = document.querySelectorAll('.rel-row');
+      rows.forEach(row => {
+        const hasMac = row.getAttribute('data-has-mac') === 'true';
+        const hasWin = row.getAttribute('data-has-win') === 'true';
+        if (type === 'macos') {
+          row.style.display = hasMac ? '' : 'none';
+        } else if (type === 'windows') {
+          row.style.display = hasWin ? '' : 'none';
+        } else {
+          row.style.display = '';
+        }
+      });
     }
   </script>
 </body>
 </html>
-
