@@ -334,8 +334,7 @@ public sealed class ServerWebSocketManager
                     if (argsEnum.MoveNext() && argsEnum.Current.ValueKind == JsonValueKind.String)
                     {
                         string line = argsEnum.Current.GetString() ?? string.Empty;
-                        string clean = _ansiRegex.Replace(line, string.Empty);
-                        try { ConsoleOutputReceived?.Invoke(clean); } catch { }
+                        try { ConsoleOutputReceived?.Invoke(line); } catch { }
                     }
                     break;
 

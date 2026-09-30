@@ -60,7 +60,7 @@
     <InstallExecuteSequence>
       <Custom Action="LaunchAppAfterInstall"
               After="InstallFinalize"
-              Condition="NOT (REMOVE=&quot;ALL&quot;)" />
+              Condition="NOT (REMOVE=&quot;ALL&quot;) AND (UILevel = 5) AND NOT OVERNODE_AUTOUPDATE" />
     </InstallExecuteSequence>
   </Package>
 </Wix>

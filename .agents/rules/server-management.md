@@ -16,6 +16,7 @@ Règles pour la gestion des serveurs dans les applications natives Overnode (mac
   - L'envoi des signaux d'alimentation (`start`, `restart`, `stop`, `kill`) doit être transmis via WebSocket (`set state`) avec repli REST API.
   - L'état local affiché ne doit pas être révoqué si la connexion WebSocket est active.
   - Toutes les modifications de collections de logs console ou de métriques issues du WebSocket doivent obligatoirement être marshalisées sur le thread UI (via `SynchronizationContext` ou `DispatcherQueue`) pour éviter les violations de threading (ex: `COMException` 0x8001010E sous WinUI 3).
+  - La console serveur doit supporter la sélection de texte à la souris et la copie directe (`Ctrl+C`), tout en préservant et affichant fidèlement les couleurs (codes ANSI du serveur et coloration sémantique) sans ajout de bouton d'interface superflu.
 - **Actions destructives**: Toujours afficher une confirmation visuelle avant toute action critique (Suppression de serveur, réinstallation de serveur, suppression de fichier/dossier, arrêt forcé/kill).
 - **Suppression de serveur**: La suppression s'effectue via DELETE /api/v5/servers/:id, restitue les quotas de ressources au pool utilisateur et purge le cache local.
 - **Gestion réseau sécurisée**: Les appels API doivent réutiliser `APIClient.shared` avec persistance des cookies de session.

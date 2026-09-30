@@ -272,6 +272,9 @@ public sealed class TrayIconManager : IDisposable
                 szTip = BuildTooltipText()
             };
 
+            // Delete any existing icon with this HWND/uID first to ensure no stale duplicate icon remains
+            Shell_NotifyIconW(NIM_DELETE, ref nid);
+
             Shell_NotifyIconW(NIM_ADD, ref nid);
 
             // Set version to NOTIFYICON_VERSION_4 for modern Windows message semantics

@@ -35,5 +35,5 @@ Règles pour le système de mise à jour automatique, le site de gestion et la C
   - Archivage `.zip` portable et calcul de somme de contrôle SHA256 pour la release.
 - **Cycle de Vie Client (macOS & Windows)**:
   - macOS : Vérification silencieuse à l'ouverture, modale Overnode, redémarrage via script nohup et support .dmg/.zip.
-  - Windows : Vérification silencieuse à l'ouverture, modale Overnode WinUI 3 avec barre de progression, téléchargement et validation SHA256, exécution MSI passive via script détaché et relance automatique de `Overnode.App.exe`.
+  - Windows : Vérification silencieuse à l'ouverture, modale Overnode WinUI 3 avec barre de progression, téléchargement et validation SHA256, exécution MSI passive via script détaché (`OVERNODE_AUTOUPDATE`), nettoyage préalable du System Tray (`TrayIconManager.Shared.Dispose()`), verrouillage par Mutex d'instance unique et relance automatique d'une seule instance de `Overnode.App.exe`.
 

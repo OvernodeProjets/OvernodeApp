@@ -143,6 +143,16 @@ public class Program
         Run("TrayIconManager Menu Command Execution", trayTests.Test_TrayIconManager_MenuCommandExecution);
         Run("QuickAction Translations Exist (FR & EN)", trayTests.Test_QuickActionTranslationsExist_FrenchAndEnglish);
 
+        // 11. Console Color & Copy Tests
+        var consoleColorTests = new ConsoleColorTests();
+        Run("ConsoleColorHelper ANSI Parsing Basic Colors", consoleColorTests.Test_AnsiParsing_BasicColors);
+        Run("ConsoleColorHelper Semantic Coloring Without ANSI", consoleColorTests.Test_SemanticColoring_WithoutAnsi);
+        Run("ConsoleColorHelper Strip ANSI & Plain Text", consoleColorTests.Test_StripAnsi_And_ToPlainText);
+        Run("ConsoleColorHelper HTML Fragment & Clipboard Wrap", consoleColorTests.Test_ToHtmlFragment_PreservesColors);
+        Run("ConsoleColorHelper RTF Color Table", consoleColorTests.Test_ToRtf_ContainsColorTable);
+        Run("ConsoleColorHelper Discord ANSI Formatting", consoleColorTests.Test_ToDiscordAnsi);
+        Run("TrayIconManager Disposal Idempotence", consoleColorTests.Test_TrayIconManager_DisposalIdempotence);
+
         Console.WriteLine($"\n---------------------------------------");
         Console.WriteLine($"Total: {passed + failed} | Passed: {passed} | Failed: {failed}");
         Console.WriteLine("=======================================");

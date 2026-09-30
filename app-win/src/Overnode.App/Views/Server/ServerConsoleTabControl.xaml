@@ -111,18 +111,34 @@
                               Padding="14,12"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl x:Name="ConsoleItemsControl">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}"
-                                           FontFamily="Consolas, Cascadia Code, Courier New"
-                                           FontSize="12"
-                                           TextWrapping="Wrap"
-                                           Margin="0,1"
-                                           Loaded="OnConsoleLineLoaded" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <RichTextBlock x:Name="ConsoleRichTextBlock"
+                                   IsTextSelectionEnabled="True"
+                                   TextWrapping="Wrap"
+                                   FontFamily="Consolas, Cascadia Code, Courier New"
+                                   FontSize="12"
+                                   Foreground="#CBD5E1"
+                                   KeyDown="OnConsoleKeyDown">
+                        <RichTextBlock.ContextFlyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Text="Copier" Click="OnContextMenuCopyClicked">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE8C8;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem Text="Tout sélectionner" Click="OnContextMenuSelectAllClicked">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE8B3;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem Text="Effacer" Click="OnClearConsoleClicked">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE74D;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </RichTextBlock.ContextFlyout>
+                    </RichTextBlock>
                 </ScrollViewer>
 
                 <!-- Command Input Bar -->

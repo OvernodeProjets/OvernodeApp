@@ -250,6 +250,12 @@ public sealed partial class MainWindow : Window, Services.ITrayTarget
                 _dashboardView.ScrollToQuickAction();
                 await System.Threading.Tasks.Task.Delay(1000);
             }
+            else if (Environment.GetEnvironmentVariable("OVERNODE_CAPTURE_CONSOLE") == "1")
+            {
+                _updateModal.Visibility = Visibility.Collapsed;
+                _dashboardView.OpenFirstServerConsole();
+                await System.Threading.Tasks.Task.Delay(1000);
+            }
 
             if (Content is FrameworkElement root)
             {

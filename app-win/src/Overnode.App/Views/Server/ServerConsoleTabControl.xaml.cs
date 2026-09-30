@@ -1,12 +1,19 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.UI;
+using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Overnode.App.Localization;
+using Overnode.App.Services;
 using Overnode.App.ViewModels;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using Windows.UI;
 
@@ -14,20 +21,43 @@ namespace Overnode.App.Views.Server;
 
 public sealed partial class ServerConsoleTabControl : UserControl
 {
-    private static readonly SolidColorBrush RedBrush = new(Color.FromArgb(255, 248, 113, 113));
-    private static readonly SolidColorBrush YellowBrush = new(Color.FromArgb(255, 251, 191, 36));
-    private static readonly SolidColorBrush CyanBrush = new(Color.FromArgb(255, 56, 189, 248));
-    private static readonly SolidColorBrush NormalBrush = new(Color.FromArgb(255, 203, 213, 225));
+    private static readonly Dictionary<string, SolidColorBrush> BrushCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly SolidColorBrush DefaultTextBrush = new(Color.FromArgb(255, 203, 213, 225));
 
     public ServerDetailViewModel? ViewModel => DataContext as ServerDetailViewModel;
     private ServerDetailViewModel? _boundViewModel;
 
     public ServerConsoleTabControl()
     {
-        this.InitializeComponent();
+        InitializeComponent();
         LocalizationManager.Instance.LanguageChanged += (s, e) => UpdateLocalization();
         DataContextChanged += OnDataContextChanged;
         UpdateLocalization();
+    }
+
+    private static SolidColorBrush GetBrushForHex(string hex)
+    {
+        if (BrushCache.TryGetValue(hex, out var cached))
+        {
+            return cached;
+        }
+
+        try
+        {
+            string clean = hex.TrimStart('#');
+            if (clean.Length == 6)
+            {
+                byte r = byte.Parse(clean.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+                byte g = byte.Parse(clean.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+                byte b = byte.Parse(clean.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+                var brush = new SolidColorBrush(Color.FromArgb(255, r, g, b));
+                BrushCache[hex] = brush;
+                return brush;
+            }
+        }
+        catch { }
+
+        return DefaultTextBrush;
     }
 
     private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
@@ -41,23 +71,89 @@ public sealed partial class ServerConsoleTabControl : UserControl
         _boundViewModel = DataContext as ServerDetailViewModel;
         if (_boundViewModel != null)
         {
-            ConsoleItemsControl.ItemsSource = _boundViewModel.ConsoleLines;
+            RebuildConsoleBlocks();
             _boundViewModel.ConsoleLines.CollectionChanged += OnConsoleLinesChanged;
             _boundViewModel.PropertyChanged += OnViewModelPropertyChanged;
             UpdateStatsUI();
         }
+        else
+        {
+            ConsoleRichTextBlock.Blocks.Clear();
+        }
+    }
+
+    private void RebuildConsoleBlocks()
+    {
+        ConsoleRichTextBlock.Blocks.Clear();
+        if (_boundViewModel == null) return;
+
+        foreach (var line in _boundViewModel.ConsoleLines)
+        {
+            ConsoleRichTextBlock.Blocks.Add(CreateParagraphForLine(line));
+        }
+
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            ConsoleScrollViewer.ChangeView(null, ConsoleScrollViewer.ScrollableHeight, null, false);
+        });
+    }
+
+    private Paragraph CreateParagraphForLine(string line)
+    {
+        var p = new Paragraph { Margin = new Thickness(0, 1, 0, 1) };
+        var spans = ConsoleColorHelper.ParseLineToSpans(line);
+
+        foreach (var span in spans)
+        {
+            var run = new Run
+            {
+                Text = span.Text,
+                Foreground = GetBrushForHex(span.HexColor)
+            };
+
+            if (span.IsBold)
+            {
+                run.FontWeight = FontWeights.Bold;
+            }
+
+            p.Inlines.Add(run);
+        }
+
+        return p;
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        DispatcherQueue.TryEnqueue(() => UpdateStatsUI());
+        DispatcherQueue.TryEnqueue(UpdateStatsUI);
     }
 
     private void OnConsoleLinesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         DispatcherQueue.TryEnqueue(() =>
         {
-            ConsoleScrollViewer.ChangeView(null, ConsoleScrollViewer.ScrollableHeight, null, false);
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+            {
+                ConsoleRichTextBlock.Blocks.Clear();
+                return;
+            }
+
+            if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
+            {
+                foreach (var item in e.NewItems)
+                {
+                    if (item is string line)
+                    {
+                        ConsoleRichTextBlock.Blocks.Add(CreateParagraphForLine(line));
+                    }
+                }
+
+                while (ConsoleRichTextBlock.Blocks.Count > 1000)
+                {
+                    ConsoleRichTextBlock.Blocks.RemoveAt(0);
+                }
+
+                ConsoleScrollViewer.ChangeView(null, ConsoleScrollViewer.ScrollableHeight, null, false);
+            }
         });
     }
 
@@ -82,32 +178,6 @@ public sealed partial class ServerConsoleTabControl : UserControl
         DiskText.Text = $"{srv.DiskUsedMB:F0} / {srv.DiskLimitMB:F0} MB";
     }
 
-    private void OnConsoleLineLoaded(object sender, RoutedEventArgs e)
-    {
-        if (sender is TextBlock tb && tb.Text is string text)
-        {
-            if (text.Contains("[Error]", StringComparison.OrdinalIgnoreCase) ||
-                text.Contains("Exception", StringComparison.OrdinalIgnoreCase) ||
-                text.Contains("ERROR", StringComparison.OrdinalIgnoreCase))
-            {
-                tb.Foreground = RedBrush;
-            }
-            else if (text.Contains("[Action]", StringComparison.OrdinalIgnoreCase) ||
-                     text.Contains("WARN", StringComparison.OrdinalIgnoreCase))
-            {
-                tb.Foreground = YellowBrush;
-            }
-            else if (text.StartsWith("> "))
-            {
-                tb.Foreground = CyanBrush;
-            }
-            else
-            {
-                tb.Foreground = NormalBrush;
-            }
-        }
-    }
-
     private async void OnSendCommandClicked(object sender, RoutedEventArgs e)
     {
         await SendCommandInternalAsync();
@@ -122,7 +192,7 @@ public sealed partial class ServerConsoleTabControl : UserControl
         }
     }
 
-    private async System.Threading.Tasks.Task SendCommandInternalAsync()
+    private async Task SendCommandInternalAsync()
     {
         if (ViewModel == null) return;
         var text = CommandTextBox.Text;
@@ -136,5 +206,74 @@ public sealed partial class ServerConsoleTabControl : UserControl
     private void OnClearConsoleClicked(object sender, RoutedEventArgs e)
     {
         ViewModel?.ConsoleLines.Clear();
+        ConsoleRichTextBlock.Blocks.Clear();
+    }
+
+    // --- Direct Console Copying & Color Transmission ---
+
+    private void OnContextMenuCopyClicked(object sender, RoutedEventArgs e)
+    {
+        CopySelectedOrAll();
+    }
+
+    private void OnContextMenuSelectAllClicked(object sender, RoutedEventArgs e)
+    {
+        ConsoleRichTextBlock.SelectAll();
+    }
+
+    private void OnConsoleKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        var ctrl = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control);
+        bool isCtrlDown = (ctrl & Windows.UI.Core.CoreVirtualKeyStates.Down) == Windows.UI.Core.CoreVirtualKeyStates.Down;
+
+        if (isCtrlDown && e.Key == VirtualKey.C)
+        {
+            e.Handled = true;
+            CopySelectedOrAll();
+        }
+        else if (isCtrlDown && e.Key == VirtualKey.A)
+        {
+            e.Handled = true;
+            ConsoleRichTextBlock.SelectAll();
+        }
+    }
+
+    private void CopySelectedOrAll()
+    {
+        List<string> linesToCopy;
+        string selected = ConsoleRichTextBlock.SelectedText;
+
+        if (!string.IsNullOrWhiteSpace(selected))
+        {
+            linesToCopy = selected.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+        }
+        else if (_boundViewModel != null && _boundViewModel.ConsoleLines.Count > 0)
+        {
+            linesToCopy = _boundViewModel.ConsoleLines.ToList();
+        }
+        else
+        {
+            return;
+        }
+
+        var dataPackage = new DataPackage();
+
+        string plainText = ConsoleColorHelper.ToPlainText(linesToCopy);
+        string htmlFragment = ConsoleColorHelper.ToHtmlFragment(linesToCopy);
+        string clipboardHtml = ConsoleColorHelper.WrapInClipboardHtml(htmlFragment);
+        string rtf = ConsoleColorHelper.ToRtf(linesToCopy);
+
+        dataPackage.SetText(plainText);
+        dataPackage.SetHtmlFormat(clipboardHtml);
+        dataPackage.SetRtf(rtf);
+
+        try
+        {
+            Clipboard.SetContent(dataPackage);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ServerConsoleTabControl] Clipboard error: {ex.Message}");
+        }
     }
 }

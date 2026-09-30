@@ -489,4 +489,13 @@ public sealed partial class DashboardView : UserControl
     {
         SettingsViewContent.ScrollToQuickAction();
     }
+
+    public void OpenFirstServerConsole()
+    {
+        var srv = ViewModel.Servers.FirstOrDefault();
+        if (srv != null)
+        {
+            OnCardManageRequested(this, srv);
+        }
+    }
 }

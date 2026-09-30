@@ -204,22 +204,26 @@ $installedExe = '{{installedExePath.Replace("'", "''")}}'
 $fallbackExe = '{{processPath.Replace("'", "''")}}'
 $logPath = '{{logPath.Replace("'", "''")}}'
 
-# 1. Wait for current Overnode process to terminate cleanly
+# 1. Wait for current Overnode process to terminate and cleanly kill any lingering instances
 if ($targetPid -gt 0) {
-    Wait-Process -Id $targetPid -Timeout 20 -ErrorAction SilentlyContinue
-    Start-Sleep -Milliseconds 600
+    Wait-Process -Id $targetPid -Timeout 10 -ErrorAction SilentlyContinue
 }
+Get-Process -Name "Overnode.App" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 600
 
-# 2. Run MSI installation passively with no restart
-$msiArgs = @('/i', "$msi", '/passive', '/norestart', '/lv*', "$logPath")
+# 2. Run MSI installation passively with no restart and disable MSI custom action launch
+$msiArgs = @('/i', "$msi", '/passive', '/norestart', 'OVERNODE_AUTOUPDATE=1', '/lv*', "$logPath")
 $proc = Start-Process -FilePath msiexec.exe -ArgumentList $msiArgs -PassThru -Wait
 
 # 3. Determine executable to launch
 $targetExe = if (Test-Path $installedExe) { $installedExe } else { $fallbackExe }
 
-# 4. Relaunch the updated application
+# 4. Relaunch the updated application once
 if (Test-Path $targetExe) {
-    Start-Process -FilePath $targetExe
+    $running = Get-Process -Name "Overnode.App" -ErrorAction SilentlyContinue
+    if (-not $running) {
+        Start-Process -FilePath $targetExe
+    }
 }
 
 # 5. Clean up temporary updater files
@@ -253,6 +257,13 @@ Remove-Item -Path $MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyConti
             startInfo.Verb = "";
             Process.Start(startInfo);
         }
+
+        // Cleanly dispose tray icon to remove it from Windows notification area before exiting
+        try
+        {
+            TrayIconManager.Shared.Dispose();
+        }
+        catch { }
 
         // Terminate old process cleanly to allow MSI to overwrite files
         Environment.Exit(0);
