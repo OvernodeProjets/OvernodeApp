@@ -166,6 +166,9 @@ public sealed partial class ServerConsoleTabControl : UserControl
         CommandTextBox.PlaceholderText = loc.GetString("console_input_placeholder");
         SendText.Text = loc.GetString("console_send");
         ClearText.Text = loc.GetString("console_clear");
+        if (ContextMenuCopy != null) ContextMenuCopy.Text = loc.GetString("console_context_copy");
+        if (ContextMenuSelectAll != null) ContextMenuSelectAll.Text = loc.GetString("console_context_select_all");
+        if (ContextMenuClear != null) ContextMenuClear.Text = loc.GetString("console_context_clear");
         UpdateStatsUI();
     }
 

@@ -66,6 +66,7 @@ public sealed partial class ServerFilesTabControl : UserControl
         FilesEmptyText.Text = loc.GetString("files_empty_directory");
         CancelEditText.Text = loc.GetString("generic_close");
         SaveFileText.Text = loc.GetString("generic_save");
+        NewFolderNameBox.PlaceholderText = loc.GetString("files_folder_placeholder");
     }
 
     public void UpdateUI()
@@ -156,7 +157,7 @@ public sealed partial class ServerFilesTabControl : UserControl
         {
             DispatcherQueue?.TryEnqueue(() =>
             {
-                FileSuccessText.Text = $"Fichier synchronisé : {fileName}";
+                FileSuccessText.Text = LocalizationManager.Instance.Format("files_synced_success", fileName);
                 FileSuccessBanner.Visibility = Visibility.Visible;
 
                 _ = Task.Run(async () =>
@@ -245,7 +246,8 @@ public sealed partial class ServerFilesTabControl : UserControl
 
         try
         {
-            FileSuccessText.Text = $"Ouverture de {item.Name} dans l'éditeur externe...";
+            string openingMsg = LocalizationManager.Instance.Format("files_opening_external", item.Name);
+            FileSuccessText.Text = openingMsg;
             FileSuccessBanner.Visibility = Visibility.Visible;
             FileErrorBanner.Visibility = Visibility.Collapsed;
 
@@ -272,7 +274,7 @@ public sealed partial class ServerFilesTabControl : UserControl
                     {
                         DispatcherQueue?.TryEnqueue(() =>
                         {
-                            FileErrorText.Text = $"Échec de synchronisation de {item.Name} : {ex.Message}";
+                            FileErrorText.Text = LocalizationManager.Instance.Format("files_sync_failed", item.Name, ex.Message);
                             FileErrorBanner.Visibility = Visibility.Visible;
                         });
                         throw;
@@ -285,7 +287,7 @@ public sealed partial class ServerFilesTabControl : UserControl
                 await Task.Delay(2500);
                 DispatcherQueue?.TryEnqueue(() =>
                 {
-                    if (FileSuccessText.Text.StartsWith("Ouverture"))
+                    if (FileSuccessText.Text == openingMsg)
                     {
                         FileSuccessBanner.Visibility = Visibility.Collapsed;
                     }
@@ -294,7 +296,7 @@ public sealed partial class ServerFilesTabControl : UserControl
         }
         catch (Exception ex)
         {
-            FileErrorText.Text = $"Erreur éditeur externe : {ex.Message}";
+            FileErrorText.Text = LocalizationManager.Instance.Format("files_editor_error", ex.Message);
             FileErrorBanner.Visibility = Visibility.Visible;
             FileSuccessBanner.Visibility = Visibility.Collapsed;
         }
@@ -336,7 +338,7 @@ public sealed partial class ServerFilesTabControl : UserControl
         {
             ViewModel.FileEditorContent = FileEditorTextBox.Text;
             await ViewModel.SaveCurrentFileAsync();
-            EditorSaveStatusText.Text = "Fichier enregistré !";
+            EditorSaveStatusText.Text = LocalizationManager.Instance.GetString("files_saved_success");
         }
     }
 }

@@ -47,7 +47,7 @@ public sealed class UpdateService
                 if (!string.IsNullOrWhiteSpace(clean)) return clean;
             }
 
-            return "1.1.4";
+            return "1.1.10";
         }
     }
 

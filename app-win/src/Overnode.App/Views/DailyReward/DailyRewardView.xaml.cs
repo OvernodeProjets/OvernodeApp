@@ -41,6 +41,14 @@ public sealed partial class DailyRewardView : UserControl
         StatCurrentStreakTitle.Text = _loc.GetString("daily_stat_current_streak");
         StatLongestStreakTitle.Text = _loc.GetString("daily_stat_longest_streak");
         StatTotalEarnedTitle.Text = _loc.GetString("daily_stat_coins_earned");
+
+        HistDateHeader.Text = _loc.GetString("daily_hist_date");
+        HistStreakHeader.Text = _loc.GetString("daily_hist_streak");
+        HistRewardHeader.Text = _loc.GetString("daily_hist_reward");
+        LbRankHeader.Text = _loc.GetString("daily_lb_rank");
+        LbUserHeader.Text = _loc.GetString("daily_lb_player");
+        LbStreakHeader.Text = _loc.GetString("daily_lb_streak");
+        UpdateUI();
     }
 
     private void UpdateUI()
@@ -75,7 +83,7 @@ public sealed partial class DailyRewardView : UserControl
         var st = ViewModel.Status;
         if (st == null) return;
 
-        HeroStreakText.Text = $"Série en cours : {st.CurrentStreak} jours consécutifs";
+        HeroStreakText.Text = _loc.Format("daily_reward_streak_active", st.CurrentStreak);
         int amount = st.NextReward?.Amount ?? 25;
         HeroRewardAmount.Text = $"+{amount}";
 
@@ -96,7 +104,7 @@ public sealed partial class DailyRewardView : UserControl
 
         if (st.CanClaim)
         {
-            ClaimButtonText.Text = "Réclamer maintenant";
+            ClaimButtonText.Text = _loc.GetString("daily_claim_button");
             ClaimButton.Background = (SolidColorBrush)Application.Current.Resources["OvernodeAccentGoldBrush"];
             ClaimButton.BorderThickness = new Thickness(0);
             ClaimButtonText.Foreground = new SolidColorBrush(Colors.Black);
@@ -105,7 +113,7 @@ public sealed partial class DailyRewardView : UserControl
         }
         else
         {
-            ClaimButtonText.Text = "Déjà réclamé aujourd'hui";
+            ClaimButtonText.Text = _loc.GetString("daily_already_claimed");
             ClaimButton.Background = new SolidColorBrush(ColorHelper.FromArgb(25, 255, 255, 255));
             ClaimButton.BorderBrush = (SolidColorBrush)Application.Current.Resources["OvernodeBorderSubtleBrush"];
             ClaimButton.BorderThickness = new Thickness(1);
@@ -130,9 +138,10 @@ public sealed partial class DailyRewardView : UserControl
         var st = ViewModel.Status;
         if (st == null) return;
 
-        StatCurrentStreakValue.Text = $"{st.CurrentStreak} jours";
-        StatLongestStreakValue.Text = $"{st.LongestStreak} jours";
-        StatTotalEarnedValue.Text = $"{st.TotalCoinsEarned:N0} coins";
+        string daysUnit = _loc.GetString("daily_unit_days");
+        StatCurrentStreakValue.Text = $"{st.CurrentStreak} {daysUnit}";
+        StatLongestStreakValue.Text = $"{st.LongestStreak} {daysUnit}";
+        StatTotalEarnedValue.Text = $"{st.TotalCoinsEarned:N0} {_loc.GetString("wallet_coins_suffix")}";
     }
 
     private void UpdateHistoryTable()
@@ -157,7 +166,7 @@ public sealed partial class DailyRewardView : UserControl
             Grid.SetColumn(dateText, 0);
             grid.Children.Add(dateText);
 
-            var streakText = new TextBlock { Text = $"Série de {item.Streak} jours", FontSize = 12, FontWeight = Microsoft.UI.Text.FontWeights.Medium, Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextPrimaryBrush"] };
+            var streakText = new TextBlock { Text = _loc.Format("daily_reward_streak_history", item.Streak), FontSize = 12, FontWeight = Microsoft.UI.Text.FontWeights.Medium, Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextPrimaryBrush"] };
             Grid.SetColumn(streakText, 1);
             grid.Children.Add(streakText);
 
@@ -204,7 +213,7 @@ public sealed partial class DailyRewardView : UserControl
             Grid.SetColumn(userText, 1);
             grid.Children.Add(userText);
 
-            var streakText = new TextBlock { Text = $"{entry.CurrentStreak} jours (max: {entry.LongestStreak})", FontSize = 12, FontFamily = new FontFamily("Consolas"), Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"], HorizontalAlignment = HorizontalAlignment.Right };
+            var streakText = new TextBlock { Text = _loc.Format("daily_reward_streak_leaderboard", entry.CurrentStreak, entry.LongestStreak), FontSize = 12, FontFamily = new FontFamily("Consolas"), Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"], HorizontalAlignment = HorizontalAlignment.Right };
             Grid.SetColumn(streakText, 2);
             grid.Children.Add(streakText);
 

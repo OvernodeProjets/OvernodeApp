@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Overnode.App.Localization;
 
 namespace Overnode.App.Services;
 
@@ -27,7 +28,16 @@ public sealed class DiscordRPCService : IDisposable
 
     public bool IsConnected => _isConnected;
 
-    private DiscordRPCService() { }
+    private DiscordRPCService()
+    {
+        LocalizationManager.Instance.LanguageChanged += (_, _) =>
+        {
+            if (_isConnected)
+            {
+                _ = SendDefaultActivityAsync();
+            }
+        };
+    }
 
     public void Start()
     {
@@ -134,8 +144,8 @@ public sealed class DiscordRPCService : IDisposable
                     pid,
                     activity = new
                     {
-                        details = "Sur l'application Overnode",
-                        state = "Gère ses infrastructures cloud",
+                        details = LocalizationManager.Instance.GetString("discord_rpc_details"),
+                        state = LocalizationManager.Instance.GetString("discord_rpc_state"),
                         timestamps = new
                         {
                             start = _startTime
@@ -147,7 +157,7 @@ public sealed class DiscordRPCService : IDisposable
                         },
                         buttons = new[]
                         {
-                            new { label = "Site officiel", url = DefaultWebsiteUrl }
+                            new { label = LocalizationManager.Instance.GetString("discord_rpc_site"), url = DefaultWebsiteUrl }
                         }
                     }
                 },

@@ -35,6 +35,21 @@ public sealed partial class SupportView : UserControl
         TitleText.Text = _loc.GetString("support_title");
         SubtitleText.Text = _loc.GetString("support_subtitle");
         NewTicketBtnText.Text = _loc.GetString("support_new_ticket");
+        CreateTicketFlyoutTitle.Text = _loc.GetString("support_modal_title");
+        NewTicketSubjectLabel.Text = _loc.GetString("support_field_subject");
+        NewTicketSubjectBox.PlaceholderText = _loc.GetString("support_subject_placeholder");
+        NewTicketCategoryLabel.Text = _loc.GetString("support_field_category");
+        CatServersItem.Content = _loc.GetString("support_cat_servers");
+        CatBillingItem.Content = _loc.GetString("support_cat_billing");
+        CatNetworkItem.Content = _loc.GetString("support_cat_network");
+        CatOtherItem.Content = _loc.GetString("support_cat_other");
+        NewTicketMessageLabel.Text = _loc.GetString("support_field_desc");
+        NewTicketDescBox.PlaceholderText = _loc.GetString("support_message_placeholder");
+        SubmitTicketBtnText.Text = _loc.GetString("support_btn_send_ticket");
+        RecentTicketsTitleText.Text = _loc.GetString("support_recent_tickets");
+        ReplyInput.PlaceholderText = _loc.GetString("support_reply_placeholder");
+        SendReplyBtnText.Text = _loc.GetString("support_btn_reply");
+        UpdateUI();
     }
 
     private void UpdateUI()
@@ -68,12 +83,13 @@ public sealed partial class SupportView : UserControl
             topRow.Children.Add(subjText);
 
             bool isOpen = ticket.Status.Equals("open", StringComparison.OrdinalIgnoreCase);
+            string statusText = isOpen ? _loc.GetString("support_status_open").ToUpperInvariant() : _loc.GetString("support_status_closed").ToUpperInvariant();
             var statusBadge = new Border
             {
                 Background = isOpen ? new SolidColorBrush(ColorHelper.FromArgb(30, 34, 197, 94)) : new SolidColorBrush(ColorHelper.FromArgb(20, 255, 255, 255)),
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(6, 2, 6, 2),
-                Child = new TextBlock { Text = isOpen ? "OUVERT" : "FERMÉ", FontSize = 9, FontWeight = Microsoft.UI.Text.FontWeights.Bold, Foreground = isOpen ? (SolidColorBrush)Application.Current.Resources["OvernodeAccentSuccessBrush"] : (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"] }
+                Child = new TextBlock { Text = statusText, FontSize = 9, FontWeight = Microsoft.UI.Text.FontWeights.Bold, Foreground = isOpen ? (SolidColorBrush)Application.Current.Resources["OvernodeAccentSuccessBrush"] : (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"] }
             };
             Grid.SetColumn(statusBadge, 1);
             topRow.Children.Add(statusBadge);
@@ -120,7 +136,7 @@ public sealed partial class SupportView : UserControl
 
         bool isOpen = ticket.Status.Equals("open", StringComparison.OrdinalIgnoreCase);
         DetailStatusBadge.Background = isOpen ? new SolidColorBrush(ColorHelper.FromArgb(30, 34, 197, 94)) : new SolidColorBrush(ColorHelper.FromArgb(20, 255, 255, 255));
-        DetailStatusText.Text = isOpen ? "OUVERT" : "FERMÉ";
+        DetailStatusText.Text = isOpen ? _loc.GetString("support_status_open").ToUpperInvariant() : _loc.GetString("support_status_closed").ToUpperInvariant();
         DetailStatusText.Foreground = isOpen ? (SolidColorBrush)Application.Current.Resources["OvernodeAccentSuccessBrush"] : (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"];
 
         MessagesPanel.Children.Clear();

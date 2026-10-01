@@ -120,18 +120,18 @@
                                    KeyDown="OnConsoleKeyDown">
                         <RichTextBlock.ContextFlyout>
                             <MenuFlyout>
-                                <MenuFlyoutItem Text="Copier" Click="OnContextMenuCopyClicked">
+                                <MenuFlyoutItem x:Name="ContextMenuCopy" Text="Copier" Click="OnContextMenuCopyClicked">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE8C8;" />
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
-                                <MenuFlyoutItem Text="Tout sélectionner" Click="OnContextMenuSelectAllClicked">
+                                <MenuFlyoutItem x:Name="ContextMenuSelectAll" Text="Tout sélectionner" Click="OnContextMenuSelectAllClicked">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE8B3;" />
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
                                 <MenuFlyoutSeparator />
-                                <MenuFlyoutItem Text="Effacer" Click="OnClearConsoleClicked">
+                                <MenuFlyoutItem x:Name="ContextMenuClear" Text="Effacer" Click="OnClearConsoleClicked">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE74D;" />
                                     </MenuFlyoutItem.Icon>

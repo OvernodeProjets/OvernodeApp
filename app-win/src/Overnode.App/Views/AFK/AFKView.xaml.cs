@@ -29,6 +29,7 @@ public sealed partial class AFKView : UserControl
         Feature3.Text = _loc.GetString("afk_feature_3");
         BtnOpenText.Text = _loc.GetString("afk_btn_open");
         FootnoteText.Text = _loc.GetString("afk_footnote");
+        LiveStatusText.Text = _loc.GetString("afk_session_active");
     }
 
     private void OnOpenWebAFKClicked(object sender, RoutedEventArgs e)
@@ -37,7 +38,7 @@ public sealed partial class AFKView : UserControl
         {
             Process.Start(new ProcessStartInfo
             {
-                FileName = "https://console.overnode.fr/afk",
+                FileName = "https://console.overnode.fr/coins/afk",
                 UseShellExecute = true
             });
         }

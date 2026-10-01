@@ -65,6 +65,7 @@ public sealed partial class TwoFactorVerificationView : UserControl
         SubtitleText.Text = loc["2fa_subtitle"];
         VerifyButtonText.Text = loc["2fa_verify_button"];
         CancelButtonText.Text = loc["2fa_cancel_button"];
+        TotpHintText.Text = loc.GetString("twofactor_code_hint");
     }
 
     private void UpdateState()

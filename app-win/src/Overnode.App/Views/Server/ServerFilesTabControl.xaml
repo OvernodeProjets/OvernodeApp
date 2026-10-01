@@ -161,18 +161,18 @@
                                     CornerRadius="6">
                                 <Button.ContextFlyout>
                                     <MenuFlyout>
-                                        <MenuFlyoutItem Text="Ouvrir / Éditer" Click="OnContextMenuOpenClicked">
+                                        <MenuFlyoutItem Text="{Binding ContextOpenText}" Click="OnContextMenuOpenClicked">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xE70F;" />
                                             </MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
-                                        <MenuFlyoutItem Text="Ouvrir avec l'éditeur externe" Click="OnContextMenuOpenExternalClicked">
+                                        <MenuFlyoutItem Text="{Binding ContextOpenExternalText}" Click="OnContextMenuOpenExternalClicked">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xE7AC;" />
                                             </MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
                                         <MenuFlyoutSeparator />
-                                        <MenuFlyoutItem Text="Supprimer" Click="OnContextMenuDeleteClicked" Foreground="{StaticResource OvernodeAccentDangerBrush}">
+                                        <MenuFlyoutItem Text="{Binding ContextDeleteText}" Click="OnContextMenuDeleteClicked" Foreground="{StaticResource OvernodeAccentDangerBrush}">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xE74D;" Foreground="{StaticResource OvernodeAccentDangerBrush}" />
                                             </MenuFlyoutItem.Icon>

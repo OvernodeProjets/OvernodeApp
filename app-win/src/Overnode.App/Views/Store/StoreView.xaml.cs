@@ -45,6 +45,14 @@ public sealed partial class StoreView : UserControl
         CpuDesc.Text = _loc.GetString("store_cpu_desc");
         ServersTitle.Text = _loc.GetString("store_servers_title");
         ServersDesc.Text = _loc.GetString("store_servers_desc");
+
+        string buyText = _loc.GetString("store_buy");
+        BuyRamText.Text = buyText;
+        BuyDiskText.Text = buyText;
+        BuyCpuText.Text = buyText;
+        BuyServersText.Text = buyText;
+        ViewModel.RefreshBundles();
+        UpdateBundles();
     }
 
     private void UpdateUI()

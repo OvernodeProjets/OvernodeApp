@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Overnode.App.Localization;
 using Overnode.App.Models;
 using Overnode.App.Services;
 
@@ -38,41 +39,54 @@ public partial class StoreViewModel : ObservableObject
     [ObservableProperty]
     private string? _successMessage;
 
-    public List<StoreBundle> Bundles { get; } = new()
+    public List<StoreBundle> Bundles { get; } = new();
+
+    public StoreViewModel()
     {
-        new(
+        RefreshBundles();
+    }
+
+    public void RefreshBundles()
+    {
+        var loc = LocalizationManager.Instance;
+        Bundles.Clear();
+
+        string monthSuffix = loc.GetString("store_bundle_monthly");
+        bool isEn = loc.CurrentLanguage == AppLanguage.En;
+
+        Bundles.Add(new(
             "auto_renew",
-            "Auto-Renouvellement",
+            loc.GetString("store_bundle_auto_renew"),
             "2,99 €",
-            "/ mois",
-            "Renouvelez automatiquement vos serveurs actifs sans interruption de service.",
-            new() { "Renouvellement automatique 24/7", "Zéro suspension inattendue", "Rappels par email", "Annulable à tout moment" },
+            monthSuffix,
+            loc.GetString("bundle_auto_renew_desc"),
+            new() { loc.GetString("bundle_auto_renew_f1"), loc.GetString("bundle_auto_renew_f2"), loc.GetString("bundle_auto_renew_f3") },
             "\uE72C", // Refresh
             "#22C55E" // Green
-        ),
-        new(
+        ));
+
+        Bundles.Add(new(
             "starter_cloud",
-            "Pack Starter Cloud",
+            isEn ? "Starter Cloud Pack" : "Pack Starter Cloud",
             "4,99 €",
-            "/ mois",
-            "Idéal pour héberger vos premiers serveurs de jeu ou bots Discord.",
-            new() { "+2 Go RAM supplémentaires", "+10 Go Disque NVMe", "+100% CPU", "+1 slot de serveur" },
+            monthSuffix,
+            loc.GetString("bundle_upgraded_desc"),
+            new() { loc.GetString("bundle_upgraded_f1"), loc.GetString("bundle_upgraded_f2"), loc.GetString("bundle_upgraded_f3") },
             "\uE753", // Cloud
             "#3B82F6" // Blue
-        ),
-        new(
+        ));
+
+        Bundles.Add(new(
             "pro_performance",
-            "Pack Pro Performance",
+            isEn ? "Pro Performance Pack" : "Pack Pro Performance",
             "9,99 €",
-            "/ mois",
-            "Pour les communautés actives et serveurs de jeu haute fréquence.",
-            new() { "+6 Go RAM supplémentaires", "+30 Go Disque NVMe", "+300% CPU", "+3 slots de serveurs", "Priorité Anti-DDoS Game" },
+            monthSuffix,
+            loc.GetString("bundle_god_desc"),
+            new() { loc.GetString("bundle_god_f1"), loc.GetString("bundle_god_f2"), loc.GetString("bundle_god_f3") },
             "\uE735", // Star
             "#F59E0B" // Gold
-        )
-    };
-
-    public StoreViewModel() { }
+        ));
+    }
 
     public async Task LoadDataAsync()
     {
@@ -108,7 +122,7 @@ public partial class StoreViewModel : ObservableObject
             var res = await _service.BuyResourceAsync(resourceType, amount);
             if (res.Success)
             {
-                SuccessMessage = $"Achat de {resourceType.ToUpperInvariant()} effectué avec succès !";
+                SuccessMessage = string.Format(LocalizationManager.Instance.GetString("store_purchase_success"), resourceType.ToUpperInvariant());
                 if (res.RemainingCoins.HasValue)
                 {
                     UserCoins = res.RemainingCoins.Value;

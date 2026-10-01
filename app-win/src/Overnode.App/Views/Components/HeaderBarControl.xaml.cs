@@ -41,6 +41,11 @@ public sealed partial class HeaderBarControl : UserControl
             EnButton.Background = ActiveBgBrush;
             EnButton.Foreground = ActiveFgBrush;
         }
+
+        if (RefreshButton != null)
+        {
+            ToolTipService.SetToolTip(RefreshButton, LocalizationManager.Instance.GetString("header_refresh_tooltip"));
+        }
     }
 
     private void OnFrClicked(object sender, RoutedEventArgs e)

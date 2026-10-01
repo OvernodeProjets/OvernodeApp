@@ -93,12 +93,15 @@ public sealed partial class DashboardServerCardControl : UserControl
         StatusDot.Fill = new SolidColorBrush(ParseHexColor(Server.StatusColorHex));
 
         // Consumptions
+        MemoryLabelText.Text = loc.GetString("dashboard_gauge_memory");
         MemoryText.Text = Server.MemoryDisplay;
         MemoryProgress.Value = Server.MemoryPercentValue;
 
+        CpuLabelText.Text = loc.GetString("dashboard_gauge_cpu");
         CpuText.Text = Server.CpuDisplay;
         CpuProgress.Value = Server.CpuPercentValue;
 
+        DiskLabelText.Text = loc.GetString("dashboard_gauge_disk");
         DiskText.Text = Server.DiskDisplay;
         DiskProgress.Value = Server.DiskPercentValue;
 

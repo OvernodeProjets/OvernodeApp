@@ -97,7 +97,7 @@
                                                 BorderThickness="1"
                                                 Padding="12,6"
                                                 CornerRadius="6">
-                                            <TextBlock Text="Mettre à jour" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                            <TextBlock Text="{Binding UpdateButtonText}" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                                         </Button>
                                     </Grid>
                                 </Grid>

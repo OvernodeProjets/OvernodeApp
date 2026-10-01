@@ -82,7 +82,7 @@ public partial class TwoFactorViewModel : ObservableObject
         catch (Exception ex)
         {
             ErrorMessage = ex.Message.Contains("400") || ex.Message.Contains("Invalid")
-                ? "Code d'authentification invalide ou expiré."
+                ? _loc["twofactor_invalid_error"]
                 : _loc["auth_error_network"];
         }
         finally

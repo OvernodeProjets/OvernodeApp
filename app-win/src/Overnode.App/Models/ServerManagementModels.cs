@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Overnode.App.Localization;
 
 namespace Overnode.App.Models;
 
@@ -296,6 +297,15 @@ public class ServerFileItem
     }
 
     public string IconGlyph => IsFile ? "\uE8A5" : "\uE8B7"; // Document vs Folder
+
+    [JsonIgnore]
+    public string ContextOpenText => LocalizationManager.Instance.GetString("files_context_open");
+
+    [JsonIgnore]
+    public string ContextOpenExternalText => LocalizationManager.Instance.GetString("files_context_open_external");
+
+    [JsonIgnore]
+    public string ContextDeleteText => LocalizationManager.Instance.GetString("files_context_delete");
 }
 
 public class ServerSubdomain
@@ -316,6 +326,9 @@ public class ServerSubdomain
     public string? CreatedAt { get; set; }
 
     public string Fqdn => !string.IsNullOrEmpty(DomainName) ? $"{Subdomain}.{DomainName}" : Subdomain;
+
+    [JsonIgnore]
+    public string StatusText => LocalizationManager.Instance.GetString("subdomains_status_active");
 }
 
 public class ServerSubuser
@@ -339,8 +352,11 @@ public class ServerSubuser
     public List<string> Permissions { get; set; } = new();
 
     public string PermissionsSummary => Permissions.Contains("*")
-        ? "Toutes permissions (Admin)"
-        : $"{Permissions.Count} permission(s)";
+        ? LocalizationManager.Instance.GetString("subusers_all_permissions")
+        : LocalizationManager.Instance.Format("subusers_count_permissions", Permissions.Count);
+
+    [JsonIgnore]
+    public string TwoFactorStatusText => LocalizationManager.Instance.GetString("subusers_2fa_active");
 }
 
 public class ServerActivityLog
@@ -359,6 +375,9 @@ public class ServerActivityLog
 
     [JsonPropertyName("details")]
     public string? Details { get; set; }
+
+    [JsonIgnore]
+    public string ByPrefix => LocalizationManager.Instance.GetString("logs_by_prefix");
 }
 
 public class ServerStartupVariable
@@ -377,6 +396,9 @@ public class ServerStartupVariable
 
     [JsonPropertyName("isEditable")]
     public bool IsEditable { get; set; } = true;
+
+    [JsonIgnore]
+    public string UpdateButtonText => LocalizationManager.Instance.GetString("settings_update_btn");
 }
 
 public class PteroFileListResponse
@@ -498,6 +520,12 @@ public class ServerPluginItem
 
     [JsonPropertyName("isInstalled")]
     public bool IsInstalled { get; set; } = false;
+
+    [JsonIgnore]
+    public string InstallActionText => LocalizationManager.Instance.GetString("plugins_install_btn");
+
+    [JsonIgnore]
+    public string UninstallActionText => LocalizationManager.Instance.GetString("plugins_uninstall_btn");
 }
 
 public class ServerPluginItemConverter : JsonConverter<ServerPluginItem>

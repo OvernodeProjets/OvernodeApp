@@ -196,9 +196,9 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="120" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Date" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
-                            <TextBlock Grid.Column="1" Text="Série" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
-                            <TextBlock Grid.Column="2" Text="Récompense" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" HorizontalAlignment="Right" />
+                            <TextBlock x:Name="HistDateHeader" Text="Date" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            <TextBlock x:Name="HistStreakHeader" Grid.Column="1" Text="Série" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            <TextBlock x:Name="HistRewardHeader" Grid.Column="2" Text="Récompense" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" HorizontalAlignment="Right" />
                         </Grid>
                     </Border>
                     <StackPanel x:Name="HistoryRows" />
@@ -220,9 +220,9 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="120" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Rang" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
-                            <TextBlock Grid.Column="1" Text="Utilisateur" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
-                            <TextBlock Grid.Column="2" Text="Série" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" HorizontalAlignment="Right" />
+                            <TextBlock x:Name="LbRankHeader" Text="Rang" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            <TextBlock x:Name="LbUserHeader" Grid.Column="1" Text="Utilisateur" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                            <TextBlock x:Name="LbStreakHeader" Grid.Column="2" Text="Série" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" HorizontalAlignment="Right" />
                         </Grid>
                     </Border>
                     <StackPanel x:Name="LeaderboardRows" />

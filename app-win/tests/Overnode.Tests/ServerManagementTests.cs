@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json;
+using Overnode.App.Localization;
 using Overnode.App.Models;
 using Overnode.App.Services;
 using Overnode.App.ViewModels;
@@ -120,6 +121,7 @@ public class ServerManagementTests
 
     public void Test_ServerSubdomain_And_Subuser()
     {
+        var loc = LocalizationManager.Instance;
         var subdomain = new ServerSubdomain
         {
             Subdomain = "play",
@@ -132,14 +134,26 @@ public class ServerManagementTests
             Email = "admin@overnode.fr",
             Permissions = new() { "*" }
         };
-        Assert.AreEqual("Toutes permissions (Admin)", subuserAdmin.PermissionsSummary);
 
         var subuserLimited = new ServerSubuser
         {
             Email = "helper@overnode.fr",
             Permissions = new() { "control.start", "control.stop" }
         };
+
+        loc.SetLanguage(AppLanguage.Fr);
+        Assert.AreEqual("Toutes permissions (Admin)", subuserAdmin.PermissionsSummary);
         Assert.AreEqual("2 permission(s)", subuserLimited.PermissionsSummary);
+        Assert.AreEqual("Actif", subdomain.StatusText);
+        Assert.AreEqual("2FA activé", subuserAdmin.TwoFactorStatusText);
+
+        loc.SetLanguage(AppLanguage.En);
+        Assert.AreEqual("All permissions (Admin)", subuserAdmin.PermissionsSummary);
+        Assert.AreEqual("2 permission(s)", subuserLimited.PermissionsSummary);
+        Assert.AreEqual("Active", subdomain.StatusText);
+        Assert.AreEqual("2FA enabled", subuserAdmin.TwoFactorStatusText);
+
+        loc.SetLanguage(AppLanguage.Fr);
     }
 
     public void Test_ServerDetailViewModel_DemoMode()

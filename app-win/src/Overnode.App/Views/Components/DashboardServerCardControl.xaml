@@ -119,7 +119,8 @@
                 <!-- Memory -->
                 <StackPanel Spacing="5">
                     <Grid>
-                        <TextBlock Text="Memory"
+                        <TextBlock x:Name="MemoryLabelText"
+                                   Text="Memory"
                                    FontSize="12"
                                    Foreground="{StaticResource OvernodeTextSecondaryBrush}"
                                    HorizontalAlignment="Left" />
@@ -141,7 +142,8 @@
                 <!-- CPU -->
                 <StackPanel Spacing="5">
                     <Grid>
-                        <TextBlock Text="CPU"
+                        <TextBlock x:Name="CpuLabelText"
+                                   Text="CPU"
                                    FontSize="12"
                                    Foreground="{StaticResource OvernodeTextSecondaryBrush}"
                                    HorizontalAlignment="Left" />
@@ -163,7 +165,8 @@
                 <!-- Disk -->
                 <StackPanel Spacing="5">
                     <Grid>
-                        <TextBlock Text="Disk"
+                        <TextBlock x:Name="DiskLabelText"
+                                   Text="Disk"
                                    FontSize="12"
                                    Foreground="{StaticResource OvernodeTextSecondaryBrush}"
                                    HorizontalAlignment="Left" />

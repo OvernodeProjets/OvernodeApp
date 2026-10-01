@@ -60,13 +60,13 @@
                 </Border>
 
                 <!-- Refresh Button -->
-                <Button Click="OnRefreshClicked"
+                <Button x:Name="RefreshButton"
+                        Click="OnRefreshClicked"
                         Background="{StaticResource OvernodeSecondaryCardBrush}"
                         BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
-                        Padding="8"
-                        ToolTipService.ToolTip="Actualiser">
+                        Padding="8">
                     <FontIcon Glyph="&#xE72C;" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                 </Button>
             </StackPanel>

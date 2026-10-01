@@ -68,7 +68,7 @@ public sealed class StoreService
         {
             Process.Start(new ProcessStartInfo
             {
-                FileName = "https://console.overnode.fr/coin/store",
+                FileName = "https://console.overnode.fr/coins/store",
                 UseShellExecute = true
             });
         }

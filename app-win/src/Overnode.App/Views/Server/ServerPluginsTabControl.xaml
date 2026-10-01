@@ -147,7 +147,7 @@
                                         VerticalAlignment="Center">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="#EF4444" />
-                                        <TextBlock Text="Désinstaller" FontSize="11.5" FontWeight="SemiBold" Foreground="#EF4444" />
+                                        <TextBlock Text="{x:Bind UninstallActionText}" FontSize="11.5" FontWeight="SemiBold" Foreground="#EF4444" />
                                     </StackPanel>
                                 </Button>
                             </Grid>
@@ -248,7 +248,7 @@
                                         VerticalAlignment="Center">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <FontIcon Glyph="&#xE896;" FontSize="11" />
-                                        <TextBlock Text="Installer" FontSize="11.5" FontWeight="SemiBold" />
+                                        <TextBlock Text="{x:Bind InstallActionText}" FontSize="11.5" FontWeight="SemiBold" />
                                     </StackPanel>
                                 </Button>
                             </Grid>

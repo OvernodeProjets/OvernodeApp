@@ -90,7 +90,7 @@
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                 <TextBlock Text="{x:Bind Action}" FontFamily="Consolas, Segoe UI" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <TextBlock Text="par" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                    <TextBlock Text="{x:Bind ByPrefix}" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                                     <TextBlock Text="{x:Bind Username}" FontSize="11" FontWeight="Medium" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                                 </StackPanel>
                             </StackPanel>

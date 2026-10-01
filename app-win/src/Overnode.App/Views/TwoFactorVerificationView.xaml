@@ -71,7 +71,8 @@
                                  KeyDown="CodeInput_KeyDown"
                                  TextChanged="CodeInput_TextChanged" />
                         
-                        <TextBlock Text="Code TOTP à 6 chiffres ou code de secours" 
+                        <TextBlock x:Name="TotpHintText"
+                                   Text="Code TOTP à 6 chiffres ou code de secours" 
                                    FontSize="11" 
                                    Foreground="#66707D" 
                                    HorizontalAlignment="Center" />

@@ -41,7 +41,7 @@
                         <Border Grid.Column="2" Background="#2022C55E" BorderBrush="#4022C55E" BorderThickness="1" CornerRadius="6" Padding="10,4" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <Ellipse Width="8" Height="8" Fill="{StaticResource OvernodeAccentSuccessBrush}" />
-                                <TextBlock Text="Session Active" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeAccentSuccessBrush}" />
+                                <TextBlock x:Name="LiveStatusText" Text="Session Active" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeAccentSuccessBrush}" />
                             </StackPanel>
                         </Border>
                     </Grid>

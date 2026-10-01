@@ -97,7 +97,7 @@
                                     <Border Background="#1A40C780" CornerRadius="4" Padding="6,2">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <FontIcon Glyph="&#xEA18;" FontSize="10" Foreground="#40C780" />
-                                            <TextBlock Text="2FA activé" FontSize="10" Foreground="#40C780" />
+                                            <TextBlock Text="{Binding TwoFactorStatusText}" FontSize="10" Foreground="#40C780" />
                                         </StackPanel>
                                     </Border>
 

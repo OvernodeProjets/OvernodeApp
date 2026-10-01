@@ -47,25 +47,25 @@
                     <Button.Flyout>
                         <Flyout x:Name="CreateTicketFlyout">
                             <StackPanel Width="360" Spacing="12" Padding="4">
-                                <TextBlock Text="Créer un ticket d'assistance" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                                <TextBlock x:Name="CreateTicketFlyoutTitle" Text="Créer un ticket d'assistance" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
 
                                 <StackPanel Spacing="4">
-                                    <TextBlock Text="Sujet" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                    <TextBlock x:Name="NewTicketSubjectLabel" Text="Sujet" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                                     <TextBox x:Name="NewTicketSubjectBox" PlaceholderText="Résumé de votre demande..." />
                                 </StackPanel>
 
                                 <StackPanel Spacing="4">
-                                    <TextBlock Text="Catégorie" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                    <TextBlock x:Name="NewTicketCategoryLabel" Text="Catégorie" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                                     <ComboBox x:Name="NewTicketCategoryCombo" HorizontalAlignment="Stretch" SelectedIndex="0">
-                                        <ComboBoxItem Content="Serveurs" />
-                                        <ComboBoxItem Content="Facturation &amp; Coins" />
-                                        <ComboBoxItem Content="Réseau &amp; DNS" />
-                                        <ComboBoxItem Content="Autre" />
+                                        <ComboBoxItem x:Name="CatServersItem" Content="Serveurs" />
+                                        <ComboBoxItem x:Name="CatBillingItem" Content="Facturation &amp; Coins" />
+                                        <ComboBoxItem x:Name="CatNetworkItem" Content="Réseau &amp; DNS" />
+                                        <ComboBoxItem x:Name="CatOtherItem" Content="Autre" />
                                     </ComboBox>
                                 </StackPanel>
 
                                 <StackPanel Spacing="4">
-                                    <TextBlock Text="Message" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                                    <TextBlock x:Name="NewTicketMessageLabel" Text="Message" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                                     <TextBox x:Name="NewTicketDescBox" AcceptsReturn="True" Height="90" PlaceholderText="Décrivez votre problème en détail..." />
                                 </StackPanel>
 
@@ -75,7 +75,7 @@
                                         BorderThickness="0"
                                         Padding="0,8"
                                         CornerRadius="6">
-                                    <TextBlock Text="Envoyer le ticket" FontSize="12.5" FontWeight="Bold" Foreground="#000000" />
+                                    <TextBlock x:Name="SubmitTicketBtnText" Text="Envoyer le ticket" FontSize="12.5" FontWeight="Bold" Foreground="#000000" />
                                 </Button>
                             </StackPanel>
                         </Flyout>
@@ -104,7 +104,7 @@
                     </Grid.RowDefinitions>
 
                     <Border Grid.Row="0" BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="0,0,0,1" Padding="14,10">
-                        <TextBlock Text="Vos Tickets Récents" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                        <TextBlock x:Name="RecentTicketsTitleText" Text="Vos Tickets Récents" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
                     </Border>
 
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
@@ -178,7 +178,7 @@
                                     Padding="14,8">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <FontIcon Glyph="&#xE724;" FontSize="11" Foreground="#000000" FontWeight="Bold" />
-                                    <TextBlock Text="Envoyer" FontSize="12.5" FontWeight="Bold" Foreground="#000000" />
+                                    <TextBlock x:Name="SendReplyBtnText" Text="Envoyer" FontSize="12.5" FontWeight="Bold" Foreground="#000000" />
                                 </StackPanel>
                             </Button>
                         </Grid>

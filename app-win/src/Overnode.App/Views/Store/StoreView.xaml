@@ -91,7 +91,7 @@
                         </StackPanel>
                         <TextBlock x:Name="RamPriceText" Text="600 coins" FontSize="18" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeGaugeRamBrush}" />
                         <Button x:Name="BuyRamBtn" Click="OnBuyRamClicked" HorizontalAlignment="Stretch" Padding="0,8" Background="#15FFFFFF" BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="1" CornerRadius="6">
-                            <TextBlock Text="Acheter" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                            <TextBlock x:Name="BuyRamText" Text="Acheter" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
                         </Button>
                     </StackPanel>
                 </Border>
@@ -108,7 +108,7 @@
                         </StackPanel>
                         <TextBlock x:Name="DiskPriceText" Text="400 coins" FontSize="18" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeGaugeDiskBrush}" />
                         <Button x:Name="BuyDiskBtn" Click="OnBuyDiskClicked" HorizontalAlignment="Stretch" Padding="0,8" Background="#15FFFFFF" BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="1" CornerRadius="6">
-                            <TextBlock Text="Acheter" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                            <TextBlock x:Name="BuyDiskText" Text="Acheter" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
                         </Button>
                     </StackPanel>
                 </Border>
@@ -125,7 +125,7 @@
                         </StackPanel>
                         <TextBlock x:Name="CpuPriceText" Text="500 coins" FontSize="18" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeGaugeCpuBrush}" />
                         <Button x:Name="BuyCpuBtn" Click="OnBuyCpuClicked" HorizontalAlignment="Stretch" Padding="0,8" Background="#15FFFFFF" BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="1" CornerRadius="6">
-                            <TextBlock Text="Acheter" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                            <TextBlock x:Name="BuyCpuText" Text="Acheter" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
                         </Button>
                     </StackPanel>
                 </Border>
@@ -142,7 +142,7 @@
                         </StackPanel>
                         <TextBlock x:Name="ServersPriceText" Text="200 coins" FontSize="18" FontWeight="Bold" FontFamily="Consolas" Foreground="{StaticResource OvernodeGaugeServersBrush}" />
                         <Button x:Name="BuyServersBtn" Click="OnBuyServersClicked" HorizontalAlignment="Stretch" Padding="0,8" Background="#15FFFFFF" BorderBrush="{StaticResource OvernodeBorderSubtleBrush}" BorderThickness="1" CornerRadius="6">
-                            <TextBlock Text="Acheter" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                            <TextBlock x:Name="BuyServersText" Text="Acheter" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
                         </Button>
                     </StackPanel>
                 </Border>

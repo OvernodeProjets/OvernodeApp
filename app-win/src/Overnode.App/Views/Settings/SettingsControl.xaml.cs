@@ -53,9 +53,12 @@ public sealed partial class SettingsControl : UserControl
     private void UpdateLocalization()
     {
         SettingsTitle.Text = _loc.GetString("nav_settings");
+        SettingsSubtitle.Text = _loc.GetString("settings_subtitle");
         LanguageTitle.Text = _loc.GetString("settings_language_title");
+        LanguageDesc.Text = _loc.GetString("settings_language_desc");
         AccountTitle.Text = _loc.GetString("account_info");
         LogoutButtonText.Text = _loc.GetString("nav_logout");
+        SecurityNoticeText.Text = _loc.GetString("settings_security_notice");
         ExternalEditorTitle.Text = _loc.GetString("settings_external_editor_title");
         ExternalEditorDesc.Text = _loc.GetString("settings_external_editor_desc");
         ExternalEditorChoiceLabel.Text = _loc.GetString("settings_external_editor_current");
@@ -69,6 +72,9 @@ public sealed partial class SettingsControl : UserControl
         QuickActionTitle.Text = _loc.GetString("settings_quickaction_title");
         QuickActionDesc.Text = _loc.GetString("settings_quickaction_desc");
         QuickActionSelectLabel.Text = _loc.GetString("settings_quickaction_select_label");
+        UpdateUserInfo();
+        PopulateExternalEditorsCombo();
+        UpdateQuickActionStatusCard();
     }
 
     private readonly List<ServerInstance> _servers = new();
@@ -179,19 +185,20 @@ public sealed partial class SettingsControl : UserControl
 
     private void UpdateUserInfo()
     {
+        string defaultRole = _loc.GetString("settings_role_member");
         if (_currentUser != null)
         {
             UsernameText.Text = _currentUser.DisplayName;
             UserInitialText.Text = _currentUser.Initial;
             UserEmailText.Text = !string.IsNullOrWhiteSpace(_currentUser.Email) ? _currentUser.Email : "email@overnode.fr";
-            UserRoleText.Text = !string.IsNullOrWhiteSpace(_currentUser.Role) ? _currentUser.Role.ToUpperInvariant() : "MEMBRE";
+            UserRoleText.Text = !string.IsNullOrWhiteSpace(_currentUser.Role) ? _currentUser.Role.ToUpperInvariant() : defaultRole;
         }
         else
         {
-            UsernameText.Text = "Utilisateur";
+            UsernameText.Text = _loc.CurrentLanguage == AppLanguage.En ? "User" : "Utilisateur";
             UserInitialText.Text = "U";
             UserEmailText.Text = "—";
-            UserRoleText.Text = "MEMBRE";
+            UserRoleText.Text = defaultRole;
         }
     }
 
@@ -229,7 +236,7 @@ public sealed partial class SettingsControl : UserControl
 
         var autoItem = new ComboBoxItem
         {
-            Content = $"Automatique ({activeName})",
+            Content = _loc.Format("settings_editor_auto", activeName),
             Tag = ""
         };
         ExternalEditorComboBox.Items.Add(autoItem);

@@ -100,6 +100,7 @@ public class Program
         Run("CreateServerViewModel Deploy Flow", () => deployTests.Test_CreateServerViewModel_DeployFlowAsync().GetAwaiter().GetResult());
 
         // 7. Localization Tests
+        var locTests = new LocalizationTests();
         Run("LocalizationManager French & English Translations", () =>
         {
             var loc = LocalizationManager.Instance;
@@ -117,6 +118,11 @@ public class Program
             // Revert to French
             loc.SetLanguage(AppLanguage.Fr);
         });
+        Run("Localization FR/EN Key Parity & No Duplicates", locTests.Test_FrEn_KeyParity_And_No_Duplicates);
+        Run("Localization No console.overnode.fr In Translations", locTests.Test_NoConsoleOvernodeFrInTranslations);
+        Run("Localization All Critical Keys Exist In FR and EN", locTests.Test_AllCriticalKeysExist);
+        Run("Localization Formatting & Persistence", locTests.Test_Formatting_And_Persistence);
+        Run("Localization Model Localized Properties", locTests.Test_ModelLocalizedProperties);
 
         // 8. Secondary Modules Tests (Wallet, DailyReward, Store, Support, NavigationTabs)
         var secondaryTests = new SecondaryModulesTests();

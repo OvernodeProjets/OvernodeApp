@@ -25,6 +25,11 @@ public sealed partial class CreateServerModalControl : UserControl
     {
         InitializeComponent();
         ViewModel.PropertyChanged += (_, _) => UpdateUI();
+        _loc.LanguageChanged += (_, _) =>
+        {
+            UpdateLocalizedStrings();
+            UpdateUI();
+        };
     }
 
     public async Task InitializeAsync()
