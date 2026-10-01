@@ -103,24 +103,67 @@ public class TrayQuickActionTests
 
         QuickActionServerStorage.Shared.SetSelectedServerIdentifier(null);
         manager.UpdateServers(testServers);
-        Assert.IsNull(manager.ActiveServer);
-
-        QuickActionServerStorage.Shared.SetSelectedServerIdentifier("srv-alpha");
+        // When multiple servers exist and no selection was stored, auto-selects first server
         Assert.IsNotNull(manager.ActiveServer);
         Assert.AreEqual("srv-alpha", manager.ActiveServer.Identifier);
         Assert.AreEqual("VPS Production", manager.ActiveServer.Name);
 
+        // Explicit switch to srv-beta
         QuickActionServerStorage.Shared.SetSelectedServerIdentifier("srv-beta");
         Assert.IsNotNull(manager.ActiveServer);
         Assert.AreEqual("srv-beta", manager.ActiveServer.Identifier);
 
-        QuickActionServerStorage.Shared.SetSelectedServerIdentifier(null);
+        // Switch back via SelectServerByIndex
+        manager.SelectServerByIndex(0);
+        Assert.IsNotNull(manager.ActiveServer);
+        Assert.AreEqual("srv-alpha", manager.ActiveServer.Identifier);
+        Assert.AreEqual("srv-alpha", QuickActionServerStorage.Shared.GetSelectedServerIdentifier());
+
+        // Switch to index 1 via menu command
+        manager.HandleMenuCommand(TrayIconManager.CMD_SELECT_SERVER_BASE + 1);
+        Assert.IsNotNull(manager.ActiveServer);
+        Assert.AreEqual("srv-beta", manager.ActiveServer.Identifier);
+
+        // When servers list is empty, active server is null
+        manager.UpdateServers(new List<ServerInstance>());
         Assert.IsNull(manager.ActiveServer);
+    }
+
+    public void Test_TrayIconManager_MultipleServersSwitching()
+    {
+        var manager = TrayIconManager.Shared;
+        var servers = new List<ServerInstance>
+        {
+            new() { Id = 1, Identifier = "srv-1", Name = "Server 1", State = "running" },
+            new() { Id = 2, Identifier = "srv-2", Name = "Server 2", State = "offline" },
+            new() { Id = 3, Identifier = "srv-3", Name = "Server 3", State = "running" }
+        };
+
+        QuickActionServerStorage.Shared.SetSelectedServerIdentifier(null);
+        manager.UpdateServers(servers);
+
+        // When storage is uninitialized, multiple servers defaults to the first
+        Assert.IsNotNull(manager.ActiveServer);
+        Assert.AreEqual("srv-1", manager.ActiveServer.Identifier);
+
+        // Switch to third server via command
+        manager.HandleMenuCommand(TrayIconManager.CMD_SELECT_SERVER_BASE + 2);
+        Assert.IsNotNull(manager.ActiveServer);
+        Assert.AreEqual("srv-3", manager.ActiveServer.Identifier);
+        Assert.AreEqual("srv-3", QuickActionServerStorage.Shared.GetSelectedServerIdentifier());
+
+        // Select invalid index (out of range) does not crash or change active server
+        manager.HandleMenuCommand(TrayIconManager.CMD_SELECT_SERVER_BASE + 99);
+        Assert.AreEqual("srv-3", manager.ActiveServer.Identifier);
+
+        QuickActionServerStorage.Shared.SetSelectedServerIdentifier(null);
+        manager.UpdateServers(new List<ServerInstance>());
     }
 
     public void Test_TrayIconManager_TooltipFormatting()
     {
         var manager = TrayIconManager.Shared;
+        manager.UpdateServers(new List<ServerInstance>());
         QuickActionServerStorage.Shared.SetSelectedServerIdentifier(null);
         manager.RefreshSelectedServer();
 
@@ -145,6 +188,7 @@ public class TrayQuickActionTests
         Assert.IsTrue(liveTip.Contains("Overnode -"));
 
         QuickActionServerStorage.Shared.SetSelectedServerIdentifier(null);
+        manager.UpdateServers(new List<ServerInstance>());
     }
 
     public void Test_TrayIconManager_LocalizedServerStates()
@@ -208,7 +252,10 @@ public class TrayQuickActionTests
             "menubar_action_kill",
             "menubar_action_kill_confirm",
             "menubar_open_app",
-            "menubar_quit"
+            "menubar_quit",
+            "menubar_servers_submenu",
+            "menubar_select_active",
+            "menubar_active_selected"
         };
 
         loc.SetLanguage(AppLanguage.Fr);

@@ -121,6 +121,13 @@ public sealed partial class SettingsControl : UserControl
             }
         }
 
+        // If no server was previously selected or found, default to first available server
+        if (selectedIndex == 0 && _servers.Count > 0)
+        {
+            selectedIndex = 1;
+            Services.QuickActionServerStorage.Shared.SetSelectedServerIdentifier(_servers[0].Identifier);
+        }
+
         QuickActionServerCombo.SelectedIndex = selectedIndex;
         QuickActionServerCombo.SelectionChanged += OnQuickActionServerChanged;
         UpdateQuickActionStatusCard();

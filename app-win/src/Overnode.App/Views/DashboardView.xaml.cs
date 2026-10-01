@@ -232,6 +232,7 @@ public sealed partial class DashboardView : UserControl
             : Visibility.Collapsed;
 
         TrayIconManager.Shared.UpdateServers(ViewModel.Servers);
+        SettingsViewContent.SetServers(ViewModel.Servers);
     }
 
     private void UpdatePlatformStats()

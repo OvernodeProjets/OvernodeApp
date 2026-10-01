@@ -13,6 +13,7 @@ Règles pour la gestion des serveurs dans les applications natives Overnode (mac
   - Le seul domaine autorisé et proposé en option dans le sélecteur est obligatoirement **`overnode.fr`**.
   - Ne JAMAIS mentionner "Cloudflare" ou "Cloudflare DNS" dans l'UI ou les statuts (utiliser sobrement "Actif" / "Active").
 - **Signaux d'alimentation & Console (Server Power & Live Console)**:
+  - La barre d'actions rapides du détail serveur propose les 3 boutons d'alimentation essentiels (Démarrer, Redémarrer, Arrêter). Ne pas ajouter de bouton superflu (ex: 4ème bouton avec warning / arrêt forcé direct).
   - L'envoi des signaux d'alimentation (`start`, `restart`, `stop`, `kill`) doit être transmis via WebSocket (`set state`) avec repli REST API.
   - L'état local affiché ne doit pas être révoqué si la connexion WebSocket est active.
   - Toutes les modifications de collections de logs console ou de métriques issues du WebSocket doivent obligatoirement être marshalisées sur le thread UI (via `SynchronizationContext` ou `DispatcherQueue`) pour éviter les violations de threading (ex: `COMException` 0x8001010E sous WinUI 3).

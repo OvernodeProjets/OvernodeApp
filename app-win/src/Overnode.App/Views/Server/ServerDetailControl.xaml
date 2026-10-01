@@ -98,17 +98,6 @@
                                 BorderThickness="0">
                             <FontIcon Glyph="&#xE71A;" FontSize="11" Foreground="White" />
                         </Button>
-
-                        <!-- Kill (Bolt) -->
-                        <Button x:Name="KillBtn"
-                                Click="OnKillClicked"
-                                Width="32" Height="32"
-                                Padding="0"
-                                CornerRadius="6"
-                                Background="#D9991B1B"
-                                BorderThickness="0">
-                            <FontIcon Glyph="&#xE7BA;" FontSize="11" Foreground="White" />
-                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>

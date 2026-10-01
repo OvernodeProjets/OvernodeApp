@@ -96,7 +96,6 @@ public sealed partial class ServerDetailControl : UserControl
         StartBtn.IsEnabled = srv.CanStart && state != "running" && state != "starting" && !isPowerLoading;
         RestartBtn.IsEnabled = srv.CanRestart && state == "running" && !isPowerLoading;
         StopBtn.IsEnabled = srv.CanStop && state != "offline" && !isPowerLoading;
-        KillBtn.IsEnabled = srv.CanStop && !isPowerLoading;
 
         StartIcon.Visibility = isPowerLoading ? Visibility.Collapsed : Visibility.Visible;
         StartProgress.Visibility = isPowerLoading ? Visibility.Visible : Visibility.Collapsed;
@@ -186,29 +185,6 @@ public sealed partial class ServerDetailControl : UserControl
         if (ViewModel != null)
         {
             await ViewModel.SendPowerSignalAsync(ServerPowerSignal.Stop);
-            UpdateHeaderUI();
-        }
-    }
-
-    private async void OnKillClicked(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel == null || XamlRoot == null) return;
-
-        var loc = LocalizationManager.Instance;
-        var dialog = new ContentDialog
-        {
-            XamlRoot = this.XamlRoot,
-            Title = loc.GetString("power_kill_confirm_title"),
-            Content = loc.GetString("power_kill_confirm_msg"),
-            PrimaryButtonText = loc.GetString("power_kill"),
-            CloseButtonText = loc.GetString("generic_cancel"),
-            DefaultButton = ContentDialogButton.Close
-        };
-
-        var result = await dialog.ShowAsync();
-        if (result == ContentDialogResult.Primary)
-        {
-            await ViewModel.SendPowerSignalAsync(ServerPowerSignal.Kill);
             UpdateHeaderUI();
         }
     }

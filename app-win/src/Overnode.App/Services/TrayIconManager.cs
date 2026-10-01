@@ -60,6 +60,8 @@ public sealed class TrayIconManager : IDisposable
     private const uint MF_DISABLED = 0x00000002;
     private const uint MF_ENABLED = 0x00000000;
     private const uint MF_SEPARATOR = 0x00000800;
+    private const uint MF_CHECKED = 0x00000008;
+    private const uint MF_POPUP = 0x00000010;
 
     private const uint TPM_RETURNCMD = 0x0100;
     private const uint TPM_RIGHTBUTTON = 0x0002;
@@ -91,6 +93,12 @@ public sealed class TrayIconManager : IDisposable
     public const int CMD_SETTINGS = 1021;
     public const int CMD_OPEN = 1030;
     public const int CMD_QUIT = 1031;
+
+    public const int CMD_SELECT_SERVER_BASE = 2000;
+    public const int CMD_SERVER_START_BASE = 3000;
+    public const int CMD_SERVER_STOP_BASE = 4000;
+    public const int CMD_SERVER_RESTART_BASE = 5000;
+    public const int CMD_MAX_SERVERS = 100;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct NOTIFYICONDATAW
@@ -339,6 +347,13 @@ public sealed class TrayIconManager : IDisposable
             _activeServer = null;
         }
 
+        // Automatically default to the first available server so Quick Actions is never empty when servers exist
+        if (_activeServer == null && _cachedServers.Count > 0)
+        {
+            _activeServer = _cachedServers[0];
+            QuickActionServerStorage.Shared.SetSelectedServerIdentifier(_activeServer.Identifier);
+        }
+
         UpdateTooltip();
     }
 
@@ -452,10 +467,12 @@ public sealed class TrayIconManager : IDisposable
 
             ServerInstance? srv;
             bool isPerforming;
+            List<ServerInstance> serversSnapshot;
             lock (_lock)
             {
                 srv = _activeServer;
                 isPerforming = _isPerformingAction;
+                serversSnapshot = new List<ServerInstance>(_cachedServers);
             }
 
             // 2. Server Details or Fallback
@@ -489,6 +506,63 @@ public sealed class TrayIconManager : IDisposable
                 // Force Kill Server
                 uint killFlags = MF_STRING | (!isPerforming ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
                 AppendMenuW(hMenu, killFlags, (UIntPtr)CMD_KILL, $"⚡ {_loc.GetString("menubar_action_kill")}");
+
+                // Multiple Servers Submenu
+                if (serversSnapshot.Count > 1)
+                {
+                    AppendMenuW(hMenu, MF_SEPARATOR, (UIntPtr)0, string.Empty);
+                    IntPtr hServersMenu = CreatePopupMenu();
+                    if (hServersMenu != IntPtr.Zero)
+                    {
+                        for (int i = 0; i < serversSnapshot.Count && i < CMD_MAX_SERVERS; i++)
+                        {
+                            var s = serversSnapshot[i];
+                            bool isCur = string.Equals(s.Identifier, srv.Identifier, StringComparison.OrdinalIgnoreCase);
+                            bool isSrvRunning = string.Equals(s.State, "running", StringComparison.OrdinalIgnoreCase);
+                            string dot = isSrvRunning ? "● " : "○ ";
+                            string srvStateStr = LocalizedServerState(s.State);
+                            string itemText = $"{dot}{s.Name} ({srvStateStr})";
+
+                            IntPtr hSrvSubMenu = CreatePopupMenu();
+                            if (hSrvSubMenu != IntPtr.Zero)
+                            {
+                                string sMemUsed = $"{s.MemoryUsedMB:F0}";
+                                string sMemLimit = $"{(int)s.MemoryLimitMB}";
+                                string sCpuUsed = $"{(int)s.CpuUsedPercent}";
+                                AppendMenuW(hSrvSubMenu, MF_STRING | MF_DISABLED | MF_GRAYED, (UIntPtr)0, $"CPU: {sCpuUsed}%   RAM: {sMemUsed}/{sMemLimit} MB");
+                                AppendMenuW(hSrvSubMenu, MF_SEPARATOR, (UIntPtr)0, string.Empty);
+
+                                uint selFlags = MF_STRING | (isCur ? MF_CHECKED : MF_ENABLED);
+                                string activeLabel = isCur
+                                    ? $"✓ {_loc.GetString("menubar_active_selected") ?? "Serveur actif"}"
+                                    : (_loc.GetString("menubar_select_active") ?? "Définir comme actif");
+                                AppendMenuW(hSrvSubMenu, selFlags, (UIntPtr)(CMD_SELECT_SERVER_BASE + i), activeLabel);
+
+                                AppendMenuW(hSrvSubMenu, MF_SEPARATOR, (UIntPtr)0, string.Empty);
+
+                                uint sStartFlags = MF_STRING | ((!isPerforming && !isSrvRunning) ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
+                                AppendMenuW(hSrvSubMenu, sStartFlags, (UIntPtr)(CMD_SERVER_START_BASE + i), $"▶  {_loc.GetString("menubar_action_start")}");
+
+                                uint sStopFlags = MF_STRING | ((!isPerforming && isSrvRunning) ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
+                                AppendMenuW(hSrvSubMenu, sStopFlags, (UIntPtr)(CMD_SERVER_STOP_BASE + i), $"■  {_loc.GetString("menubar_action_stop")}");
+
+                                uint sRestartFlags = MF_STRING | (!isPerforming ? MF_ENABLED : (MF_DISABLED | MF_GRAYED));
+                                AppendMenuW(hSrvSubMenu, sRestartFlags, (UIntPtr)(CMD_SERVER_RESTART_BASE + i), $"↺  {_loc.GetString("menubar_action_restart")}");
+
+                                uint subFlags = MF_POPUP | (isCur ? MF_CHECKED : MF_ENABLED);
+                                AppendMenuW(hServersMenu, subFlags, (UIntPtr)hSrvSubMenu, itemText);
+                            }
+                            else
+                            {
+                                uint itemFlags = MF_STRING | (isCur ? MF_CHECKED : MF_ENABLED);
+                                AppendMenuW(hServersMenu, itemFlags, (UIntPtr)(CMD_SELECT_SERVER_BASE + i), itemText);
+                            }
+                        }
+
+                        string serversTitle = _loc.GetString("menubar_servers_submenu") ?? "Serveurs";
+                        AppendMenuW(hMenu, MF_POPUP, (UIntPtr)hServersMenu, $"🗄  {serversTitle} ({serversSnapshot.Count})");
+                    }
+                }
             }
             else
             {
@@ -518,6 +592,34 @@ public sealed class TrayIconManager : IDisposable
 
     public void HandleMenuCommand(int cmd)
     {
+        if (cmd >= CMD_SELECT_SERVER_BASE && cmd < CMD_SELECT_SERVER_BASE + CMD_MAX_SERVERS)
+        {
+            int index = cmd - CMD_SELECT_SERVER_BASE;
+            SelectServerByIndex(index);
+            return;
+        }
+
+        if (cmd >= CMD_SERVER_START_BASE && cmd < CMD_SERVER_START_BASE + CMD_MAX_SERVERS)
+        {
+            int index = cmd - CMD_SERVER_START_BASE;
+            TriggerPowerSignalForServerIndex(index, ServerPowerSignal.Start);
+            return;
+        }
+
+        if (cmd >= CMD_SERVER_STOP_BASE && cmd < CMD_SERVER_STOP_BASE + CMD_MAX_SERVERS)
+        {
+            int index = cmd - CMD_SERVER_STOP_BASE;
+            TriggerPowerSignalForServerIndex(index, ServerPowerSignal.Stop);
+            return;
+        }
+
+        if (cmd >= CMD_SERVER_RESTART_BASE && cmd < CMD_SERVER_RESTART_BASE + CMD_MAX_SERVERS)
+        {
+            int index = cmd - CMD_SERVER_RESTART_BASE;
+            TriggerPowerSignalForServerIndex(index, ServerPowerSignal.Restart);
+            return;
+        }
+
         switch (cmd)
         {
             case CMD_START:
@@ -544,6 +646,37 @@ public sealed class TrayIconManager : IDisposable
         }
     }
 
+    public void SelectServerByIndex(int index)
+    {
+        lock (_lock)
+        {
+            if (index >= 0 && index < _cachedServers.Count)
+            {
+                var s = _cachedServers[index];
+                _activeServer = s;
+                QuickActionServerStorage.Shared.SetSelectedServerIdentifier(s.Identifier);
+            }
+        }
+        UpdateTooltip();
+        _ = RefreshActiveServerLiveStateAsync();
+    }
+
+    public void TriggerPowerSignalForServerIndex(int index, ServerPowerSignal signal)
+    {
+        ServerInstance? srv = null;
+        lock (_lock)
+        {
+            if (index >= 0 && index < _cachedServers.Count)
+            {
+                srv = _cachedServers[index];
+            }
+        }
+        if (srv != null)
+        {
+            TriggerPowerSignalForServer(srv, signal);
+        }
+    }
+
     private void HandleKillAction()
     {
         string title = _loc.GetString("power_kill_confirm_title") ?? "Confirmation";
@@ -561,8 +694,19 @@ public sealed class TrayIconManager : IDisposable
         ServerInstance? srv;
         lock (_lock)
         {
-            if (_activeServer == null || _isPerformingAction) return;
             srv = _activeServer;
+        }
+        if (srv != null)
+        {
+            TriggerPowerSignalForServer(srv, signal);
+        }
+    }
+
+    public void TriggerPowerSignalForServer(ServerInstance srv, ServerPowerSignal signal)
+    {
+        lock (_lock)
+        {
+            if (_isPerformingAction) return;
             _isPerformingAction = true;
         }
 
@@ -577,12 +721,13 @@ public sealed class TrayIconManager : IDisposable
                 {
                     lock (_lock)
                     {
-                        if (_activeServer != null && _activeServer.Identifier == srv.Identifier)
+                        var target = _cachedServers.FirstOrDefault(s => s.Identifier == srv.Identifier);
+                        if (target != null)
                         {
-                            _activeServer.State = live.Value.state;
-                            _activeServer.MemoryUsedMB = live.Value.memoryMB;
-                            _activeServer.CpuUsedPercent = live.Value.cpuPercent;
-                            _activeServer.DiskUsedMB = live.Value.diskMB;
+                            target.State = live.Value.state;
+                            target.MemoryUsedMB = live.Value.memoryMB;
+                            target.CpuUsedPercent = live.Value.cpuPercent;
+                            target.DiskUsedMB = live.Value.diskMB;
                         }
                     }
                 }

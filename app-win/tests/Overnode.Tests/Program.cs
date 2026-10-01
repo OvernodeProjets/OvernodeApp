@@ -144,6 +144,7 @@ public class Program
         Run("QuickAction ServerStorage Set & Get", trayTests.Test_QuickActionServerStorage_Basic);
         Run("QuickAction ServerStorage Notification", trayTests.Test_QuickActionServerStorage_Notification);
         Run("TrayIconManager UpdateServers & Active Server", trayTests.Test_TrayIconManager_UpdateServersAndActiveServer);
+        Run("TrayIconManager Multiple Servers Switching", trayTests.Test_TrayIconManager_MultipleServersSwitching);
         Run("TrayIconManager Tooltip Formatting", trayTests.Test_TrayIconManager_TooltipFormatting);
         Run("TrayIconManager Localized Server States", trayTests.Test_TrayIconManager_LocalizedServerStates);
         Run("TrayIconManager Menu Command Execution", trayTests.Test_TrayIconManager_MenuCommandExecution);
