@@ -50,8 +50,17 @@ jobs:
             $VERSION = "${{ inputs.version }}"
             $TAG = "v$VERSION"
           } else {
-            # Unique non-conflicting version for each run on main
-            $VERSION = "1.1.${{ github.run_number }}"
+            # Dynamically determine next non-conflicting SemVer version from all repository git tags
+            git fetch --tags --force
+            $latestTag = git tag -l "v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | Select-Object -First 1
+            if ($latestTag -match '^v?(\d+)\.(\d+)\.(\d+)$') {
+              $major = [int]$matches[1]
+              $minor = [int]$matches[2]
+              $patch = [int]$matches[3] + 1
+              $VERSION = "$major.$minor.$patch"
+            } else {
+              $VERSION = "1.1.51"
+            }
             $TAG = "v$VERSION"
           }
           Write-Host "==> Version unique résolue : $VERSION (Tag: $TAG)"

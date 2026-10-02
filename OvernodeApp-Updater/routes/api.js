@@ -31,7 +31,9 @@ router.get('/v1/update/check', async (req, res) => {
   // Check if GitHub has a newer release asset
   try {
     const releases = await github.fetchGitHubReleases();
-    const latestPlatformRel = releases.find(r => r.isRelease && (isWindows ? (r.msiUrl || r.windowsDownloadUrl) : (r.dmgUrl || r.zipUrl)));
+    const platformReleases = releases.filter(r => r.isRelease && (isWindows ? (r.msiUrl || r.windowsDownloadUrl) : (r.dmgUrl || r.zipUrl)));
+    platformReleases.sort((a, b) => github.compareVersions(b.version, a.version));
+    const latestPlatformRel = platformReleases[0];
     if (latestPlatformRel && github.compareVersions(latestPlatformRel.version, latestVersion) > 0) {
       latestVersion = latestPlatformRel.version;
       rawDownloadUrl = isWindows ? (latestPlatformRel.msiUrl || latestPlatformRel.windowsDownloadUrl) : (latestPlatformRel.dmgUrl || latestPlatformRel.downloadUrl);

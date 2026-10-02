@@ -93,6 +93,21 @@ async function runTests() {
   assert.strictEqual(macUntouched.currentVersion, '1.3.0');
   console.log('   ✓ Independent platform push passed');
 
+  // Test 8: SemVer sorting of multiple releases
+  console.log('8. Testing release sorting by SemVer descending...');
+  const mockReleases = [
+    { version: '1.1.12', isRelease: true },
+    { version: '1.1.50', isRelease: true },
+    { version: '1.1.14', isRelease: true },
+    { version: '1.1.9', isRelease: true }
+  ];
+  mockReleases.sort((a, b) => github.compareVersions(b.version, a.version));
+  assert.strictEqual(mockReleases[0].version, '1.1.50', 'Highest SemVer must be at index 0');
+  assert.strictEqual(mockReleases[1].version, '1.1.14', '1.1.14 should come before 1.1.12');
+  assert.strictEqual(mockReleases[2].version, '1.1.12', '1.1.12 should come before 1.1.9');
+  assert.strictEqual(mockReleases[3].version, '1.1.9', 'Lowest SemVer at end');
+  console.log('   ✓ Release sorting test passed');
+
   console.log('🎉 All OvernodeApp-Updater tests passed successfully!');
 }
 

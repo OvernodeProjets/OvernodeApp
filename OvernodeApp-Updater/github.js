@@ -59,7 +59,7 @@ async function fetchGitHubReleases(token) {
 
   // 1. Try to fetch official GitHub Releases
   try {
-    const url = `https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=15`;
+    const url = `https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=100`;
     const res = await axios.get(url, { headers: getHeaders(token), timeout: 8000 });
     
     if (Array.isArray(res.data) && res.data.length > 0) {
@@ -101,6 +101,8 @@ async function fetchGitHubReleases(token) {
           isRelease: true
         });
       });
+      // Sort official releases by SemVer descending so latest version is always prioritized
+      releasesList.sort((a, b) => compareVersions(b.version, a.version));
     }
   } catch (err) {
     console.warn(`[GitHub] Unable to fetch releases from ${GITHUB_REPO}: ${err.message}`);

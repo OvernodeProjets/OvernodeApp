@@ -51,8 +51,18 @@ jobs:
             VERSION="${{ inputs.version }}"
             TAG="v$VERSION"
           else
-            # Chaque commit sur main génère une version unique non conflictuelle : v1.1.<run_number>
-            VERSION="1.1.${{ github.run_number }}"
+            # Dynamically determine next non-conflicting SemVer version from all repository git tags
+            git fetch --tags --force
+            LATEST_TAG=$(git tag -l "v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | head -n 1)
+            if [[ "$LATEST_TAG" =~ ^v?([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              MAJOR="${BASH_REMATCH[1]}"
+              MINOR="${BASH_REMATCH[2]}"
+              PATCH="${BASH_REMATCH[3]}"
+              PATCH=$((PATCH + 1))
+              VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            else
+              VERSION="1.1.51"
+            fi
             TAG="v$VERSION"
           fi
           echo "==> Version unique résolue : $VERSION (Tag: $TAG)"

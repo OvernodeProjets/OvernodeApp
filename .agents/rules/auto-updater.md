@@ -33,6 +33,10 @@ Règles pour le système de mise à jour automatique, le site de gestion et la C
   - Vérification de l'icône d'application PE intégrée (`app_icon.ico`).
   - Packaging MSI natif via WiX Toolset v4+ avec raccourcis Menu Démarrer et Bureau.
   - Archivage `.zip` portable et calcul de somme de contrôle SHA256 pour la release.
+- **Versioning SemVer & Releases GitHub**:
+  - **CRITICAL**: Ne JAMAIS utiliser `github.run_number` pour définir les numéros de version car les compteurs sont isolés par workflow et écrasent silencieusement les anciennes releases.
+  - Déterminer systématiquement la version depuis les tags Git réels (`vX.Y.Z` explicite ou incrément automatique du patch sur le dernier tag SemVer existant).
+  - Le serveur `OvernodeApp-Updater` doit toujours trier les releases par ordre SemVer décroissant (`compareVersions`) avec un quota de récupération suffisant (`per_page=100`) pour garantir la détection de la version la plus haute.
 - **Cycle de Vie Client (macOS & Windows)**:
   - macOS : Vérification silencieuse à l'ouverture, modale Overnode, redémarrage via script nohup et support .dmg/.zip.
   - Windows : Vérification silencieuse à l'ouverture, modale Overnode WinUI 3 avec barre de progression, téléchargement et validation SHA256, exécution MSI passive via script détaché (`OVERNODE_AUTOUPDATE`), nettoyage préalable du System Tray (`TrayIconManager.Shared.Dispose()`), verrouillage par Mutex d'instance unique et relance automatique d'une seule instance de `Overnode.App.exe`.
