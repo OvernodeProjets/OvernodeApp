@@ -11,12 +11,38 @@ public class ServerFilesService
 {
     private static readonly Lazy<ServerFilesService> _instance = new(() => new ServerFilesService());
     public static ServerFilesService Shared => _instance.Value;
+    public static ServerFilesService Instance => _instance.Value;
 
     private readonly APIClient _client;
 
-    private ServerFilesService()
+    public ServerFilesService(APIClient? client = null)
     {
-        _client = APIClient.Shared;
+        _client = client ?? APIClient.Shared;
+    }
+
+    /// <summary>
+    /// Normalise un chemin de fichier distant pour Pterodactyl.
+    /// Pterodactyl Panel / Wings rejette les chemins débutant par un slash ('/') avec une erreur HTTP 400 Bad Request.
+    /// Cette méthode convertit également les antislashs Windows ('\') en slashs ('/') et élimine les slashs consécutifs.
+    /// </summary>
+    public static string NormalizeServerFilePath(string? filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+            return string.Empty;
+
+        // Normalise les antislashs Windows en slashs
+        string normalized = filePath.Trim().Replace('\\', '/');
+
+        // Réduit les slashs consécutifs
+        while (normalized.Contains("//", StringComparison.Ordinal))
+        {
+            normalized = normalized.Replace("//", "/");
+        }
+
+        // Pterodactyl exige un chemin relatif à la racine du serveur (aucun slash de début ou de fin)
+        normalized = normalized.Trim('/');
+
+        return normalized;
     }
 
     public async Task<List<ServerFileItem>> ListFilesAsync(string serverId, string directory = "/")
@@ -50,13 +76,23 @@ public class ServerFilesService
 
     public async Task<string> ReadFileAsync(string serverId, string filePath)
     {
-        string encodedPath = WebUtility.UrlEncode(filePath) ?? filePath;
+        string normalized = NormalizeServerFilePath(filePath);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            throw new ArgumentException("Chemin de fichier serveur invalide.", nameof(filePath));
+        }
+        string encodedPath = Uri.EscapeDataString(normalized);
         return await _client.GetStringAsync($"/api/server/{serverId}/files/contents?file={encodedPath}");
     }
 
     public async Task WriteFileAsync(string serverId, string filePath, string content)
     {
-        string encodedPath = WebUtility.UrlEncode(filePath) ?? filePath;
+        string normalized = NormalizeServerFilePath(filePath);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            throw new ArgumentException("Chemin de fichier serveur invalide.", nameof(filePath));
+        }
+        string encodedPath = Uri.EscapeDataString(normalized);
         await _client.PostTextAsync($"/api/server/{serverId}/files/write?file={encodedPath}", content);
     }
 

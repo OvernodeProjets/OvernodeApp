@@ -521,5 +521,34 @@ public class ServerManagementTests
         vm.SendPowerSignalAsync(ServerPowerSignal.Stop).GetAwaiter().GetResult();
         Assert.AreEqual("stopping", vm.Server.State);
     }
+
+    public void Test_ServerFilesService_NormalizeServerFilePath()
+    {
+        // Leading slashes stripped (Pterodactyl rejects leading slashes with HTTP 400)
+        Assert.AreEqual("server.properties", ServerFilesService.NormalizeServerFilePath("/server.properties"));
+        Assert.AreEqual("server.properties", ServerFilesService.NormalizeServerFilePath("///server.properties"));
+        Assert.AreEqual("server.properties", ServerFilesService.NormalizeServerFilePath("server.properties"));
+
+        // Nested subdirectories
+        Assert.AreEqual("plugins/Essentials/config.yml", ServerFilesService.NormalizeServerFilePath("/plugins/Essentials/config.yml"));
+        Assert.AreEqual("plugins/worldguard/config.yml", ServerFilesService.NormalizeServerFilePath(@"\plugins\worldguard\config.yml"));
+        Assert.AreEqual("plugins/worldguard/config.yml", ServerFilesService.NormalizeServerFilePath(@"\\plugins\\worldguard\\config.yml"));
+
+        // Redundant and trailing slashes
+        Assert.AreEqual("plugins/config.yml", ServerFilesService.NormalizeServerFilePath("/plugins//config.yml/"));
+        Assert.AreEqual("plugins/config.yml", ServerFilesService.NormalizeServerFilePath("///plugins///config.yml///"));
+
+        // Whitespace handling
+        Assert.AreEqual("server.properties", ServerFilesService.NormalizeServerFilePath("   /server.properties   "));
+        Assert.AreEqual("plugins/test space/file.txt", ServerFilesService.NormalizeServerFilePath("/plugins/test space/file.txt"));
+
+        // Empty / root-only paths
+        Assert.AreEqual(string.Empty, ServerFilesService.NormalizeServerFilePath(null));
+        Assert.AreEqual(string.Empty, ServerFilesService.NormalizeServerFilePath(""));
+        Assert.AreEqual(string.Empty, ServerFilesService.NormalizeServerFilePath("   "));
+        Assert.AreEqual(string.Empty, ServerFilesService.NormalizeServerFilePath("/"));
+        Assert.AreEqual(string.Empty, ServerFilesService.NormalizeServerFilePath("///"));
+        Assert.AreEqual(string.Empty, ServerFilesService.NormalizeServerFilePath(@"\\\"));
+    }
 }
 

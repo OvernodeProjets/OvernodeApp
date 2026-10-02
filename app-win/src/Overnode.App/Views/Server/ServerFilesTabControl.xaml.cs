@@ -159,6 +159,7 @@ public sealed partial class ServerFilesTabControl : UserControl
             {
                 FileSuccessText.Text = LocalizationManager.Instance.Format("files_synced_success", fileName);
                 FileSuccessBanner.Visibility = Visibility.Visible;
+                FileErrorBanner.Visibility = Visibility.Collapsed;
 
                 _ = Task.Run(async () =>
                 {
@@ -268,6 +269,7 @@ public sealed partial class ServerFilesTabControl : UserControl
                             {
                                 ViewModel.FileEditorContent = newContent;
                             }
+                            FileErrorBanner.Visibility = Visibility.Collapsed;
                         });
                     }
                     catch (Exception ex)
@@ -276,6 +278,7 @@ public sealed partial class ServerFilesTabControl : UserControl
                         {
                             FileErrorText.Text = LocalizationManager.Instance.Format("files_sync_failed", item.Name, ex.Message);
                             FileErrorBanner.Visibility = Visibility.Visible;
+                            FileSuccessBanner.Visibility = Visibility.Collapsed;
                         });
                         throw;
                     }

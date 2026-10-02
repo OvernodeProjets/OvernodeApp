@@ -204,7 +204,7 @@ public sealed class APIClient
 
     public async Task PostTextAsync(string endpoint, string text)
     {
-        using var content = new StringContent(text, Encoding.UTF8, "text/plain");
+        using var content = new StringContent(text ?? string.Empty, Encoding.UTF8, "text/plain");
         using var response = await _httpClient.PostAsync(endpoint, content);
         PersistCurrentCookies();
 

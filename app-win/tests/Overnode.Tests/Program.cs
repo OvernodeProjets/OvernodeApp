@@ -92,6 +92,7 @@ public class Program
         Run("PteroFileList Response Deserialization", mgmtTests.Test_PteroFileList_Deserialization);
         Run("ServerSubdomain & ServerSubuser Models", mgmtTests.Test_ServerSubdomain_And_Subuser);
         Run("ServerDetailViewModel Demo Mode Initialization", mgmtTests.Test_ServerDetailViewModel_DemoMode);
+        Run("ServerFilesService NormalizeServerFilePath (Pterodactyl root parity)", mgmtTests.Test_ServerFilesService_NormalizeServerFilePath);
 
         // 6. Server Deployment & Creation Tests
         var deployTests = new ServerDeploymentTests();
