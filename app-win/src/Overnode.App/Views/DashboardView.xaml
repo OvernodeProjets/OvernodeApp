@@ -14,7 +14,7 @@
     xmlns:settingsViews="using:Overnode.App.Views.Settings"
     mc:Ignorable="d">
 
-    <Grid Background="{StaticResource OvernodeBackgroundBrush}">
+    <Grid Background="{StaticResource OvernodeBackgroundBrush}" AllowDrop="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -26,7 +26,7 @@
                                      RefreshRequested="OnRefreshRequested" />
 
         <!-- Main Workspace (Sidebar + Content) -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" AllowDrop="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />

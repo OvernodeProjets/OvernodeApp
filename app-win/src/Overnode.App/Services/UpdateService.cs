@@ -218,11 +218,16 @@ $proc = Start-Process -FilePath msiexec.exe -ArgumentList $msiArgs -PassThru -Wa
 # 3. Determine executable to launch
 $targetExe = if (Test-Path $installedExe) { $installedExe } else { $fallbackExe }
 
-# 4. Relaunch the updated application once
+# 4. Relaunch the updated application once as standard user
 if (Test-Path $targetExe) {
     $running = Get-Process -Name "Overnode.App" -ErrorAction SilentlyContinue
     if (-not $running) {
-        Start-Process -FilePath $targetExe
+        try {
+            $shell = New-Object -ComObject Shell.Application
+            $shell.ShellExecute($targetExe, "", "", "open", 1)
+        } catch {
+            Start-Process -FilePath "explorer.exe" -ArgumentList "`"$targetExe`""
+        }
     }
 }
 

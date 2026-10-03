@@ -73,12 +73,7 @@
           Drop="OnFileBrowserDrop">
         <!-- Normal Files Browser View -->
         <StackPanel x:Name="FileBrowserContainer"
-                    Spacing="14"
-                    AllowDrop="True"
-                    DragEnter="OnFileBrowserDragEnter"
-                    DragOver="OnFileBrowserDragOver"
-                    DragLeave="OnFileBrowserDragLeave"
-                    Drop="OnFileBrowserDrop">
+                    Spacing="14">
             <!-- Breadcrumbs & Actions Bar -->
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -152,6 +147,33 @@
                             <TextBlock x:Name="NewFolderText" Text="Nouveau dossier" FontSize="12" FontWeight="SemiBold" Foreground="White" />
                         </StackPanel>
                     </Button>
+
+                    <!-- Upload Button with Flyout -->
+                    <DropDownButton x:Name="UploadDropDownBtn"
+                                    Background="{StaticResource OvernodeAccentGoldBrush}"
+                                    Foreground="#0B0D13"
+                                    FontWeight="SemiBold"
+                                    Padding="12,6"
+                                    CornerRadius="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE898;" FontSize="12" Foreground="#0B0D13" />
+                            <TextBlock x:Name="UploadBtnText" Text="Envoyer" FontSize="12" FontWeight="SemiBold" Foreground="#0B0D13" />
+                        </StackPanel>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                <MenuFlyoutItem x:Name="MenuUploadFiles" Text="Envoyer des fichiers..." Click="OnUploadFilesClicked">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE8E5;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem x:Name="MenuUploadFolder" Text="Envoyer un dossier..." Click="OnUploadFolderClicked">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xED25;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
                 </StackPanel>
             </Grid>
 
@@ -230,9 +252,10 @@
                     BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
-                    <FontIcon Glyph="&#xE8B7;" FontSize="32" Foreground="{StaticResource OvernodeTextMutedBrush}" />
-                    <TextBlock x:Name="FilesEmptyText" Text="Ce dossier est vide" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
+                    <FontIcon Glyph="&#xE8B7;" FontSize="36" Foreground="{StaticResource OvernodeTextMutedBrush}" />
+                    <TextBlock x:Name="FilesEmptyText" Text="Ce dossier est vide" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                    <TextBlock x:Name="FilesEmptySubtitleText" Text="Glissez-déposez vos fichiers ou dossiers ici, ou cliquez sur Envoyer" FontSize="12" Foreground="{StaticResource OvernodeTextMutedBrush}" />
                 </StackPanel>
             </Border>
 
@@ -242,18 +265,8 @@
                     BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
-                    Padding="4"
-                    AllowDrop="True"
-                    DragEnter="OnFileBrowserDragEnter"
-                    DragOver="OnFileBrowserDragOver"
-                    DragLeave="OnFileBrowserDragLeave"
-                    Drop="OnFileBrowserDrop">
-                <ItemsControl x:Name="FilesItemsControl"
-                              AllowDrop="True"
-                              DragEnter="OnFileBrowserDragEnter"
-                              DragOver="OnFileBrowserDragOver"
-                              DragLeave="OnFileBrowserDragLeave"
-                              Drop="OnFileBrowserDrop">
+                    Padding="4">
+                <ItemsControl x:Name="FilesItemsControl">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Click="OnFileRowClicked"

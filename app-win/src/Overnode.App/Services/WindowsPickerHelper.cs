@@ -15,6 +15,42 @@ public static class WindowsPickerHelper
     /// </summary>
     public static Func<IntPtr>? ActiveWindowHandleProvider { get; set; }
 
+    public static async Task<IReadOnlyList<string>?> PickMultipleFilesAsync(IntPtr hwnd = default)
+    {
+        try
+        {
+            var picker = new FileOpenPicker();
+            picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
+            picker.FileTypeFilter.Add("*");
+
+            IntPtr handle = hwnd != IntPtr.Zero ? hwnd : (ActiveWindowHandleProvider?.Invoke() ?? IntPtr.Zero);
+            if (handle != IntPtr.Zero)
+            {
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, handle);
+            }
+
+            var files = await picker.PickMultipleFilesAsync();
+            if (files != null && files.Count > 0)
+            {
+                var list = new System.Collections.Generic.List<string>(files.Count);
+                foreach (var file in files)
+                {
+                    if (!string.IsNullOrEmpty(file.Path))
+                    {
+                        list.Add(file.Path);
+                    }
+                }
+                return list;
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[WindowsPickerHelper] PickMultipleFilesAsync error: {ex.Message}");
+            return null;
+        }
+    }
+
     public static async Task<string?> PickExeFileAsync(IntPtr hwnd = default)
     {
         try

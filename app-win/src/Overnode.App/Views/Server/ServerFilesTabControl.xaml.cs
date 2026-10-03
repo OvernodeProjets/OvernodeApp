@@ -92,6 +92,10 @@ public sealed partial class ServerFilesTabControl : UserControl
         NewFolderNameBox.PlaceholderText = loc.GetString("files_folder_placeholder");
         DropOverlayTitleText.Text = loc.GetString("files_drop_zone_title");
         DropOverlaySubtitleText.Text = loc.GetString("files_drop_zone_subtitle");
+        UploadBtnText.Text = loc.GetString("files_upload_btn");
+        MenuUploadFiles.Text = loc.GetString("files_upload_files");
+        MenuUploadFolder.Text = loc.GetString("files_upload_folder");
+        FilesEmptySubtitleText.Text = loc.GetString("files_empty_subtitle");
     }
 
     public void UpdateUI()
@@ -287,6 +291,40 @@ public sealed partial class ServerFilesTabControl : UserControl
         finally
         {
             deferral.Complete();
+        }
+    }
+
+    private async void OnUploadFilesClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel == null) return;
+        try
+        {
+            var paths = await WindowsPickerHelper.PickMultipleFilesAsync();
+            if (paths != null && paths.Count > 0)
+            {
+                await ViewModel.UploadDroppedPathsAsync(paths);
+            }
+        }
+        catch (Exception ex)
+        {
+            ViewModel.FileErrorMessage = ex.Message;
+        }
+    }
+
+    private async void OnUploadFolderClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel == null) return;
+        try
+        {
+            var folderPath = await WindowsPickerHelper.PickFolderAsync();
+            if (!string.IsNullOrEmpty(folderPath))
+            {
+                await ViewModel.UploadDroppedPathsAsync(new List<string> { folderPath });
+            }
+        }
+        catch (Exception ex)
+        {
+            ViewModel.FileErrorMessage = ex.Message;
         }
     }
 

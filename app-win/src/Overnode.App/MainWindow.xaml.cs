@@ -28,7 +28,14 @@ public sealed partial class MainWindow : Window, Services.ITrayTarget
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hWnd);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool ChangeWindowMessageFilterEx(IntPtr hWnd, uint message, uint action, IntPtr pChangeFilterStruct);
+
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    private const uint WM_DROPFILES = 0x0233;
+    private const uint WM_COPYDATA = 0x004A;
+    private const uint WM_COPYGLOBALDATA = 0x0049;
+    private const uint MSGFLT_ALLOW = 1;
 
     private readonly Views.AuthView _authView = new();
     private readonly Views.TwoFactorVerificationView _twoFactorView = new();
@@ -122,6 +129,15 @@ public sealed partial class MainWindow : Window, Services.ITrayTarget
             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             CurrentWindowHandle = hWnd;
             Services.WindowsPickerHelper.ActiveWindowHandleProvider = () => CurrentWindowHandle;
+
+            try
+            {
+                ChangeWindowMessageFilterEx(hWnd, WM_DROPFILES, MSGFLT_ALLOW, IntPtr.Zero);
+                ChangeWindowMessageFilterEx(hWnd, WM_COPYDATA, MSGFLT_ALLOW, IntPtr.Zero);
+                ChangeWindowMessageFilterEx(hWnd, WM_COPYGLOBALDATA, MSGFLT_ALLOW, IntPtr.Zero);
+            }
+            catch { }
+
             int useDarkMode = 1;
             DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDarkMode, sizeof(int));
 
