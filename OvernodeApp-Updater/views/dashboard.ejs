@@ -677,7 +677,7 @@
             <div class="form-group">
               <label for="mac_downloadUrl">URL de l'archive macOS (.dmg ou .zip)</label>
               <input type="text" id="mac_downloadUrl" name="downloadUrl" required 
-                     value="<%= latestMacRelease ? (latestMacRelease.dmgUrl || latestMacRelease.zipUrl || latestMacRelease.downloadUrl) : macDeployment.downloadUrl %>" 
+                     value="<%= latestMacRelease ? (latestMacRelease.dmgUrl || latestMacRelease.macZipUrl || latestMacRelease.macDownloadUrl || macDeployment.downloadUrl) : macDeployment.downloadUrl %>" 
                      placeholder="https://.../Overnode-v1.1.0-macOS-arm64.dmg">
             </div>
           </div>
@@ -941,8 +941,8 @@ Windows : GET /api/v1/update/check?version=<%= winDeployment.currentVersion %>&a
         </thead>
         <tbody id="releasesTableBody">
           <% releases.forEach(function(rel) { 
-               const hasMac = Boolean(rel.dmgUrl || rel.zipUrl);
-               const hasWin = Boolean(rel.msiUrl || rel.windowsDownloadUrl);
+               const hasMac = Boolean(rel.hasMacAsset || rel.dmgUrl || rel.macZipUrl);
+               const hasWin = Boolean(rel.hasWinAsset || rel.msiUrl || rel.winZipUrl || rel.windowsDownloadUrl);
                const isMacActive = rel.version === macDeployment.currentVersion;
                const isWinActive = rel.version === winDeployment.currentVersion;
           %>
@@ -980,13 +980,13 @@ Windows : GET /api/v1/update/check?version=<%= winDeployment.currentVersion %>&a
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <% if (hasMac) { %>
                     <button type="button" class="btn-select" 
-                      onclick="selectMacRelease('<%= rel.version %>', '<%= rel.dmgUrl || rel.zipUrl || rel.downloadUrl %>', '<%= encodeURIComponent(rel.body) %>')">
+                      onclick="selectMacRelease('<%= rel.version %>', '<%= rel.dmgUrl || rel.macZipUrl || rel.macDownloadUrl || rel.downloadUrl %>', '<%= encodeURIComponent(rel.body) %>')">
                       🍎 Pour macOS
                     </button>
                   <% } %>
                   <% if (hasWin) { %>
                     <button type="button" class="btn-select btn-select-win" 
-                      onclick="selectWinRelease('<%= rel.version %>', '<%= rel.windowsDownloadUrl || rel.msiUrl || rel.downloadUrl %>', '<%= encodeURIComponent(rel.body) %>')">
+                      onclick="selectWinRelease('<%= rel.version %>', '<%= rel.msiUrl || rel.winZipUrl || rel.windowsDownloadUrl || rel.downloadUrl %>', '<%= encodeURIComponent(rel.body) %>')">
                       🪟 Pour Windows
                     </button>
                   <% } %>

@@ -27,8 +27,8 @@ router.get('/', async (req, res) => {
     const latestCommit = commits[0] || null;
 
     // Detect latest platform-specific releases
-    const latestMacRelease = releases.find(r => r.dmgUrl || r.zipUrl) || latestRelease;
-    const latestWinRelease = releases.find(r => r.msiUrl || r.windowsDownloadUrl) || latestRelease;
+    const latestMacRelease = releases.find(r => r.hasMacAsset || r.dmgUrl || r.macZipUrl) || null;
+    const latestWinRelease = releases.find(r => r.hasWinAsset || r.msiUrl || r.winZipUrl || r.windowsDownloadUrl) || null;
     
     const macComparison = latestMacRelease ? github.compareVersions(latestMacRelease.version, macDeployment.currentVersion) : 0;
     const winComparison = latestWinRelease ? github.compareVersions(latestWinRelease.version, winDeployment.currentVersion) : 0;

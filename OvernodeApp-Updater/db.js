@@ -204,8 +204,12 @@ function getDeployment(platform) {
 
   // macOS / Default
   const macPlat = deployment.platforms.macos || {};
-  const macVer = (macPlat.currentVersion || deployment.currentVersion || '1.0.0').replace(/^v/, '');
-  const macUrl = macPlat.downloadUrl || deployment.downloadUrl;
+  let macUrl = macPlat.downloadUrl || deployment.downloadUrl;
+  // Never serve a Windows installer (.msi) as macOS downloadUrl
+  if (macUrl && (macUrl.toLowerCase().endsWith('.msi') || macUrl.includes('Windows-x64'))) {
+    macUrl = macPlat.downloadUrl && !macPlat.downloadUrl.toLowerCase().endsWith('.msi') ? macPlat.downloadUrl : '';
+  }
+  const macVer = (macPlat.currentVersion || (deployment.downloadUrl && !deployment.downloadUrl.toLowerCase().endsWith('.msi') ? deployment.currentVersion : '1.0.0')).replace(/^v/, '');
   return {
     currentVersion: macVer,
     downloadUrl: macUrl,

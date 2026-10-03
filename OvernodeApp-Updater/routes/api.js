@@ -31,14 +31,18 @@ router.get('/v1/update/check', async (req, res) => {
   // Check if GitHub has a newer release asset
   try {
     const releases = await github.fetchGitHubReleases();
-    const platformReleases = releases.filter(r => r.isRelease && (isWindows ? (r.msiUrl || r.windowsDownloadUrl) : (r.dmgUrl || r.zipUrl)));
+    const platformReleases = releases.filter(r => r.isRelease && (isWindows ? r.hasWinAsset : r.hasMacAsset));
     platformReleases.sort((a, b) => github.compareVersions(b.version, a.version));
     const latestPlatformRel = platformReleases[0];
-    if (latestPlatformRel && github.compareVersions(latestPlatformRel.version, latestVersion) > 0) {
-      latestVersion = latestPlatformRel.version;
-      rawDownloadUrl = isWindows ? (latestPlatformRel.msiUrl || latestPlatformRel.windowsDownloadUrl) : (latestPlatformRel.dmgUrl || latestPlatformRel.downloadUrl);
-      releaseNotes = latestPlatformRel.body || releaseNotes;
-      publishedAt = latestPlatformRel.publishedAt || publishedAt;
+    if (latestPlatformRel) {
+      if (github.compareVersions(latestPlatformRel.version, latestVersion) > 0 || !rawDownloadUrl) {
+        latestVersion = latestPlatformRel.version;
+        rawDownloadUrl = isWindows 
+          ? (latestPlatformRel.msiUrl || latestPlatformRel.winZipUrl || latestPlatformRel.windowsDownloadUrl) 
+          : (latestPlatformRel.dmgUrl || latestPlatformRel.macZipUrl || latestPlatformRel.macDownloadUrl || latestPlatformRel.downloadUrl);
+        releaseNotes = latestPlatformRel.body || releaseNotes;
+        publishedAt = latestPlatformRel.publishedAt || publishedAt;
+      }
     }
   } catch (err) {
     console.warn('[Update Check] GitHub releases check fallback:', err.message);
@@ -76,34 +80,44 @@ router.get('/v1/update/download', async (req, res) => {
 
   try {
     const releases = await github.fetchGitHubReleases();
-    const rel = releases.find(r => r.isRelease && r.version === deployment.currentVersion) || releases.find(r => r.isRelease) || releases[0];
+    const platformReleases = releases.filter(r => r.isRelease && (isWindows ? r.hasWinAsset : r.hasMacAsset));
+    platformReleases.sort((a, b) => github.compareVersions(b.version, a.version));
+
+    // Prefer release matching deployment.currentVersion, or latest available for this platform
+    const rel = platformReleases.find(r => r.version === deployment.currentVersion) || platformReleases[0];
     
     if (rel && rel.id && typeof rel.id === 'number') {
-      let targetAssetId;
-      let filename;
-      let contentType;
+      let targetAssetId = null;
+      let filename = null;
+      let contentType = null;
 
       if (isWindows) {
         if (requestedType === 'zip') {
-          targetAssetId = rel.winZipAssetId || rel.zipAssetId || rel.assetId;
-          filename = `Overnode-v${deployment.currentVersion}-Windows-x64.zip`;
+          targetAssetId = rel.winZipAssetId || rel.msiAssetId;
+          filename = `Overnode-v${rel.version}-Windows-x64.zip`;
           contentType = 'application/zip';
         } else if (requestedType === 'exe') {
-          targetAssetId = rel.exeAssetId || rel.assetId;
-          filename = `Overnode-v${deployment.currentVersion}-Windows-x64.exe`;
+          targetAssetId = rel.exeAssetId || rel.msiAssetId;
+          filename = `Overnode-v${rel.version}-Windows-x64.exe`;
           contentType = 'application/vnd.microsoft.portable-executable';
         } else {
           // Default Windows installer is MSI
-          targetAssetId = rel.msiAssetId || rel.assetId;
-          filename = `Overnode-v${deployment.currentVersion}-Windows-x64.msi`;
+          targetAssetId = rel.msiAssetId || rel.winZipAssetId;
+          filename = `Overnode-v${rel.version}-Windows-x64.msi`;
           contentType = 'application/x-msi';
         }
       } else {
-        targetAssetId = requestedType === 'zip' ? (rel.zipAssetId || rel.assetId) : (rel.dmgAssetId || rel.assetId);
-        filename = (requestedType === 'zip') 
-          ? `Overnode-v${deployment.currentVersion}-macOS-arm64.zip` 
-          : `Overnode-v${deployment.currentVersion}-macOS-arm64.dmg`;
-        contentType = requestedType === 'zip' ? 'application/zip' : 'application/x-apple-diskimage';
+        // macOS
+        if (requestedType === 'zip') {
+          targetAssetId = rel.macZipAssetId || rel.dmgAssetId;
+          filename = `Overnode-v${rel.version}-macOS-arm64.zip`;
+          contentType = 'application/zip';
+        } else {
+          // Default macOS installer is DMG
+          targetAssetId = rel.dmgAssetId || rel.macZipAssetId;
+          filename = `Overnode-v${rel.version}-macOS-arm64.dmg`;
+          contentType = 'application/x-apple-diskimage';
+        }
       }
       
       if (targetAssetId) {
@@ -127,7 +141,10 @@ router.get('/v1/update/download', async (req, res) => {
   }
 
   // Fallback to configured URL
-  res.redirect(deployment.downloadUrl);
+  if (deployment.downloadUrl) {
+    return res.redirect(deployment.downloadUrl);
+  }
+  res.status(404).send('Mise à jour introuvable pour cette plateforme.');
 });
 
 // Current deployment info

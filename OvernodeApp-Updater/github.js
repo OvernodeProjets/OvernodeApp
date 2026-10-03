@@ -64,16 +64,34 @@ async function fetchGitHubReleases(token) {
     
     if (Array.isArray(res.data) && res.data.length > 0) {
       res.data.forEach(r => {
-        const dmgAsset = r.assets.find(a => a.name.endsWith('.dmg'));
-        const macZipAsset = r.assets.find(a => a.name.endsWith('.zip') && !a.name.toLowerCase().includes('win'));
-        const msiAsset = r.assets.find(a => a.name.endsWith('.msi'));
-        const winZipAsset = r.assets.find(a => a.name.endsWith('.zip') && a.name.toLowerCase().includes('win'));
-        const exeAsset = r.assets.find(a => a.name.endsWith('.exe'));
-        const generalZipAsset = r.assets.find(a => a.name.endsWith('.zip'));
+        const assets = Array.isArray(r.assets) ? r.assets : [];
 
-        const chosenMacAsset = dmgAsset || macZipAsset || generalZipAsset;
-        const chosenWinAsset = msiAsset || winZipAsset || exeAsset;
-        const chosenAsset = chosenMacAsset || chosenWinAsset;
+        // macOS Assets: .dmg or macOS-specific .zip
+        const dmgAsset = assets.find(a => a.name && a.name.toLowerCase().endsWith('.dmg'));
+        const macZipAsset = assets.find(a => {
+          if (!a.name || !a.name.toLowerCase().endsWith('.zip')) return false;
+          const nameLower = a.name.toLowerCase();
+          // Explicit macOS tags
+          if (nameLower.includes('mac') || nameLower.includes('darwin') || nameLower.includes('apple')) return true;
+          // Must not contain Windows indicators
+          return !nameLower.includes('win') && !nameLower.includes('windows');
+        });
+
+        // Windows Assets: .msi, Windows-specific .zip, or .exe
+        const msiAsset = assets.find(a => a.name && a.name.toLowerCase().endsWith('.msi'));
+        const winZipAsset = assets.find(a => {
+          if (!a.name || !a.name.toLowerCase().endsWith('.zip')) return false;
+          const nameLower = a.name.toLowerCase();
+          return nameLower.includes('win') || nameLower.includes('windows');
+        });
+        const exeAsset = assets.find(a => a.name && a.name.toLowerCase().endsWith('.exe'));
+
+        const hasMacAsset = Boolean(dmgAsset || macZipAsset);
+        const hasWinAsset = Boolean(msiAsset || winZipAsset || exeAsset);
+
+        const chosenMacAsset = dmgAsset || macZipAsset || null;
+        const chosenWinAsset = msiAsset || winZipAsset || exeAsset || null;
+        const chosenAsset = chosenMacAsset || chosenWinAsset || null;
 
         releasesList.push({
           id: r.id,
@@ -82,16 +100,21 @@ async function fetchGitHubReleases(token) {
           name: r.name || r.tag_name,
           body: r.body || '',
           publishedAt: r.published_at || r.created_at,
+          hasMacAsset,
+          hasWinAsset,
           downloadUrl: chosenMacAsset ? chosenMacAsset.browser_download_url : (chosenWinAsset ? chosenWinAsset.browser_download_url : (r.tarball_url || '')),
+          macDownloadUrl: chosenMacAsset ? chosenMacAsset.browser_download_url : null,
           dmgUrl: dmgAsset ? dmgAsset.browser_download_url : null,
-          zipUrl: (macZipAsset || generalZipAsset) ? (macZipAsset || generalZipAsset).browser_download_url : null,
+          zipUrl: macZipAsset ? macZipAsset.browser_download_url : null,
+          macZipUrl: macZipAsset ? macZipAsset.browser_download_url : null,
           msiUrl: msiAsset ? msiAsset.browser_download_url : null,
           winZipUrl: winZipAsset ? winZipAsset.browser_download_url : null,
           exeUrl: exeAsset ? exeAsset.browser_download_url : null,
           windowsDownloadUrl: chosenWinAsset ? chosenWinAsset.browser_download_url : null,
           assetId: chosenAsset ? chosenAsset.id : null,
           dmgAssetId: dmgAsset ? dmgAsset.id : null,
-          zipAssetId: (macZipAsset || generalZipAsset) ? (macZipAsset || generalZipAsset).id : null,
+          zipAssetId: macZipAsset ? macZipAsset.id : null,
+          macZipAssetId: macZipAsset ? macZipAsset.id : null,
           msiAssetId: msiAsset ? msiAsset.id : null,
           winZipAssetId: winZipAsset ? winZipAsset.id : null,
           exeAssetId: exeAsset ? exeAsset.id : null,
@@ -125,9 +148,13 @@ async function fetchGitHubReleases(token) {
         name: `Commit ${latestCommit.shortSha} : ${commitTitle}`,
         body: `• ${latestCommit.message}\n• Auteur: ${latestCommit.authorName}\n• Commit: ${latestCommit.shortSha}`,
         publishedAt: latestCommit.date,
+        hasMacAsset: true,
+        hasWinAsset: true,
         downloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v${derivedVersion}/Overnode-v${derivedVersion}-macOS-arm64.dmg`,
+        macDownloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v${derivedVersion}/Overnode-v${derivedVersion}-macOS-arm64.dmg`,
         dmgUrl: `https://github.com/${GITHUB_REPO}/releases/download/v${derivedVersion}/Overnode-v${derivedVersion}-macOS-arm64.dmg`,
         zipUrl: `https://github.com/${GITHUB_REPO}/releases/download/v${derivedVersion}/Overnode-v${derivedVersion}-macOS-arm64.zip`,
+        macZipUrl: `https://github.com/${GITHUB_REPO}/releases/download/v${derivedVersion}/Overnode-v${derivedVersion}-macOS-arm64.zip`,
         msiUrl: `https://github.com/${GITHUB_REPO}/releases/download/v${derivedVersion}/Overnode-v${derivedVersion}-Windows-x64.msi`,
         windowsDownloadUrl: `https://github.com/${GITHUB_REPO}/releases/download/v${derivedVersion}/Overnode-v${derivedVersion}-Windows-x64.msi`,
         assetName: `Overnode-v${derivedVersion}-macOS-arm64.dmg`,

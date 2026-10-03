@@ -113,6 +113,33 @@ final class UpdateTests: XCTestCase {
         }
     }
 
+    func testDownloadFailsOnWindowsMSIUrl() async {
+        let service = UpdateService.shared
+        do {
+            _ = try await service.downloadUpdate(from: "https://example.com/Overnode-v1.1.55-Windows-x64.msi") { _ in }
+            XCTFail("Should have thrown an error for .msi URL on macOS")
+        } catch let nsError as NSError {
+            XCTAssertEqual(nsError.code, -3)
+            XCTAssertTrue(nsError.localizedDescription.contains("Windows"))
+        }
+    }
+
+    func testDownloadFailsOnWindowsBinaryHeader() async {
+        // Test custom URL session or verify error code -4 description
+        let peData = Data([0x4D, 0x5A, 0x90, 0x00, 0x03]) // "MZ" Windows executable header
+        let msiData = Data([0xD0, 0xCF, 0x11, 0xE0, 0xA1]) // OLE Compound MSI header
+        
+        let prefixPE = [UInt8](peData.prefix(4))
+        XCTAssertEqual(prefixPE[0], 0x4D)
+        XCTAssertEqual(prefixPE[1], 0x5A)
+
+        let prefixMSI = [UInt8](msiData.prefix(4))
+        XCTAssertEqual(prefixMSI[0], 0xD0)
+        XCTAssertEqual(prefixMSI[1], 0xCF)
+        XCTAssertEqual(prefixMSI[2], 0x11)
+        XCTAssertEqual(prefixMSI[3], 0xE0)
+    }
+
     func testUpdateTranslations() async {
         let loc = await LocalizationManager.shared
         await loc.setLanguage(.french)

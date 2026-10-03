@@ -40,4 +40,10 @@ Règles pour le système de mise à jour automatique, le site de gestion et la C
 - **Cycle de Vie Client (macOS & Windows)**:
   - macOS : Vérification silencieuse à l'ouverture, modale Overnode, redémarrage via script nohup et support .dmg/.zip.
   - Windows : Vérification silencieuse à l'ouverture, modale Overnode WinUI 3 avec barre de progression, téléchargement et validation SHA256, exécution MSI passive via script détaché (`OVERNODE_AUTOUPDATE`), nettoyage préalable du System Tray (`TrayIconManager.Shared.Dispose()`), verrouillage par Mutex d'instance unique et relance automatique d'une seule instance de `Overnode.App.exe`.
+- **Isolation Stricte des Plateformes (macOS vs Windows)**:
+  - **CRITICAL**: Les releases GitHub peuvent être indépendantes et asynchrones par plateforme (ex: commit ciblant uniquement `app-win/**` générant un tag `v1.1.55` avec uniquement des assets Windows `.msi` et `.zip`).
+  - Le serveur `OvernodeApp-Updater` DOIT filtrer strictement les releases par présence d'assets compatibles avec la plateforme (`hasMacAsset` pour `darwin-arm64`, `hasWinAsset` pour `win-x64`).
+  - Une release Windows ne doit JAMAIS être notifiée à macOS, et une release macOS ne doit JAMAIS être notifiée à Windows.
+  - Le proxy de téléchargement (`/api/v1/update/download`) ne doit JAMAIS servir un asset Windows à macOS ni un asset macOS à Windows.
+  - L'application macOS (`UpdateService.swift`) applique une défense en profondeur rejetant activement toute URL `.msi`/`.exe` ou binaire contenant des signatures PE/MSI.
 

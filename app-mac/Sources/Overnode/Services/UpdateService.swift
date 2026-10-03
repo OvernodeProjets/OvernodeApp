@@ -51,7 +51,26 @@ public final class UpdateService: @unchecked Sendable {
             guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
                 throw URLError(.badServerResponse)
             }
-            return try JSONDecoder().decode(UpdateCheckResponse.self, from: data)
+            let update = try JSONDecoder().decode(UpdateCheckResponse.self, from: data)
+            
+            // Client-side safety: Verify the update is actually compatible with macOS
+            if update.updateAvailable {
+                let lowerUrl = update.downloadUrl.lowercased()
+                let isWindowsOnly = lowerUrl.contains(".msi") || lowerUrl.contains(".exe") || (lowerUrl.contains("windows-x64") && !lowerUrl.contains("darwin") && !lowerUrl.contains("macos"))
+                if isWindowsOnly {
+                    return UpdateCheckResponse(
+                        updateAvailable: false,
+                        clientVersion: update.clientVersion,
+                        latestVersion: update.clientVersion,
+                        downloadUrl: update.downloadUrl,
+                        releaseNotes: update.releaseNotes,
+                        mandatory: false,
+                        sha256: update.sha256,
+                        publishedAt: update.publishedAt
+                    )
+                }
+            }
+            return update
         } catch {
             // Fallback in demo/snapshot test mode
             if ProcessInfo.processInfo.environment["OVERNODE_DEMO"] != nil {
@@ -75,6 +94,15 @@ public final class UpdateService: @unchecked Sendable {
     ) async throws -> URL {
         guard let url = URL(string: urlString) else {
             throw URLError(.badURL)
+        }
+        
+        let lowerUrl = urlString.lowercased()
+        if lowerUrl.contains(".msi") || lowerUrl.contains(".exe") {
+            throw NSError(
+                domain: "OvernodeUpdater",
+                code: -3,
+                userInfo: [NSLocalizedDescriptionKey: "Format de mise à jour incompatible avec macOS (fichier Windows détecté)."]
+            )
         }
         
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -122,6 +150,19 @@ public final class UpdateService: @unchecked Sendable {
                 code: -1,
                 userInfo: [NSLocalizedDescriptionKey: "Fichier de mise à jour incomplet ou corrompu (taille: \(fileData.count) octets)."]
             )
+        }
+        
+        // Additional integrity check: verify file header is not an MSI/Windows PE file
+        if fileData.count >= 4 {
+            let prefix = [UInt8](fileData.prefix(4))
+            if (prefix[0] == 0x4D && prefix[1] == 0x5A) || 
+               (prefix[0] == 0xD0 && prefix[1] == 0xCF && prefix[2] == 0x11 && prefix[3] == 0xE0) {
+                throw NSError(
+                    domain: "OvernodeUpdater",
+                    code: -4,
+                    userInfo: [NSLocalizedDescriptionKey: "Le fichier téléchargé est un exécutable/installeur Windows (.msi/.exe) et ne peut pas être installé sur macOS."]
+                )
+            }
         }
         
         onProgress(1.0)
