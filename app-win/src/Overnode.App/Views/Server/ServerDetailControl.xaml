@@ -130,12 +130,13 @@
         <!-- Main Tab Content Body -->
         <ScrollViewer Grid.Row="1"
                       Padding="24"
+                      AllowDrop="True"
                       VerticalScrollBarVisibility="Hidden"
                       HorizontalScrollBarVisibility="Disabled">
-            <Grid>
+            <Grid AllowDrop="True">
                 <serverViews:ServerConsoleTabControl x:Name="ConsoleTab" Visibility="Collapsed" />
                 <serverViews:ServerRenewalTabControl x:Name="RenewalTab" Visibility="Collapsed" />
-                <serverViews:ServerFilesTabControl x:Name="FilesTab" Visibility="Collapsed" />
+                <serverViews:ServerFilesTabControl x:Name="FilesTab" Visibility="Collapsed" AllowDrop="True" />
                 <serverViews:ServerSubdomainsTabControl x:Name="SubdomainsTab" Visibility="Collapsed" />
                 <serverViews:ServerSubusersTabControl x:Name="SubusersTab" Visibility="Collapsed" />
                 <serverViews:ServerPackageTabControl x:Name="PackageTab" Visibility="Collapsed" />

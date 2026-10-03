@@ -42,7 +42,7 @@
                                        LogoutRequested="OnLogoutRequested" />
 
             <!-- Content Area -->
-            <Grid Grid.Column="1">
+            <Grid Grid.Column="1" AllowDrop="True">
                 <!-- Overview / Dashboard Tab -->
                 <ScrollViewer x:Name="OverviewContent"
                               VerticalScrollBarVisibility="Hidden"
@@ -335,7 +335,7 @@
                 <settingsViews:SettingsControl x:Name="SettingsViewContent" Visibility="Collapsed" />
 
                 <!-- Detailed Server Management View -->
-                <serverViews:ServerDetailControl x:Name="ServerDetailView" Visibility="Collapsed" />
+                <serverViews:ServerDetailControl x:Name="ServerDetailView" Visibility="Collapsed" AllowDrop="True" />
             </Grid>
         </Grid>
 

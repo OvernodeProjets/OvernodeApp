@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Foundation;
 using Overnode.App.Localization;
 using Overnode.App.Models;
 using Overnode.App.Services;
@@ -216,46 +217,76 @@ public sealed partial class ServerFilesTabControl : UserControl
     }
 
     // Drag & Drop
+    private int _dragDepth = 0;
+
+    private void OnFileBrowserDragEnter(object sender, DragEventArgs e)
+    {
+        _dragDepth++;
+        e.AcceptedOperation = DataPackageOperation.Copy;
+        e.DragUIOverride.Caption = LocalizationManager.Instance.GetString("files_drop_zone_title");
+        e.DragUIOverride.IsCaptionVisible = true;
+        e.DragUIOverride.IsContentVisible = true;
+        e.Handled = true;
+        FileDropOverlay.Visibility = Visibility.Visible;
+    }
+
     private void OnFileBrowserDragOver(object sender, DragEventArgs e)
     {
-        if (e.DataView.Contains(StandardDataFormats.StorageItems))
-        {
-            e.AcceptedOperation = DataPackageOperation.Copy;
-            e.DragUIOverride.Caption = LocalizationManager.Instance.GetString("files_drop_zone_title");
-            e.DragUIOverride.IsCaptionVisible = true;
-            e.DragUIOverride.IsContentVisible = true;
-            FileDropOverlay.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            e.AcceptedOperation = DataPackageOperation.None;
-        }
+        e.AcceptedOperation = DataPackageOperation.Copy;
+        e.DragUIOverride.Caption = LocalizationManager.Instance.GetString("files_drop_zone_title");
+        e.DragUIOverride.IsCaptionVisible = true;
+        e.DragUIOverride.IsContentVisible = true;
+        e.Handled = true;
+        FileDropOverlay.Visibility = Visibility.Visible;
     }
 
     private void OnFileBrowserDragLeave(object sender, DragEventArgs e)
     {
-        FileDropOverlay.Visibility = Visibility.Collapsed;
+        _dragDepth = Math.Max(0, _dragDepth - 1);
+        if (_dragDepth == 0)
+        {
+            FileDropOverlay.Visibility = Visibility.Collapsed;
+        }
+        e.Handled = true;
     }
 
     private async void OnFileBrowserDrop(object sender, DragEventArgs e)
     {
+        _dragDepth = 0;
         FileDropOverlay.Visibility = Visibility.Collapsed;
+        e.Handled = true;
+        var deferral = e.GetDeferral();
 
-        if (e.DataView.Contains(StandardDataFormats.StorageItems) && ViewModel != null)
+        try
         {
-            try
+            var paths = new List<string>();
+            if (e.DataView.Contains(StandardDataFormats.StorageItems))
             {
                 var items = await e.DataView.GetStorageItemsAsync();
-                var paths = items.Select(i => i.Path).Where(p => !string.IsNullOrEmpty(p)).ToList();
-                if (paths.Count > 0)
+                foreach (var item in items)
                 {
-                    await ViewModel.UploadDroppedPathsAsync(paths);
+                    if (!string.IsNullOrEmpty(item.Path))
+                    {
+                        paths.Add(item.Path);
+                    }
                 }
             }
-            catch (Exception ex)
+
+            if (paths.Count > 0 && ViewModel != null)
+            {
+                await ViewModel.UploadDroppedPathsAsync(paths);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (ViewModel != null)
             {
                 ViewModel.FileErrorMessage = ex.Message;
             }
+        }
+        finally
+        {
+            deferral.Complete();
         }
     }
 
@@ -300,12 +331,49 @@ public sealed partial class ServerFilesTabControl : UserControl
         }
     }
 
-    private void OnFileRowContextMenuOpening(object? sender, object e)
+    private ServerFileItem? _activeContextItem;
+
+    private void OnFileRowRightTapped(object sender, Microsoft.UI.Xaml.Input.RightTappedRoutedEventArgs e)
     {
-        if (sender is MenuFlyout flyout && flyout.Target is FrameworkElement fe && fe.DataContext is ServerFileItem item)
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item)
         {
-            bool isFile = item.IsFile;
-            bool isSynced = item.IsSynced;
+            ShowItemContextMenu(fe, item, e.GetPosition(fe));
+            e.Handled = true;
+        }
+    }
+
+    private void OnFileRowContextRequested(UIElement sender, Microsoft.UI.Xaml.Input.ContextRequestedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item)
+        {
+            Point? pos = null;
+            if (e.TryGetPosition(fe, out var p))
+            {
+                pos = p;
+            }
+            ShowItemContextMenu(fe, item, pos);
+            e.Handled = true;
+        }
+    }
+
+    private void ShowItemContextMenu(FrameworkElement target, ServerFileItem item, Point? position)
+    {
+        _activeContextItem = item;
+        bool isFile = item.IsFile;
+        bool isSynced = item.IsSynced;
+
+        if (Resources.TryGetValue("FileRowMenuFlyout", out var flyoutObj) && flyoutObj is MenuFlyout flyout)
+        {
+            var loc = LocalizationManager.Instance;
+            MenuOpenFileExternal.Text = loc.GetString("files_context_open_external");
+            MenuChooseEditor.Text = loc.GetString("files_context_choose_editor");
+            MenuOpenFileInternal.Text = loc.GetString("files_context_open_internal");
+            MenuOpenFolder.Text = loc.GetString("files_context_open_folder");
+            MenuSyncEnable.Text = loc.GetString("files_context_sync_enable");
+            MenuSyncOpenExplorer.Text = loc.GetString("files_context_sync_open_explorer");
+            MenuSyncForce.Text = loc.GetString("files_context_sync_force");
+            MenuSyncStop.Text = loc.GetString("files_context_sync_stop");
+            MenuDelete.Text = loc.GetString("files_context_delete");
 
             foreach (var element in flyout.Items)
             {
@@ -321,21 +389,22 @@ public sealed partial class ServerFilesTabControl : UserControl
                     };
                 }
             }
-        }
-    }
 
-    private async void OnContextMenuOpenClicked(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null)
-        {
-            await ViewModel.OpenFileAsync(item);
-            UpdateUI();
+            if (position.HasValue)
+            {
+                flyout.ShowAt(target, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions { Position = position.Value });
+            }
+            else
+            {
+                flyout.ShowAt(target);
+            }
         }
     }
 
     private async void OnContextMenuOpenExternalClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && item.IsFile)
+        var item = _activeContextItem;
+        if (item != null && ViewModel != null && item.IsFile)
         {
             await ViewModel.OpenFileInExternalEditorAsync(item, forceChooseEditor: false);
         }
@@ -343,7 +412,8 @@ public sealed partial class ServerFilesTabControl : UserControl
 
     private async void OnContextMenuChooseEditorClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && item.IsFile)
+        var item = _activeContextItem;
+        if (item != null && ViewModel != null && item.IsFile)
         {
             await ViewModel.OpenFileInExternalEditorAsync(item, forceChooseEditor: true);
         }
@@ -351,7 +421,8 @@ public sealed partial class ServerFilesTabControl : UserControl
 
     private async void OnContextMenuOpenInternalClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && item.IsFile)
+        var item = _activeContextItem;
+        if (item != null && ViewModel != null && item.IsFile)
         {
             await ViewModel.OpenFileInternallyAsync(item);
             UpdateUI();
@@ -360,7 +431,8 @@ public sealed partial class ServerFilesTabControl : UserControl
 
     private async void OnContextMenuOpenFolderClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && !item.IsFile)
+        var item = _activeContextItem;
+        if (item != null && ViewModel != null && !item.IsFile)
         {
             await ViewModel.OpenFileAsync(item);
             UpdateUI();
@@ -369,7 +441,8 @@ public sealed partial class ServerFilesTabControl : UserControl
 
     private async void OnContextMenuSyncEnableClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && !item.IsFile)
+        var item = _activeContextItem;
+        if (item != null && ViewModel != null && !item.IsFile)
         {
             string? localFolder = await WindowsPickerHelper.PickFolderAsync();
             if (!string.IsNullOrEmpty(localFolder))
@@ -381,7 +454,8 @@ public sealed partial class ServerFilesTabControl : UserControl
 
     private void OnContextMenuSyncOpenExplorerClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && !item.IsFile)
+        var item = _activeContextItem;
+        if (item != null && ViewModel != null && !item.IsFile)
         {
             ViewModel.OpenSyncedFolderInExplorer(item);
         }
@@ -389,7 +463,8 @@ public sealed partial class ServerFilesTabControl : UserControl
 
     private async void OnContextMenuSyncForceClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && !item.IsFile)
+        var item = _activeContextItem;
+        if (item != null && ViewModel != null && !item.IsFile)
         {
             await ViewModel.ForceSyncFolderAsync(item);
         }
@@ -397,7 +472,8 @@ public sealed partial class ServerFilesTabControl : UserControl
 
     private void OnContextMenuSyncStopClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && !item.IsFile)
+        var item = _activeContextItem;
+        if (item != null && ViewModel != null && !item.IsFile)
         {
             ViewModel.StopSyncFolder(item);
         }
@@ -405,7 +481,8 @@ public sealed partial class ServerFilesTabControl : UserControl
 
     private async void OnContextMenuDeleteClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null)
+        var item = _activeContextItem;
+        if (item != null && ViewModel != null)
         {
             await ViewModel.DeleteFileAsync(item);
         }

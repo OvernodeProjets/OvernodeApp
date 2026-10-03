@@ -10,14 +10,75 @@
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
+
+        <MenuFlyout x:Key="FileRowMenuFlyout">
+            <!-- File items -->
+            <MenuFlyoutItem x:Name="MenuOpenFileExternal" Tag="file_only" Text="Ouvrir dans un éditeur externe" Click="OnContextMenuOpenExternalClicked">
+                <MenuFlyoutItem.Icon>
+                    <FontIcon Glyph="&#xE7AC;" />
+                </MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem x:Name="MenuChooseEditor" Tag="file_only" Text="Choisir un autre éditeur..." Click="OnContextMenuChooseEditorClicked">
+                <MenuFlyoutItem.Icon>
+                    <FontIcon Glyph="&#xE70F;" />
+                </MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem x:Name="MenuOpenFileInternal" Tag="file_only" Text="Ouvrir dans l'éditeur intégré" Click="OnContextMenuOpenInternalClicked">
+                <MenuFlyoutItem.Icon>
+                    <FontIcon Glyph="&#xE737;" />
+                </MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
+
+            <!-- Folder items -->
+            <MenuFlyoutItem x:Name="MenuOpenFolder" Tag="folder_only" Text="Ouvrir ce dossier" Click="OnContextMenuOpenFolderClicked">
+                <MenuFlyoutItem.Icon>
+                    <FontIcon Glyph="&#xE8B7;" />
+                </MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem x:Name="MenuSyncEnable" Tag="nosync_only" Text="Synchroniser avec un dossier local..." Click="OnContextMenuSyncEnableClicked">
+                <MenuFlyoutItem.Icon>
+                    <FontIcon Glyph="&#xE8D5;" />
+                </MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem x:Name="MenuSyncOpenExplorer" Tag="sync_only" Text="Afficher dans l'Explorateur de fichiers" Click="OnContextMenuSyncOpenExplorerClicked">
+                <MenuFlyoutItem.Icon>
+                    <FontIcon Glyph="&#xE8A7;" />
+                </MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem x:Name="MenuSyncForce" Tag="sync_only" Text="Synchroniser maintenant" Click="OnContextMenuSyncForceClicked">
+                <MenuFlyoutItem.Icon>
+                    <FontIcon Glyph="&#xE72C;" />
+                </MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
+            <MenuFlyoutItem x:Name="MenuSyncStop" Tag="sync_only" Text="Arrêter la synchronisation" Click="OnContextMenuSyncStopClicked" Foreground="{StaticResource OvernodeAccentDangerBrush}">
+                <MenuFlyoutItem.Icon>
+                    <FontIcon Glyph="&#xE711;" Foreground="{StaticResource OvernodeAccentDangerBrush}" />
+                </MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
+
+            <MenuFlyoutSeparator />
+            <MenuFlyoutItem x:Name="MenuDelete" Text="Supprimer" Click="OnContextMenuDeleteClicked" Foreground="{StaticResource OvernodeAccentDangerBrush}">
+                <MenuFlyoutItem.Icon>
+                    <FontIcon Glyph="&#xE74D;" Foreground="{StaticResource OvernodeAccentDangerBrush}" />
+                </MenuFlyoutItem.Icon>
+            </MenuFlyoutItem>
+        </MenuFlyout>
     </UserControl.Resources>
 
-    <Grid AllowDrop="True"
+    <Grid Background="Transparent"
+          AllowDrop="True"
+          DragEnter="OnFileBrowserDragEnter"
           DragOver="OnFileBrowserDragOver"
           DragLeave="OnFileBrowserDragLeave"
           Drop="OnFileBrowserDrop">
         <!-- Normal Files Browser View -->
-        <StackPanel x:Name="FileBrowserContainer" Spacing="14">
+        <StackPanel x:Name="FileBrowserContainer"
+                    Spacing="14"
+                    AllowDrop="True"
+                    DragEnter="OnFileBrowserDragEnter"
+                    DragOver="OnFileBrowserDragOver"
+                    DragLeave="OnFileBrowserDragLeave"
+                    Drop="OnFileBrowserDrop">
             <!-- Breadcrumbs & Actions Bar -->
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -181,12 +242,29 @@
                     BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
-                    Padding="4">
-                <ItemsControl x:Name="FilesItemsControl">
+                    Padding="4"
+                    AllowDrop="True"
+                    DragEnter="OnFileBrowserDragEnter"
+                    DragOver="OnFileBrowserDragOver"
+                    DragLeave="OnFileBrowserDragLeave"
+                    Drop="OnFileBrowserDrop">
+                <ItemsControl x:Name="FilesItemsControl"
+                              AllowDrop="True"
+                              DragEnter="OnFileBrowserDragEnter"
+                              DragOver="OnFileBrowserDragOver"
+                              DragLeave="OnFileBrowserDragLeave"
+                              Drop="OnFileBrowserDrop">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Click="OnFileRowClicked"
                                     DoubleTapped="OnFileRowDoubleTapped"
+                                    ContextRequested="OnFileRowContextRequested"
+                                    RightTapped="OnFileRowRightTapped"
+                                    AllowDrop="True"
+                                    DragEnter="OnFileBrowserDragEnter"
+                                    DragOver="OnFileBrowserDragOver"
+                                    DragLeave="OnFileBrowserDragLeave"
+                                    Drop="OnFileBrowserDrop"
                                     HorizontalAlignment="Stretch"
                                     HorizontalContentAlignment="Stretch"
                                     Padding="12,9"
@@ -194,60 +272,6 @@
                                     Background="Transparent"
                                     BorderThickness="0"
                                     CornerRadius="6">
-                                <Button.ContextFlyout>
-                                    <MenuFlyout Opening="OnFileRowContextMenuOpening">
-                                        <!-- File items -->
-                                        <MenuFlyoutItem Tag="file_only" Text="{Binding ContextOpenExternalText}" Click="OnContextMenuOpenExternalClicked">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE7AC;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem Tag="file_only" Text="{Binding ContextChooseEditorText}" Click="OnContextMenuChooseEditorClicked">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE70F;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem Tag="file_only" Text="{Binding ContextOpenInternalText}" Click="OnContextMenuOpenInternalClicked">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE737;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-
-                                        <!-- Folder items -->
-                                        <MenuFlyoutItem Tag="folder_only" Text="Ouvrir ce dossier" Click="OnContextMenuOpenFolderClicked">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE8B7;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem Tag="nosync_only" Text="{Binding ContextSyncEnableText}" Click="OnContextMenuSyncEnableClicked">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE8D5;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem Tag="sync_only" Text="{Binding ContextSyncOpenExplorerText}" Click="OnContextMenuSyncOpenExplorerClicked">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE8A7;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem Tag="sync_only" Text="{Binding ContextSyncForceText}" Click="OnContextMenuSyncForceClicked">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE72C;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem Tag="sync_only" Text="{Binding ContextSyncStopText}" Click="OnContextMenuSyncStopClicked" Foreground="{StaticResource OvernodeAccentDangerBrush}">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE711;" Foreground="{StaticResource OvernodeAccentDangerBrush}" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-
-                                        <MenuFlyoutSeparator />
-                                        <MenuFlyoutItem Text="{Binding ContextDeleteText}" Click="OnContextMenuDeleteClicked" Foreground="{StaticResource OvernodeAccentDangerBrush}">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE74D;" Foreground="{StaticResource OvernodeAccentDangerBrush}" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                    </MenuFlyout>
-                                </Button.ContextFlyout>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
