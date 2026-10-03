@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -76,6 +78,15 @@ public partial class ServerDetailViewModel : ObservableObject
 
     [ObservableProperty]
     private string? _fileErrorMessage;
+
+    [ObservableProperty]
+    private bool _isUploadingFiles;
+
+    [ObservableProperty]
+    private double _uploadProgress;
+
+    [ObservableProperty]
+    private string _uploadProgressText = string.Empty;
 
     // Subdomains & Subusers
     [ObservableProperty]
@@ -461,6 +472,14 @@ public partial class ServerDetailViewModel : ObservableObject
         try
         {
             var loaded = await _filesService.ListFilesAsync(Server.Identifier, CurrentDirectory);
+            foreach (var f in loaded)
+            {
+                if (!f.IsFile)
+                {
+                    string fullRemote = CurrentDirectory == "/" ? $"/{f.Name}" : $"{CurrentDirectory}/{f.Name}";
+                    f.IsSynced = FolderSyncManager.Shared.IsFolderSynced(Server.Identifier, fullRemote);
+                }
+            }
             Files = new ObservableCollection<ServerFileItem>(loaded);
         }
         catch (Exception ex)
@@ -482,6 +501,20 @@ public partial class ServerDetailViewModel : ObservableObject
             return;
         }
 
+        if (ExternalEditorManager.Shared.AlwaysOpenInExternalEditor)
+        {
+            await OpenFileInExternalEditorAsync(item, forceChooseEditor: false);
+        }
+        else
+        {
+            await OpenFileInternallyAsync(item);
+        }
+    }
+
+    public async Task OpenFileInternallyAsync(ServerFileItem item)
+    {
+        if (!item.IsFile) return;
+
         SelectedFile = item;
         IsFileLoading = true;
         string fullPath = CurrentDirectory == "/" ? $"/{item.Name}" : $"{CurrentDirectory}/{item.Name}";
@@ -494,6 +527,74 @@ public partial class ServerDetailViewModel : ObservableObject
         {
             ErrorMessage = ex.Message;
             SelectedFile = null;
+        }
+        finally
+        {
+            IsFileLoading = false;
+        }
+    }
+
+    public async Task OpenFileInExternalEditorAsync(ServerFileItem item, bool forceChooseEditor = false)
+    {
+        if (!item.IsFile) return;
+        string fullPath = CurrentDirectory == "/" ? $"/{item.Name}" : $"{CurrentDirectory}/{item.Name}";
+        IsFileLoading = true;
+        FileErrorMessage = null;
+
+        try
+        {
+            string? explicitEditor = null;
+            if (forceChooseEditor)
+            {
+                explicitEditor = await ExternalEditorManager.Shared.PromptUserToSelectEditorAsync();
+                if (string.IsNullOrEmpty(explicitEditor))
+                {
+                    IsFileLoading = false;
+                    return;
+                }
+            }
+
+            string content = await _filesService.ReadFileAsync(Server.Identifier, fullPath);
+            await ExternalEditorManager.Shared.OpenAndWatchFileAsync(
+                Server.Identifier,
+                fullPath,
+                item.Name,
+                content,
+                explicitEditor,
+                async (newContent) =>
+                {
+                    try
+                    {
+                        await _filesService.WriteFileAsync(Server.Identifier, fullPath, newContent);
+                        if (SelectedFile?.Name == item.Name)
+                        {
+                            FileEditorContent = newContent;
+                        }
+                        string msg = LocalizationManager.Instance.Format("files_synced_success", item.Name);
+                        FileSuccessMessage = msg;
+                        _ = Task.Delay(4000).ContinueWith(_ =>
+                        {
+                            if (FileSuccessMessage == msg) FileSuccessMessage = null;
+                        }, TaskScheduler.FromCurrentSynchronizationContext());
+                    }
+                    catch (Exception ex)
+                    {
+                        FileErrorMessage = LocalizationManager.Instance.Format("files_sync_failed", item.Name, ex.Message);
+                        throw;
+                    }
+                }
+            );
+
+            string openMsg = LocalizationManager.Instance.Format("files_opening_external", item.Name);
+            FileSuccessMessage = openMsg;
+            _ = Task.Delay(3000).ContinueWith(_ =>
+            {
+                if (FileSuccessMessage == openMsg) FileSuccessMessage = null;
+            }, TaskScheduler.FromCurrentSynchronizationContext());
+        }
+        catch (Exception ex)
+        {
+            FileErrorMessage = LocalizationManager.Instance.Format("files_editor_error", ex.Message);
         }
         finally
         {
@@ -551,6 +652,190 @@ public partial class ServerDetailViewModel : ObservableObject
         {
             ErrorMessage = ex.Message;
         }
+    }
+
+    // Drag & Drop Upload
+    public async Task UploadDroppedPathsAsync(IEnumerable<string> paths)
+    {
+        if (paths == null) return;
+        FileErrorMessage = null;
+        FileSuccessMessage = null;
+
+        FileUploadPlan plan;
+        try
+        {
+            plan = FileUploadSecurity.Shared.BuildPlan(
+                paths,
+                diskLimitMB: Server.DiskLimitMB,
+                diskUsedMB: Server.DiskUsedMB
+            );
+        }
+        catch (Exception ex)
+        {
+            FileErrorMessage = ex.Message;
+            return;
+        }
+
+        double totalSteps = plan.DirectoriesToCreate.Count + plan.FilesToUpload.Count;
+        if (totalSteps <= 0) return;
+
+        IsUploadingFiles = true;
+        UploadProgress = 0.0;
+        UploadProgressText = LocalizationManager.Instance.GetString("files_uploading");
+
+        double currentStep = 0.0;
+
+        try
+        {
+            // 1. Créer les répertoires distants
+            foreach (var dir in plan.DirectoriesToCreate)
+            {
+                string parent;
+                string dirName;
+                int lastSlash = dir.LastIndexOf('/');
+                if (lastSlash >= 0)
+                {
+                    string relParent = dir[..lastSlash];
+                    parent = CurrentDirectory == "/" ? $"/{relParent}" : $"{CurrentDirectory}/{relParent}";
+                    dirName = dir[(lastSlash + 1)..];
+                }
+                else
+                {
+                    parent = CurrentDirectory;
+                    dirName = dir;
+                }
+
+                UploadProgressText = $"{LocalizationManager.Instance.GetString("files_uploading")} {dirName}";
+                await _filesService.CreateFolderAsync(Server.Identifier, parent, dirName);
+
+                currentStep += 1.0;
+                UploadProgress = currentStep / totalSteps;
+            }
+
+            // 2. Téléverser les fichiers
+            foreach (var file in plan.FilesToUpload)
+            {
+                string targetDir;
+                int lastSlash = file.RelativePath.LastIndexOf('/');
+                if (lastSlash >= 0)
+                {
+                    string relParent = file.RelativePath[..lastSlash];
+                    targetDir = CurrentDirectory == "/" ? $"/{relParent}" : $"{CurrentDirectory}/{relParent}";
+                }
+                else
+                {
+                    targetDir = CurrentDirectory;
+                }
+
+                UploadProgressText = $"{LocalizationManager.Instance.GetString("files_uploading")} {file.FileName}";
+
+                byte[] fileBytes = await File.ReadAllBytesAsync(file.LocalPath);
+                string uploadUrl = await _filesService.GetUploadUrlAsync(Server.Identifier, targetDir);
+                await _filesService.UploadFileAsync(uploadUrl, targetDir, file.FileName, fileBytes);
+
+                currentStep += 1.0;
+                UploadProgress = currentStep / totalSteps;
+            }
+
+            IsUploadingFiles = false;
+            UploadProgress = 1.0;
+
+            if (plan.FilesToUpload.Count == 1 && plan.DirectoriesToCreate.Count == 0)
+            {
+                string singleName = plan.FilesToUpload[0].FileName;
+                FileSuccessMessage = LocalizationManager.Instance.Format("files_upload_success_single", singleName);
+            }
+            else
+            {
+                int count = plan.FilesToUpload.Count + plan.DirectoriesToCreate.Count;
+                FileSuccessMessage = LocalizationManager.Instance.Format("files_upload_success_multiple", count);
+            }
+
+            _ = Task.Delay(4000).ContinueWith(_ =>
+            {
+                FileSuccessMessage = null;
+            }, TaskScheduler.FromCurrentSynchronizationContext());
+
+            await LoadFilesAsync(CurrentDirectory, true);
+        }
+        catch (Exception ex)
+        {
+            IsUploadingFiles = false;
+            FileErrorMessage = ex.Message;
+        }
+    }
+
+    // Folder Synchronization (Live Sync)
+    public async Task PromptSyncFolderAsync(ServerFileItem item, string localPath)
+    {
+        if (item.IsFile || string.IsNullOrWhiteSpace(localPath)) return;
+        string fullRemote = CurrentDirectory == "/" ? $"/{item.Name}" : $"{CurrentDirectory}/{item.Name}";
+
+        try
+        {
+            await FolderSyncManager.Shared.RegisterSyncedFolderAsync(
+                Server.Identifier,
+                fullRemote,
+                localPath,
+                initialPull: true
+            );
+            item.IsSynced = true;
+            string msg = LocalizationManager.Instance.Format("files_sync_success_banner", item.Name);
+            FileSuccessMessage = msg;
+            _ = Task.Delay(4000).ContinueWith(_ =>
+            {
+                if (FileSuccessMessage == msg) FileSuccessMessage = null;
+            }, TaskScheduler.FromCurrentSynchronizationContext());
+
+            await LoadFilesAsync(CurrentDirectory, true);
+        }
+        catch (Exception ex)
+        {
+            FileErrorMessage = ex.Message;
+        }
+    }
+
+    public void StopSyncFolder(ServerFileItem item)
+    {
+        if (item.IsFile) return;
+        string fullRemote = CurrentDirectory == "/" ? $"/{item.Name}" : $"{CurrentDirectory}/{item.Name}";
+        var cfg = FolderSyncManager.Shared.GetConfigFor(Server.Identifier, fullRemote);
+        if (cfg != null)
+        {
+            FolderSyncManager.Shared.StopSync(cfg.Id);
+            item.IsSynced = false;
+            _ = LoadFilesAsync(CurrentDirectory, true);
+        }
+    }
+
+    public async Task ForceSyncFolderAsync(ServerFileItem item)
+    {
+        if (item.IsFile) return;
+        string fullRemote = CurrentDirectory == "/" ? $"/{item.Name}" : $"{CurrentDirectory}/{item.Name}";
+        var cfg = FolderSyncManager.Shared.GetConfigFor(Server.Identifier, fullRemote);
+        if (cfg != null)
+        {
+            await FolderSyncManager.Shared.ProcessLocalChangesAsync(cfg.Id);
+            await LoadFilesAsync(CurrentDirectory, true);
+        }
+    }
+
+    public void OpenSyncedFolderInExplorer(ServerFileItem item)
+    {
+        if (item.IsFile) return;
+        string fullRemote = CurrentDirectory == "/" ? $"/{item.Name}" : $"{CurrentDirectory}/{item.Name}";
+        var cfg = FolderSyncManager.Shared.GetConfigFor(Server.Identifier, fullRemote);
+        if (cfg != null)
+        {
+            FolderSyncManager.Shared.OpenInExplorer(cfg);
+        }
+    }
+
+    public bool IsFolderSynced(ServerFileItem item)
+    {
+        if (item.IsFile) return false;
+        string fullRemote = CurrentDirectory == "/" ? $"/{item.Name}" : $"{CurrentDirectory}/{item.Name}";
+        return FolderSyncManager.Shared.IsFolderSynced(Server.Identifier, fullRemote);
     }
 
     public async Task LoadSubdomainsAsync(bool force = false)

@@ -2,11 +2,20 @@
     x:Class="Overnode.App.Views.Server.ServerFilesTabControl"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Overnode.App.Views.Server"
+    xmlns:converters="using:Overnode.App.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid>
+    <UserControl.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+
+    <Grid AllowDrop="True"
+          DragOver="OnFileBrowserDragOver"
+          DragLeave="OnFileBrowserDragLeave"
+          Drop="OnFileBrowserDrop">
         <!-- Normal Files Browser View -->
         <StackPanel x:Name="FileBrowserContainer" Spacing="14">
             <!-- Breadcrumbs & Actions Bar -->
@@ -112,6 +121,32 @@
                 </StackPanel>
             </Border>
 
+            <!-- Upload Progress Banner -->
+            <Border x:Name="UploadProgressCard"
+                    Visibility="Collapsed"
+                    Background="{StaticResource OvernodeCardBrush}"
+                    BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="14,10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8" VerticalAlignment="Center">
+                        <ProgressRing x:Name="UploadProgressRing" IsActive="True" Width="14" Height="14" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                        <TextBlock x:Name="UploadProgressText" Text="Téléversement en cours..." FontSize="12" FontWeight="SemiBold" Foreground="White" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="0" Grid.Column="1" x:Name="UploadProgressPercentText" Text="0%" FontSize="12" FontFamily="Consolas, Segoe UI" Foreground="{StaticResource OvernodeTextSecondaryBrush}" VerticalAlignment="Center" />
+                    <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" x:Name="UploadProgressBar" Value="0" Maximum="100" Height="4" CornerRadius="2" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                </Grid>
+            </Border>
+
             <!-- Loading State -->
             <Border x:Name="FilesLoadingContainer"
                     Visibility="Collapsed"
@@ -160,17 +195,51 @@
                                     BorderThickness="0"
                                     CornerRadius="6">
                                 <Button.ContextFlyout>
-                                    <MenuFlyout>
-                                        <MenuFlyoutItem Text="{Binding ContextOpenText}" Click="OnContextMenuOpenClicked">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE70F;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem Text="{Binding ContextOpenExternalText}" Click="OnContextMenuOpenExternalClicked">
+                                    <MenuFlyout Opening="OnFileRowContextMenuOpening">
+                                        <!-- File items -->
+                                        <MenuFlyoutItem Tag="file_only" Text="{Binding ContextOpenExternalText}" Click="OnContextMenuOpenExternalClicked">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xE7AC;" />
                                             </MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
+                                        <MenuFlyoutItem Tag="file_only" Text="{Binding ContextChooseEditorText}" Click="OnContextMenuChooseEditorClicked">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE70F;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Tag="file_only" Text="{Binding ContextOpenInternalText}" Click="OnContextMenuOpenInternalClicked">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE737;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+
+                                        <!-- Folder items -->
+                                        <MenuFlyoutItem Tag="folder_only" Text="Ouvrir ce dossier" Click="OnContextMenuOpenFolderClicked">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE8B7;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Tag="nosync_only" Text="{Binding ContextSyncEnableText}" Click="OnContextMenuSyncEnableClicked">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE8D5;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Tag="sync_only" Text="{Binding ContextSyncOpenExplorerText}" Click="OnContextMenuSyncOpenExplorerClicked">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE8A7;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Tag="sync_only" Text="{Binding ContextSyncForceText}" Click="OnContextMenuSyncForceClicked">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE72C;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Tag="sync_only" Text="{Binding ContextSyncStopText}" Click="OnContextMenuSyncStopClicked" Foreground="{StaticResource OvernodeAccentDangerBrush}">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE711;" Foreground="{StaticResource OvernodeAccentDangerBrush}" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+
                                         <MenuFlyoutSeparator />
                                         <MenuFlyoutItem Text="{Binding ContextDeleteText}" Click="OnContextMenuDeleteClicked" Foreground="{StaticResource OvernodeAccentDangerBrush}">
                                             <MenuFlyoutItem.Icon>
@@ -195,14 +264,28 @@
                                               Margin="0,0,12,0"
                                               VerticalAlignment="Center" />
 
-                                    <!-- Name -->
-                                    <TextBlock Grid.Column="1"
-                                               Text="{Binding Name}"
-                                               FontSize="13"
-                                               FontWeight="Medium"
-                                               Foreground="{StaticResource OvernodeTextPrimaryBrush}"
-                                               VerticalAlignment="Center"
-                                               TextTrimming="CharacterEllipsis" />
+                                    <!-- Name & Sync Badge -->
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="13"
+                                                   FontWeight="Medium"
+                                                   Foreground="{StaticResource OvernodeTextPrimaryBrush}"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" />
+
+                                        <!-- Badge de synchronisation dossier actif -->
+                                        <Border Visibility="{Binding IsSynced, Converter={StaticResource BoolToVis}}"
+                                                Background="#1A10B981"
+                                                BorderBrush="#4D10B981"
+                                                BorderThickness="1"
+                                                CornerRadius="4"
+                                                Padding="6,2">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <FontIcon Glyph="&#xE8D5;" FontSize="9" Foreground="#10B981" />
+                                                <TextBlock Text="{Binding SyncBadgeText}" FontSize="10" FontWeight="SemiBold" Foreground="#10B981" />
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
 
                                     <!-- Size -->
                                     <TextBlock Grid.Column="2"
@@ -307,6 +390,31 @@
                            Foreground="{StaticResource OvernodeTextSecondaryBrush}"
                            Margin="0,8,0,0" />
             </Grid>
+        </Border>
+
+        <!-- Drag & Drop Full Overlay -->
+        <Border x:Name="FileDropOverlay"
+                Visibility="Collapsed"
+                Background="#E60B0D13"
+                BorderBrush="{StaticResource OvernodeAccentGoldBrush}"
+                BorderThickness="2"
+                CornerRadius="8"
+                Margin="2"
+                IsHitTestVisible="False">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                <FontIcon Glyph="&#xE898;" FontSize="42" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                <TextBlock x:Name="DropOverlayTitleText"
+                           Text="Déposez vos fichiers ou dossiers ici pour les téléverser"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="White"
+                           HorizontalAlignment="Center" />
+                <TextBlock x:Name="DropOverlaySubtitleText"
+                           Text="Les éléments seront automatiquement téléversés sur Overnode"
+                           FontSize="12"
+                           Foreground="{StaticResource OvernodeTextSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
         </Border>
     </Grid>
 </UserControl>

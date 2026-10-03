@@ -296,7 +296,20 @@ public class ServerFileItem
         }
     }
 
-    public string IconGlyph => IsFile ? "\uE8A5" : "\uE8B7"; // Document vs Folder
+    public string IconGlyph
+    {
+        get
+        {
+            if (IsFile) return "\uE8A5"; // Document
+            return IsSynced ? "\uE8D5" : "\uE8B7"; // SyncFolder vs Normal Folder
+        }
+    }
+
+    [JsonIgnore]
+    public bool IsSynced { get; set; } = false;
+
+    [JsonIgnore]
+    public string SyncBadgeText => LocalizationManager.Instance.GetString("files_sync_badge");
 
     [JsonIgnore]
     public string ContextOpenText => LocalizationManager.Instance.GetString("files_context_open");
@@ -305,7 +318,25 @@ public class ServerFileItem
     public string ContextOpenExternalText => LocalizationManager.Instance.GetString("files_context_open_external");
 
     [JsonIgnore]
+    public string ContextChooseEditorText => LocalizationManager.Instance.GetString("files_context_choose_editor");
+
+    [JsonIgnore]
+    public string ContextOpenInternalText => LocalizationManager.Instance.GetString("files_context_open_internal");
+
+    [JsonIgnore]
     public string ContextDeleteText => LocalizationManager.Instance.GetString("files_context_delete");
+
+    [JsonIgnore]
+    public string ContextSyncEnableText => LocalizationManager.Instance.GetString("files_context_sync_enable");
+
+    [JsonIgnore]
+    public string ContextSyncOpenExplorerText => LocalizationManager.Instance.GetString("files_context_sync_open_explorer");
+
+    [JsonIgnore]
+    public string ContextSyncForceText => LocalizationManager.Instance.GetString("files_context_sync_force");
+
+    [JsonIgnore]
+    public string ContextSyncStopText => LocalizationManager.Instance.GetString("files_context_sync_stop");
 }
 
 public class ServerSubdomain

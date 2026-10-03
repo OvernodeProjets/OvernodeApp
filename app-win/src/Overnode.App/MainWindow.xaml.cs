@@ -38,11 +38,15 @@ public sealed partial class MainWindow : Window, Services.ITrayTarget
     private AppWindow? _appWindow;
     private bool _isQuitting;
 
+    public static new MainWindow? Current { get; private set; }
+    public static IntPtr CurrentWindowHandle { get; private set; }
+
     public AuthViewModel AuthVM { get; }
     public UpdateViewModel UpdateVM => UpdateViewModel.Shared;
 
     public MainWindow()
     {
+        Current = this;
         InitializeComponent();
 
         try
@@ -116,6 +120,8 @@ public sealed partial class MainWindow : Window, Services.ITrayTarget
         try
         {
             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            CurrentWindowHandle = hWnd;
+            Services.WindowsPickerHelper.ActiveWindowHandleProvider = () => CurrentWindowHandle;
             int useDarkMode = 1;
             DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDarkMode, sizeof(int));
 

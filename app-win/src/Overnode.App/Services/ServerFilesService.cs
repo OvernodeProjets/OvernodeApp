@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using Overnode.App.Models;
 
@@ -113,5 +117,130 @@ public class ServerFilesService
             root,
             files = new[] { new { from, to } }
         });
+    }
+
+    private static readonly HttpClient _directTransferClient = new()
+    {
+        Timeout = TimeSpan.FromMinutes(10)
+    };
+
+    public async Task<string> GetUploadUrlAsync(string serverId, string directory = "/")
+    {
+        string encodedDir = WebUtility.UrlEncode(directory) ?? "/";
+        var resp = await _client.GetAsync<PteroUploadUrlResponse>($"/api/server/{serverId}/files/upload?directory={encodedDir}");
+        string? url = resp.Attributes?.Url ?? resp.Url;
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            throw new InvalidOperationException("URL de téléversement invalide reçue du serveur.");
+        }
+        return url;
+    }
+
+    public async Task UploadFileAsync(
+        string uploadUrl,
+        string directory,
+        string fileName,
+        byte[] fileData,
+        CancellationToken cancellationToken = default)
+    {
+        string targetUrl = uploadUrl;
+        if (!targetUrl.Contains("directory=", StringComparison.OrdinalIgnoreCase))
+        {
+            string separator = targetUrl.Contains('?') ? "&" : "?";
+            string encodedDir = WebUtility.UrlEncode(directory) ?? directory;
+            targetUrl += $"{separator}directory={encodedDir}";
+        }
+
+        string boundary = $"----OvernodeUploadBoundary{Guid.NewGuid():N}";
+        using var content = new MultipartFormDataContent(boundary);
+
+        var byteContent = new ByteArrayContent(fileData);
+        byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        content.Add(byteContent, "files", fileName);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
+        {
+            Content = content
+        };
+        request.Headers.Add("User-Agent", "Overnode-Windows-Native/1.0");
+
+        using var response = await _directTransferClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            string err = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Échec du téléversement vers le serveur (HTTP {(int)response.StatusCode}): {err}", null, response.StatusCode);
+        }
+    }
+
+    public async Task<string> GetDownloadUrlAsync(string serverId, string filePath)
+    {
+        string normalized = NormalizeServerFilePath(filePath);
+        string encodedPath = Uri.EscapeDataString(normalized);
+        var resp = await _client.GetAsync<PteroDownloadUrlResponse>($"/api/server/{serverId}/files/download?file={encodedPath}");
+        string? url = resp.Attributes?.Url ?? resp.Url;
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            throw new InvalidOperationException("URL de téléchargement invalide reçue du serveur.");
+        }
+        return url;
+    }
+
+    public async Task DownloadFileAsync(
+        string serverId,
+        string filePath,
+        string destinationLocalPath,
+        CancellationToken cancellationToken = default)
+    {
+        string downloadUrl = await GetDownloadUrlAsync(serverId, filePath);
+        using var response = await _directTransferClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Échec du téléchargement du fichier (HTTP {(int)response.StatusCode})", null, response.StatusCode);
+        }
+
+        string? dir = Path.GetDirectoryName(destinationLocalPath);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        using var fs = new FileStream(destinationLocalPath, FileMode.Create, FileAccess.Write, FileShare.None);
+        await response.Content.CopyToAsync(fs, cancellationToken);
+    }
+
+    private class PteroUploadUrlResponse
+    {
+        [JsonPropertyName("object")]
+        public string? Object { get; set; }
+
+        [JsonPropertyName("attributes")]
+        public PteroUploadUrlAttributes? Attributes { get; set; }
+
+        [JsonPropertyName("url")]
+        public string? Url { get; set; }
+    }
+
+    private class PteroUploadUrlAttributes
+    {
+        [JsonPropertyName("url")]
+        public string? Url { get; set; }
+    }
+
+    private class PteroDownloadUrlResponse
+    {
+        [JsonPropertyName("object")]
+        public string? Object { get; set; }
+
+        [JsonPropertyName("attributes")]
+        public PteroDownloadUrlAttributes? Attributes { get; set; }
+
+        [JsonPropertyName("url")]
+        public string? Url { get; set; }
+    }
+
+    private class PteroDownloadUrlAttributes
+    {
+        [JsonPropertyName("url")]
+        public string? Url { get; set; }
     }
 }

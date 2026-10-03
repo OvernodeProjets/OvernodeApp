@@ -1,7 +1,10 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Data;
+using Windows.ApplicationModel.DataTransfer;
 using Overnode.App.Localization;
 using Overnode.App.Models;
 using Overnode.App.Services;
@@ -9,22 +12,34 @@ using Overnode.App.ViewModels;
 
 namespace Overnode.App.Views.Server;
 
+public class BoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        return value is true ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        return value is Visibility v && v == Visibility.Visible;
+    }
+}
+
 public sealed partial class ServerFilesTabControl : UserControl
 {
     public ServerDetailViewModel? ViewModel => DataContext as ServerDetailViewModel;
-
-    private DateTime _lastClickTime = DateTime.MinValue;
-    private string? _lastClickedPath;
 
     public ServerFilesTabControl()
     {
         this.InitializeComponent();
         LocalizationManager.Instance.LanguageChanged += (s, e) => UpdateLocalization();
         ExternalEditorManager.Shared.FileSynced += OnExternalFileSynced;
+        FolderSyncManager.Shared.FolderSynced += OnFolderSynced;
 
         Unloaded += (s, e) =>
         {
             ExternalEditorManager.Shared.FileSynced -= OnExternalFileSynced;
+            FolderSyncManager.Shared.FolderSynced -= OnFolderSynced;
         };
 
         DataContextChanged += (s, e) =>
@@ -36,7 +51,12 @@ public sealed partial class ServerFilesTabControl : UserControl
                     if (pe.PropertyName == nameof(ServerDetailViewModel.Files) ||
                         pe.PropertyName == nameof(ServerDetailViewModel.IsFileLoading) ||
                         pe.PropertyName == nameof(ServerDetailViewModel.CurrentDirectory) ||
-                        pe.PropertyName == nameof(ServerDetailViewModel.SelectedFile))
+                        pe.PropertyName == nameof(ServerDetailViewModel.SelectedFile) ||
+                        pe.PropertyName == nameof(ServerDetailViewModel.FileSuccessMessage) ||
+                        pe.PropertyName == nameof(ServerDetailViewModel.FileErrorMessage) ||
+                        pe.PropertyName == nameof(ServerDetailViewModel.IsUploadingFiles) ||
+                        pe.PropertyName == nameof(ServerDetailViewModel.UploadProgress) ||
+                        pe.PropertyName == nameof(ServerDetailViewModel.UploadProgressText))
                     {
                         UpdateUI();
                     }
@@ -44,6 +64,7 @@ public sealed partial class ServerFilesTabControl : UserControl
             }
             UpdateUI();
         };
+
         Loaded += async (s, e) =>
         {
             if (ViewModel != null && ViewModel.Files.Count == 0)
@@ -52,6 +73,7 @@ public sealed partial class ServerFilesTabControl : UserControl
             }
             UpdateUI();
         };
+
         UpdateLocalization();
     }
 
@@ -67,6 +89,8 @@ public sealed partial class ServerFilesTabControl : UserControl
         CancelEditText.Text = loc.GetString("generic_close");
         SaveFileText.Text = loc.GetString("generic_save");
         NewFolderNameBox.PlaceholderText = loc.GetString("files_folder_placeholder");
+        DropOverlayTitleText.Text = loc.GetString("files_drop_zone_title");
+        DropOverlaySubtitleText.Text = loc.GetString("files_drop_zone_subtitle");
     }
 
     public void UpdateUI()
@@ -95,6 +119,19 @@ public sealed partial class ServerFilesTabControl : UserControl
         else
         {
             FileErrorBanner.Visibility = Visibility.Collapsed;
+        }
+
+        // Upload progress
+        if (ViewModel.IsUploadingFiles)
+        {
+            UploadProgressText.Text = ViewModel.UploadProgressText;
+            UploadProgressBar.Value = Math.Clamp(ViewModel.UploadProgress * 100.0, 0, 100);
+            UploadProgressPercentText.Text = $"{(int)(ViewModel.UploadProgress * 100.0)}%";
+            UploadProgressCard.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            UploadProgressCard.Visibility = Visibility.Collapsed;
         }
 
         // Editor mode vs Browser mode
@@ -132,6 +169,96 @@ public sealed partial class ServerFilesTabControl : UserControl
         }
     }
 
+    private void OnExternalFileSynced(string serverId, string fileName)
+    {
+        if (ViewModel != null && ViewModel.Server.Identifier == serverId)
+        {
+            DispatcherQueue?.TryEnqueue(() =>
+            {
+                string msg = LocalizationManager.Instance.Format("files_synced_success", fileName);
+                ViewModel.FileSuccessMessage = msg;
+                _ = Task.Delay(4000).ContinueWith(_ =>
+                {
+                    DispatcherQueue?.TryEnqueue(() =>
+                    {
+                        if (ViewModel.FileSuccessMessage == msg)
+                        {
+                            ViewModel.FileSuccessMessage = null;
+                        }
+                    });
+                });
+            });
+        }
+    }
+
+    private void OnFolderSynced(string serverId, string folderName, int count)
+    {
+        if (ViewModel != null && ViewModel.Server.Identifier == serverId)
+        {
+            DispatcherQueue?.TryEnqueue(async () =>
+            {
+                string msg = LocalizationManager.Instance.Format("files_sync_success_notification", folderName, count);
+                ViewModel.FileSuccessMessage = msg;
+                await ViewModel.LoadFilesAsync(ViewModel.CurrentDirectory, true);
+
+                _ = Task.Delay(4000).ContinueWith(_ =>
+                {
+                    DispatcherQueue?.TryEnqueue(() =>
+                    {
+                        if (ViewModel.FileSuccessMessage == msg)
+                        {
+                            ViewModel.FileSuccessMessage = null;
+                        }
+                    });
+                });
+            });
+        }
+    }
+
+    // Drag & Drop
+    private void OnFileBrowserDragOver(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Contains(StandardDataFormats.StorageItems))
+        {
+            e.AcceptedOperation = DataPackageOperation.Copy;
+            e.DragUIOverride.Caption = LocalizationManager.Instance.GetString("files_drop_zone_title");
+            e.DragUIOverride.IsCaptionVisible = true;
+            e.DragUIOverride.IsContentVisible = true;
+            FileDropOverlay.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
+        }
+    }
+
+    private void OnFileBrowserDragLeave(object sender, DragEventArgs e)
+    {
+        FileDropOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private async void OnFileBrowserDrop(object sender, DragEventArgs e)
+    {
+        FileDropOverlay.Visibility = Visibility.Collapsed;
+
+        if (e.DataView.Contains(StandardDataFormats.StorageItems) && ViewModel != null)
+        {
+            try
+            {
+                var items = await e.DataView.GetStorageItemsAsync();
+                var paths = items.Select(i => i.Path).Where(p => !string.IsNullOrEmpty(p)).ToList();
+                if (paths.Count > 0)
+                {
+                    await ViewModel.UploadDroppedPathsAsync(paths);
+                }
+            }
+            catch (Exception ex)
+            {
+                ViewModel.FileErrorMessage = ex.Message;
+            }
+        }
+    }
+
     private async void OnParentDirClicked(object sender, RoutedEventArgs e)
     {
         if (ViewModel == null) return;
@@ -139,7 +266,7 @@ public sealed partial class ServerFilesTabControl : UserControl
         if (dir == "/") return;
 
         var lastSlash = dir.LastIndexOf('/');
-        string parent = lastSlash <= 0 ? "/" : dir.Substring(0, lastSlash);
+        string parent = lastSlash <= 0 ? "/" : dir[..lastSlash];
         await ViewModel.LoadFilesAsync(parent);
     }
 
@@ -151,53 +278,11 @@ public sealed partial class ServerFilesTabControl : UserControl
         }
     }
 
-    private void OnExternalFileSynced(string serverId, string fileName)
-    {
-        if (ViewModel != null && ViewModel.Server.Identifier == serverId)
-        {
-            DispatcherQueue?.TryEnqueue(() =>
-            {
-                FileSuccessText.Text = LocalizationManager.Instance.Format("files_synced_success", fileName);
-                FileSuccessBanner.Visibility = Visibility.Visible;
-                FileErrorBanner.Visibility = Visibility.Collapsed;
-
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(3000);
-                    DispatcherQueue?.TryEnqueue(() =>
-                    {
-                        if (FileSuccessText.Text.Contains(fileName))
-                        {
-                            FileSuccessBanner.Visibility = Visibility.Collapsed;
-                        }
-                    });
-                });
-            });
-        }
-    }
-
     private async void OnFileRowClicked(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null)
         {
             if (!item.IsFile)
-            {
-                await ViewModel.OpenFileAsync(item);
-                UpdateUI();
-                return;
-            }
-
-            var now = DateTime.UtcNow;
-            string fullPath = ViewModel.CurrentDirectory == "/" ? $"/{item.Name}" : $"{ViewModel.CurrentDirectory}/{item.Name}";
-            bool isDoubleClick = (now - _lastClickTime < TimeSpan.FromMilliseconds(500)) && _lastClickedPath == fullPath;
-            _lastClickTime = now;
-            _lastClickedPath = fullPath;
-
-            if (isDoubleClick || ExternalEditorManager.Shared.AlwaysOpenInExternalEditor)
-            {
-                await OpenFileInExternalEditorAsync(item, fullPath);
-            }
-            else
             {
                 await ViewModel.OpenFileAsync(item);
                 UpdateUI();
@@ -210,15 +295,31 @@ public sealed partial class ServerFilesTabControl : UserControl
         if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null)
         {
             e.Handled = true;
-            if (item.IsFile)
+            await ViewModel.OpenFileAsync(item);
+            UpdateUI();
+        }
+    }
+
+    private void OnFileRowContextMenuOpening(object? sender, object e)
+    {
+        if (sender is MenuFlyout flyout && flyout.Target is FrameworkElement fe && fe.DataContext is ServerFileItem item)
+        {
+            bool isFile = item.IsFile;
+            bool isSynced = item.IsSynced;
+
+            foreach (var element in flyout.Items)
             {
-                string fullPath = ViewModel.CurrentDirectory == "/" ? $"/{item.Name}" : $"{ViewModel.CurrentDirectory}/{item.Name}";
-                await OpenFileInExternalEditorAsync(item, fullPath);
-            }
-            else
-            {
-                await ViewModel.OpenFileAsync(item);
-                UpdateUI();
+                if (element is MenuFlyoutItem mfi && mfi.Tag is string tag)
+                {
+                    mfi.Visibility = tag switch
+                    {
+                        "file_only" => isFile ? Visibility.Visible : Visibility.Collapsed,
+                        "folder_only" => !isFile ? Visibility.Visible : Visibility.Collapsed,
+                        "sync_only" => (!isFile && isSynced) ? Visibility.Visible : Visibility.Collapsed,
+                        "nosync_only" => (!isFile && !isSynced) ? Visibility.Visible : Visibility.Collapsed,
+                        _ => Visibility.Visible
+                    };
+                }
             }
         }
     }
@@ -236,72 +337,69 @@ public sealed partial class ServerFilesTabControl : UserControl
     {
         if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && item.IsFile)
         {
-            string fullPath = ViewModel.CurrentDirectory == "/" ? $"/{item.Name}" : $"{ViewModel.CurrentDirectory}/{item.Name}";
-            await OpenFileInExternalEditorAsync(item, fullPath);
+            await ViewModel.OpenFileInExternalEditorAsync(item, forceChooseEditor: false);
         }
     }
 
-    private async Task OpenFileInExternalEditorAsync(ServerFileItem item, string fullPath)
+    private async void OnContextMenuChooseEditorClicked(object sender, RoutedEventArgs e)
     {
-        if (ViewModel == null) return;
-
-        try
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && item.IsFile)
         {
-            string openingMsg = LocalizationManager.Instance.Format("files_opening_external", item.Name);
-            FileSuccessText.Text = openingMsg;
-            FileSuccessBanner.Visibility = Visibility.Visible;
-            FileErrorBanner.Visibility = Visibility.Collapsed;
-
-            string content = await ServerFilesService.Shared.ReadFileAsync(ViewModel.Server.Identifier, fullPath);
-            await ExternalEditorManager.Shared.OpenAndWatchFileAsync(
-                ViewModel.Server.Identifier,
-                fullPath,
-                item.Name,
-                content,
-                async (newContent) =>
-                {
-                    try
-                    {
-                        await ServerFilesService.Shared.WriteFileAsync(ViewModel.Server.Identifier, fullPath, newContent);
-                        DispatcherQueue?.TryEnqueue(() =>
-                        {
-                            if (ViewModel.SelectedFile?.Name == item.Name)
-                            {
-                                ViewModel.FileEditorContent = newContent;
-                            }
-                            FileErrorBanner.Visibility = Visibility.Collapsed;
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        DispatcherQueue?.TryEnqueue(() =>
-                        {
-                            FileErrorText.Text = LocalizationManager.Instance.Format("files_sync_failed", item.Name, ex.Message);
-                            FileErrorBanner.Visibility = Visibility.Visible;
-                            FileSuccessBanner.Visibility = Visibility.Collapsed;
-                        });
-                        throw;
-                    }
-                }
-            );
-
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(2500);
-                DispatcherQueue?.TryEnqueue(() =>
-                {
-                    if (FileSuccessText.Text == openingMsg)
-                    {
-                        FileSuccessBanner.Visibility = Visibility.Collapsed;
-                    }
-                });
-            });
+            await ViewModel.OpenFileInExternalEditorAsync(item, forceChooseEditor: true);
         }
-        catch (Exception ex)
+    }
+
+    private async void OnContextMenuOpenInternalClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && item.IsFile)
         {
-            FileErrorText.Text = LocalizationManager.Instance.Format("files_editor_error", ex.Message);
-            FileErrorBanner.Visibility = Visibility.Visible;
-            FileSuccessBanner.Visibility = Visibility.Collapsed;
+            await ViewModel.OpenFileInternallyAsync(item);
+            UpdateUI();
+        }
+    }
+
+    private async void OnContextMenuOpenFolderClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && !item.IsFile)
+        {
+            await ViewModel.OpenFileAsync(item);
+            UpdateUI();
+        }
+    }
+
+    private async void OnContextMenuSyncEnableClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && !item.IsFile)
+        {
+            string? localFolder = await WindowsPickerHelper.PickFolderAsync();
+            if (!string.IsNullOrEmpty(localFolder))
+            {
+                await ViewModel.PromptSyncFolderAsync(item, localFolder);
+            }
+        }
+    }
+
+    private void OnContextMenuSyncOpenExplorerClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && !item.IsFile)
+        {
+            ViewModel.OpenSyncedFolderInExplorer(item);
+        }
+    }
+
+    private async void OnContextMenuSyncForceClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && !item.IsFile)
+        {
+            await ViewModel.ForceSyncFolderAsync(item);
+        }
+    }
+
+    private void OnContextMenuSyncStopClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is ServerFileItem item && ViewModel != null && !item.IsFile)
+        {
+            ViewModel.StopSyncFolder(item);
         }
     }
 

@@ -28,6 +28,10 @@
     <Compile Include="..\..\src\Overnode.App\Services\ServerWebSocketManager.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Services\UpdateService.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Services\ExternalEditorManager.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\FileUploadSecurity.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\FolderSyncScanner.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\FolderSyncExecutor.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\FolderSyncManager.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Services\TrayIconManager.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Services\ConsoleColorHelper.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\ViewModels\TwoFactorViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />

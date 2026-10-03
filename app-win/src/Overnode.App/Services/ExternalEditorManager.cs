@@ -313,11 +313,29 @@ public sealed class ExternalEditorManager
     }
 
     /// <summary>
+    /// Prompts the user with a Windows FileOpenPicker to select a custom editor executable (.exe).
+    /// </summary>
+    public async Task<string?> PromptUserToSelectEditorAsync(IntPtr hwnd = default)
+    {
+        string? picked = await WindowsPickerHelper.PickExeFileAsync(hwnd);
+        if (!string.IsNullOrEmpty(picked) && File.Exists(picked))
+        {
+            SelectedEditorAppPath = picked;
+            return picked;
+        }
+        return null;
+    }
+
+    /// <summary>
     /// Launches the resolved editor executable with the target file without showing any CMD window.
     /// </summary>
-    public bool LaunchEditor(string localFilePath)
+    public bool LaunchEditor(string localFilePath, string? explicitEditorPath = null)
     {
-        string editorPath = ResolveEditorExecutable();
+        string editorPath = !string.IsNullOrWhiteSpace(explicitEditorPath) && File.Exists(explicitEditorPath)
+            ? explicitEditorPath
+            : ResolveEditorExecutable();
+
+        string? workDir = Path.GetDirectoryName(localFilePath);
 
         try
         {
@@ -325,6 +343,7 @@ public sealed class ExternalEditorManager
             {
                 FileName = editorPath,
                 Arguments = $"\"{localFilePath}\"",
+                WorkingDirectory = !string.IsNullOrEmpty(workDir) ? workDir : string.Empty,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Normal
@@ -339,8 +358,9 @@ public sealed class ExternalEditorManager
             {
                 var fallbackInfo = new ProcessStartInfo
                 {
-                    FileName = "notepad.exe",
+                    FileName = FindWindowsNotepad(),
                     Arguments = $"\"{localFilePath}\"",
+                    WorkingDirectory = !string.IsNullOrEmpty(workDir) ? workDir : string.Empty,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     WindowStyle = ProcessWindowStyle.Normal
@@ -361,6 +381,7 @@ public sealed class ExternalEditorManager
         string remotePath,
         string fileName,
         string initialContent,
+        string? explicitEditorPath = null,
         Func<string, Task>? onSave = null)
     {
         // 1. Prepare local staging directory
@@ -394,9 +415,19 @@ public sealed class ExternalEditorManager
         session.Start();
 
         // 3. Open file in GUI editor without showing any CMD prompt
-        LaunchEditor(localFilePath);
+        LaunchEditor(localFilePath, explicitEditorPath);
 
         return localFilePath;
+    }
+
+    public async Task<string> OpenAndWatchFileAsync(
+        string serverId,
+        string remotePath,
+        string fileName,
+        string initialContent,
+        Func<string, Task>? onSave)
+    {
+        return await OpenAndWatchFileAsync(serverId, remotePath, fileName, initialContent, null, onSave);
     }
 
     public void StopWatching(string serverId, string remotePath)

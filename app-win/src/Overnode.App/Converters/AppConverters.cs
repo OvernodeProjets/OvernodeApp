@@ -42,3 +42,18 @@ public class NullOrEmptyToCollapsedConverter : IValueConverter
         throw new NotSupportedException();
     }
 }
+
+public class BoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is bool b && b) return Microsoft.UI.Xaml.Visibility.Visible;
+        return Microsoft.UI.Xaml.Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        if (value is Microsoft.UI.Xaml.Visibility v) return v == Microsoft.UI.Xaml.Visibility.Visible;
+        return false;
+    }
+}

@@ -161,6 +161,12 @@ public class Program
         Run("ConsoleColorHelper Discord ANSI Formatting", consoleColorTests.Test_ToDiscordAnsi);
         Run("TrayIconManager Disposal Idempotence", consoleColorTests.Test_TrayIconManager_DisposalIdempotence);
 
+        // 12. File Upload Security Tests
+        FileUploadSecurityTests.RunAll(Run);
+
+        // 13. Folder Sync Tests
+        FolderSyncTests.RunAll(Run);
+
         Console.WriteLine($"\n---------------------------------------");
         Console.WriteLine($"Total: {passed + failed} | Passed: {passed} | Failed: {failed}");
         Console.WriteLine("=======================================");
