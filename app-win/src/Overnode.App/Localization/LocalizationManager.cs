@@ -158,14 +158,52 @@ public partial class LocalizationManager : ObservableObject
     public string Format(string key, params object[] args)
     {
         string template = GetString(key);
+        if (string.IsNullOrEmpty(template) || args == null || args.Length == 0)
+        {
+            return template;
+        }
+
         try
         {
-            return string.Format(template, args);
+            string normalized = NormalizeFormatTemplate(template);
+            return string.Format(CultureInfo.CurrentUICulture, normalized, args);
         }
         catch
         {
             return template;
         }
+    }
+
+    private static string NormalizeFormatTemplate(string template)
+    {
+        if (string.IsNullOrEmpty(template)) return template;
+
+        // Convert positional specifiers: %1$@ -> {0}, %2$d -> {1}, %2$.1f -> {1:F1}, etc.
+        string result = System.Text.RegularExpressions.Regex.Replace(
+            template,
+            @"%(\d+)\$(\.\d+)?([@dfsF])",
+            m =>
+            {
+                int idx = int.Parse(m.Groups[1].Value) - 1;
+                string precision = m.Groups[2].Value;
+                if (!string.IsNullOrEmpty(precision))
+                {
+                    return $"{{{idx}:F{precision.TrimStart('.')}}}";
+                }
+                return $"{{{idx}}}";
+            });
+
+        // Convert sequential specifiers: %@, %d, %s
+        if (result.Contains("%@") || result.Contains("%d") || result.Contains("%s"))
+        {
+            int argIndex = 0;
+            result = System.Text.RegularExpressions.Regex.Replace(
+                result,
+                @"%[@ds]",
+                _ => $"{{{argIndex++}}}");
+        }
+
+        return result;
     }
 
     public string this[string key] => GetString(key);

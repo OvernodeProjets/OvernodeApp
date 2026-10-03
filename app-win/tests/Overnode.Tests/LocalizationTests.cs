@@ -145,9 +145,21 @@ public class LocalizationTests
         string formattedFr = loc.Format("files_synced_success", "server.properties");
         Assert.AreEqual("Fichier synchronisé : server.properties", formattedFr);
 
+        string singleFr = loc.Format("files_upload_success_single", "server.jar");
+        Assert.AreEqual("Le fichier « server.jar » a été téléversé avec succès", singleFr);
+
+        string multiFr = loc.Format("files_upload_success_multiple", 5);
+        Assert.AreEqual("5 éléments téléversés avec succès", multiFr);
+
         loc.SetLanguage(AppLanguage.En);
         string formattedEn = loc.Format("files_synced_success", "server.properties");
         Assert.AreEqual("File synchronized: server.properties", formattedEn);
+
+        string singleEn = loc.Format("files_upload_success_single", "server.jar");
+        Assert.AreEqual("File 'server.jar' uploaded successfully", singleEn);
+
+        string multiEn = loc.Format("files_upload_success_multiple", 5);
+        Assert.AreEqual("5 items uploaded successfully", multiEn);
 
         // Persistence test
         loc.SetLanguage(AppLanguage.En);
