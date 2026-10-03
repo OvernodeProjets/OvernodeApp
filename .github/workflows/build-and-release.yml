@@ -52,8 +52,11 @@ jobs:
             TAG="v$VERSION"
           else
             # Dynamically determine next non-conflicting SemVer version from all repository git tags
-            git fetch --tags --force
-            LATEST_TAG=$(git tag -l "v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | head -n 1)
+            git fetch --tags --force 2>/dev/null || true
+            LATEST_TAG=$(git ls-remote --tags --refs origin "refs/tags/v[0-9]*.[0-9]*.[0-9]*" 2>/dev/null | sed 's/.*refs\/tags\///' | sort -V | tail -n 1)
+            if [ -z "$LATEST_TAG" ]; then
+              LATEST_TAG=$(git tag -l "v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | head -n 1)
+            fi
             if [[ "$LATEST_TAG" =~ ^v?([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
               MAJOR="${BASH_REMATCH[1]}"
               MINOR="${BASH_REMATCH[2]}"
@@ -61,7 +64,7 @@ jobs:
               PATCH=$((PATCH + 1))
               VERSION="${MAJOR}.${MINOR}.${PATCH}"
             else
-              VERSION="1.1.51"
+              VERSION="1.1.57"
             fi
             TAG="v$VERSION"
           fi
