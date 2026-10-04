@@ -266,7 +266,14 @@ public sealed partial class MainWindow : Window, Services.ITrayTarget
         {
             await System.Threading.Tasks.Task.Delay(1500);
 
-            if (Environment.GetEnvironmentVariable("OVERNODE_CAPTURE_QUICKACTION") == "1")
+            if (Environment.GetEnvironmentVariable("OVERNODE_CAPTURE_WEBAUTH") == "1")
+            {
+                AuthVM.Logout();
+                _updateModal.Visibility = Visibility.Collapsed;
+                _ = _authView.StartDiscordWebAuthAsync();
+                await System.Threading.Tasks.Task.Delay(2500);
+            }
+            else if (Environment.GetEnvironmentVariable("OVERNODE_CAPTURE_QUICKACTION") == "1")
             {
                 _updateModal.Visibility = Visibility.Collapsed;
                 _dashboardView.ScrollToQuickAction();
@@ -314,6 +321,12 @@ public sealed partial class MainWindow : Window, Services.ITrayTarget
                 }
 
                 System.Diagnostics.Debug.WriteLine($"[{DateTime.Now}] Window screenshot saved: {filePath} ({rtb.PixelWidth}x{rtb.PixelHeight})");
+
+                if (Environment.GetEnvironmentVariable("OVERNODE_CAPTURE_EXIT") == "1")
+                {
+                    await System.Threading.Tasks.Task.Delay(500);
+                    QuitApplication();
+                }
             }
         }
         catch (Exception ex)

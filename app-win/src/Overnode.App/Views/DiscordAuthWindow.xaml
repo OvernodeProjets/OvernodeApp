@@ -5,20 +5,47 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="Connexion Discord - Overnode">
+    Title="Overnode">
 
     <Grid Background="#101218">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Custom Overnode Header Bar matching macOS -->
+        <Border x:Name="AppTitleBar" 
+                Grid.Row="0" 
+                Background="#181B22" 
+                BorderBrush="#2E3337" 
+                BorderThickness="0,0,0,1" 
+                Padding="16,0">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                    <FontIcon Glyph="&#xE72E;" FontSize="15" Foreground="#F59E0B" />
+                    <TextBlock x:Name="TitleText"
+                               Text="" 
+                               FontSize="13" 
+                               FontWeight="Bold" 
+                               Foreground="#FFFFFF" 
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- Loading Indicator -->
         <ProgressRing x:Name="LoadingRing" 
+                      Grid.Row="1"
                       IsActive="True" 
-                      Width="48" 
-                      Height="48" 
+                      Width="40" 
+                      Height="40" 
                       Foreground="#F59E0B" 
                       HorizontalAlignment="Center" 
                       VerticalAlignment="Center" />
 
         <!-- WebView2 Control -->
         <WebView2 x:Name="AuthWebView" 
+                  Grid.Row="1"
                   Visibility="Collapsed" />
     </Grid>
 </Window>

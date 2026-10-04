@@ -178,5 +178,77 @@
                    Foreground="#66707D" 
                    HorizontalAlignment="Center" 
                    Margin="0,0,0,20" />
+
+        <!-- In-app WebAuth Modal Overlay (Matching macOS AuthView .sheet) -->
+        <Grid x:Name="WebAuthModalOverlay" 
+              Grid.Row="0"
+              Grid.RowSpan="3" 
+              Background="#B2000000" 
+              Visibility="Collapsed">
+            <Border Width="580" 
+                    Height="680" 
+                    Background="#181B22" 
+                    BorderBrush="#2E3337" 
+                    BorderThickness="1" 
+                    CornerRadius="16" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="48" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Modal Header matching macOS -->
+                    <Border Grid.Row="0" 
+                            Background="#181B22" 
+                            BorderBrush="#2E3337" 
+                            BorderThickness="0,0,0,1" 
+                            CornerRadius="16,16,0,0" 
+                            Padding="16,0">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                                <FontIcon Glyph="&#xE72E;" FontSize="15" Foreground="#F59E0B" />
+                                <TextBlock x:Name="WebAuthModalTitle" 
+                                           Text="" 
+                                           FontSize="13" 
+                                           FontWeight="Bold" 
+                                           Foreground="#FFFFFF" 
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <Button x:Name="WebAuthCloseButton" 
+                                    Click="WebAuthCloseButton_Click" 
+                                    HorizontalAlignment="Right" 
+                                    VerticalAlignment="Center" 
+                                    Width="32" 
+                                    Height="32" 
+                                    Padding="0" 
+                                    CornerRadius="16" 
+                                    Background="Transparent" 
+                                    BorderThickness="0">
+                                <FontIcon Glyph="&#xE711;" FontSize="12" Foreground="#95A1AD" />
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- Modal Body: Loading & WebView2 -->
+                    <Grid Grid.Row="1" CornerRadius="0,0,16,16">
+                        <ProgressRing x:Name="WebAuthLoadingRing" 
+                                      IsActive="True" 
+                                      Width="40" 
+                                      Height="40" 
+                                      Foreground="#F59E0B" 
+                                      HorizontalAlignment="Center" 
+                                      VerticalAlignment="Center" />
+
+                        <WebView2 x:Name="WebAuthWebView" 
+                                  Visibility="Collapsed" 
+                                  HorizontalAlignment="Stretch" 
+                                  VerticalAlignment="Stretch" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

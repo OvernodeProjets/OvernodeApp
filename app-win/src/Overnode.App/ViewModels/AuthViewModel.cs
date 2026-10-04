@@ -166,6 +166,25 @@ public partial class AuthViewModel : ObservableObject
         try
         {
             var state = await DiscordAuthCoordinator.Instance.StartDiscordAuthAsync();
+            await HandleDiscordAuthResultAsync(state);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"{_loc["auth_error_generic"]} ({ex.Message})";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    public async Task HandleDiscordAuthResultAsync(AuthStateResponse? state)
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
             if (state == null)
             {
                 // Cancelled

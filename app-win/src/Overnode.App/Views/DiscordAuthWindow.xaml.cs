@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -34,7 +35,16 @@ public sealed partial class DiscordAuthWindow : Window
         InitializeComponent();
         ConfigureWindow();
         Closed += OnWindowClosed;
+        Localization.LocalizationManager.Instance.PropertyChanged += OnLocalizationChanged;
         _ = InitializeWebViewAsync();
+    }
+
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            TitleText.Text = Localization.LocalizationManager.Instance["auth_login_discord"];
+        });
     }
 
     private void ConfigureWindow()
@@ -45,11 +55,24 @@ public sealed partial class DiscordAuthWindow : Window
         int useDarkMode = 1;
         DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDarkMode, sizeof(int));
 
+        try
+        {
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar);
+        }
+        catch { }
+
+        try
+        {
+            TitleText.Text = Localization.LocalizationManager.Instance["auth_login_discord"];
+        }
+        catch { }
+
         var windowId = Win32Interop.GetWindowIdFromWindow(hWnd);
         var appWindow = AppWindow.GetFromWindowId(windowId);
         if (appWindow != null)
         {
-            appWindow.Title = "Connexion Discord - Overnode";
+            appWindow.Title = "Overnode";
 
             // DPI-aware sizing: 580x740 DIPs to fit Discord dialog comfortably without scrollbars
             uint dpi = GetDpiForWindow(hWnd);
@@ -64,22 +87,22 @@ public sealed partial class DiscordAuthWindow : Window
             if (AppWindowTitleBar.IsCustomizationSupported())
             {
                 var titleBar = appWindow.TitleBar;
-                var bg = ColorHelper.FromArgb(255, 16, 18, 24);
-                titleBar.BackgroundColor = bg;
-                titleBar.ForegroundColor = Colors.White;
-                titleBar.InactiveBackgroundColor = bg;
-                titleBar.InactiveForegroundColor = ColorHelper.FromArgb(255, 149, 161, 173);
-                titleBar.ButtonBackgroundColor = bg;
+                titleBar.ExtendsContentIntoTitleBar = true;
+                titleBar.ButtonBackgroundColor = Colors.Transparent;
                 titleBar.ButtonForegroundColor = Colors.White;
                 titleBar.ButtonHoverBackgroundColor = ColorHelper.FromArgb(255, 32, 34, 41);
                 titleBar.ButtonHoverForegroundColor = Colors.White;
                 titleBar.ButtonPressedBackgroundColor = ColorHelper.FromArgb(255, 46, 51, 55);
                 titleBar.ButtonPressedForegroundColor = Colors.White;
-                titleBar.ButtonInactiveBackgroundColor = bg;
+                titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
                 titleBar.ButtonInactiveForegroundColor = ColorHelper.FromArgb(255, 102, 112, 125);
             }
 
-            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app_icon.png");
+            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app_icon.ico");
+            if (!File.Exists(iconPath))
+            {
+                iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app_icon.png");
+            }
             if (File.Exists(iconPath))
             {
                 appWindow.SetIcon(iconPath);
@@ -289,6 +312,7 @@ public sealed partial class DiscordAuthWindow : Window
 
     private void OnWindowClosed(object sender, WindowEventArgs args)
     {
+        Localization.LocalizationManager.Instance.PropertyChanged -= OnLocalizationChanged;
         if (!_isCompleted)
         {
             _isCompleted = true;
