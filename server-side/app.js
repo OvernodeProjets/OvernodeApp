@@ -102,14 +102,13 @@ if (require.main === module || require.main?.filename === __filename || !module.
       await moduleLoader.loadAllModules();
       global.moduleInfo = moduleLoader.getLoadedModuleInfo();
 
-      const host = settings.website?.host || "0.0.0.0";
-      const server = app.listen(settings.website.port, host, () => {
+      const server = app.listen(settings.website.port, "0.0.0.0", () => {
         const bootTime = process.hrtime(startTime);
         const bootTimeMs = (bootTime[0] * 1000 + bootTime[1] / 1000000).toFixed(2);
         const duration = bootTimeMs > 1000 ? (bootTimeMs / 1000).toFixed(2) + "s" : bootTimeMs + "ms";
         logger.info(
           `${chalk.red("https server")} listening on ` +
-          chalk.cyan(`${host}:${settings.website.port} ` + chalk.gray(`(app@${VERSION} / ${PLATFORM_CODENAME}, ${duration})`)),
+          chalk.cyan(`0.0.0.0:${settings.website.port} ` + chalk.gray(`(app@${VERSION} / ${PLATFORM_CODENAME}, ${duration})`)),
           {}, true
         );
       });

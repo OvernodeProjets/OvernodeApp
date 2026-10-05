@@ -1,6 +1,6 @@
 "use strict";
 
-const { getClientIp, areIpsEquivalent } = require('./antiVpnAllowlist');
+const { getClientIp } = require('./antiVpnAllowlist');
 const loadConfig = require('./config');
 const db = require('../db');
 const settings = loadConfig('./config.toml');
@@ -53,8 +53,7 @@ function createSessionIpCheck() {
       return next();
     }
 
-    // Check if IP changed to an entirely different network / subnet
-    if (!areIpsEquivalent(req.session.sessionIp, currentIp)) {
+    if (req.session.sessionIp !== currentIp) {
       if (req.session.vpnBypassed === undefined) {
         try {
           const user = await db.user.findUnique({
@@ -94,10 +93,6 @@ function createSessionIpCheck() {
 
         return res.redirect('/auth?error=ip_changed');
       });
-    } else if (req.session.sessionIp !== currentIp) {
-      // User rotated temporary IPv6 host identifier within same /64 subnet (RFC 4941).
-      // Smoothly update sessionIp without dropping the active session.
-      req.session.sessionIp = currentIp;
     }
 
     next();

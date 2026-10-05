@@ -373,8 +373,7 @@ module.exports.load = async function (app, db) {
             if (!user) {
                 return res.status(404).json({ error: 'User not found' });
             }
-            const serverList = user.attributes?.relationships?.servers?.data || [];
-            res.json(serverList);
+            res.json(user.attributes.relationships.servers.data);
         } catch (error) {
             if (error.message.includes('not linked')) {
                 return res.status(400).json({ error: 'Pterodactyl account not linked' });

@@ -1,12 +1,6 @@
 const AUTO_BAN_REASON = 'Suspicious login detected: this IP address is already associated with a different Discord account.';
 const AUTO_BAN_ACTOR = 'System (IP mismatch check)';
-const net = require('net');
-const {
-  normalizeIp,
-  getIpv6Subnet64,
-  areIpsEquivalent,
-  isUserAllowlisted
-} = require('./antiVpnAllowlist');
+const { normalizeIp, isUserAllowlisted } = require('./antiVpnAllowlist');
 
 function buildAutoBanReason({ userId, discordId, conflictingUserId, conflictingDiscordId, ipAddress }) {
   const details = [
@@ -35,45 +29,12 @@ function createIpCheck(db) {
       return { allowed: true, allowlistBypassed: true };
     }
 
-    const isIpv6 = net.isIP(normalizedIp) === 6;
-    let existingRecord = null;
-    let subnet = null;
-
-    if (isIpv6) {
-      subnet = getIpv6Subnet64(normalizedIp);
-      const conditions = [
-        { ipAddress: { startsWith: subnet.expandedPrefix } },
-        { ipAddress: { startsWith: subnet.shortPrefix } },
-        { ipAddress: normalizedIp },
-      ];
-
-      existingRecord = await db.ipHistory.findFirst({
-        where: {
-          OR: conditions,
-          NOT: { discordId },
-        },
-      });
-
-      // Fallback check for any legacy or differently-formatted IPv6 records in the database
-      if (!existingRecord) {
-        const potentialRecords = await db.ipHistory.findMany({
-          where: {
-            ipAddress: { contains: ':' },
-            NOT: { discordId },
-          },
-          take: 50,
-          orderBy: { createdAt: 'desc' }
-        });
-        existingRecord = potentialRecords.find(r => areIpsEquivalent(r.ipAddress, normalizedIp)) || null;
-      }
-    } else {
-      existingRecord = await db.ipHistory.findFirst({
-        where: {
-          ipAddress: normalizedIp,
-          NOT: { discordId },
-        },
-      });
-    }
+    const existingRecord = await db.ipHistory.findFirst({
+      where: {
+        ipAddress: normalizedIp,
+        NOT: { discordId },
+      },
+    });
 
     if (existingRecord) {
       const reason = buildAutoBanReason({
@@ -101,18 +62,15 @@ function createIpCheck(db) {
       };
     }
 
-    // For IPv6, record the expanded address so indexed prefix matching works across all devices in the /64 subnet
-    const recordIp = isIpv6 && subnet ? subnet.expanded : normalizedIp;
-
     await db.ipHistory.upsert({
       where: {
         ipAddress_discordId: {
-          ipAddress: recordIp,
+          ipAddress: normalizedIp,
           discordId,
         },
       },
       create: {
-        ipAddress: recordIp,
+        ipAddress: normalizedIp,
         discordId,
         userId,
       },
