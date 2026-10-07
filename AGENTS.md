@@ -34,7 +34,7 @@ The detailed rules live in `.agents/rules/`. Read the relevant file before actin
 - **Daily Reward & Widget** - [.agents/rules/daily-reward-widget.md](.agents/rules/daily-reward-widget.md) - Règles du module Daily Reward et du widget macOS
 - **Discord Rich Presence** - [.agents/rules/discord-rpc.md](.agents/rules/discord-rpc.md) - Intégration Discord RPC, statut Overnode App et respect de la vie privée
 - **Menu Bar & Quick Actions** - [.agents/rules/menu-bar.md](.agents/rules/menu-bar.md) - Menu Bar macOS, présence en arrière-plan et contrôle rapide du serveur
-- **Easter Egg** - [.agents/rules/easter-egg.md](.agents/rules/easter-egg.md) - Raccourci secret ⌘T dans les réglages et montage félin WTF
+- **Easter Egg** - [.agents/rules/easter-egg.md](.agents/rules/easter-egg.md) - Raccourci secret ⌘T (macOS) / Ctrl+T (Windows) dans les réglages et montage félin WTF
  
 ## Universal Rules
 

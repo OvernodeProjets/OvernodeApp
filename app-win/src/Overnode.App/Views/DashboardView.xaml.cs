@@ -1,7 +1,9 @@
 using System;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Overnode.App.Localization;
 using Overnode.App.Models;
 using Overnode.App.Services;
@@ -50,11 +52,27 @@ public sealed partial class DashboardView : UserControl
             Sidebar.SelectedTab = initialNavTab;
         }
 
+        EasterEggOverlay.Dismissed += (s, e) =>
+        {
+            EasterEggOverlay.Visibility = Visibility.Collapsed;
+        };
+        PreviewKeyDown += OnDashboardPreviewKeyDown;
+
         if (Environment.GetEnvironmentVariable("OVERNODE_TEST_CREATE_MODAL") == "1")
         {
             DispatcherQueue.TryEnqueue(async () =>
             {
                 await OpenCreateServerModalAsync();
+            });
+        }
+
+        if (Environment.GetEnvironmentVariable("OVERNODE_TEST_EASTER_EGG") == "1")
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                ViewModel.SelectedTab = NavigationTab.Settings;
+                UpdateTabContent();
+                OpenEasterEgg();
             });
         }
 
@@ -314,6 +332,7 @@ public sealed partial class DashboardView : UserControl
 
     private void OnSidebarTabSelected(object? sender, NavigationTab tab)
     {
+        CloseEasterEgg();
         ServerDetailView.Visibility = Visibility.Collapsed;
         ServerDetailView.DataContext = null;
         Sidebar.SelectedServer = null;
@@ -324,6 +343,7 @@ public sealed partial class DashboardView : UserControl
 
     private void OnSidebarServerTabSelected(object? sender, ServerTab tab)
     {
+        CloseEasterEgg();
         if (ServerDetailView.DataContext is ServerDetailViewModel vm)
         {
             vm.SelectedTab = tab;
@@ -334,6 +354,7 @@ public sealed partial class DashboardView : UserControl
 
     private void OnSidebarBackToServersRequested(object? sender, EventArgs e)
     {
+        CloseEasterEgg();
         ServerDetailView.Visibility = Visibility.Collapsed;
         ServerDetailView.DataContext = null;
         Sidebar.SelectedServer = null;
@@ -483,6 +504,7 @@ public sealed partial class DashboardView : UserControl
 
     private void OnLogoutRequested(object? sender, EventArgs e)
     {
+        CloseEasterEgg();
         AuthVM?.LogoutCommand.Execute(null);
     }
 
@@ -497,6 +519,71 @@ public sealed partial class DashboardView : UserControl
         if (srv != null)
         {
             OnCardManageRequested(this, srv);
+        }
+    }
+
+    // MARK: - Easter Egg Handlers & Controls
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
+
+    private void OnCtrlTInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        ToggleEasterEgg();
+    }
+
+    private void OnEscapeInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (EasterEggOverlay.Visibility == Visibility.Visible)
+        {
+            args.Handled = true;
+            CloseEasterEgg();
+        }
+    }
+
+    private void OnDashboardPreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (EasterEggOverlay.Visibility == Visibility.Visible && e.Key == Windows.System.VirtualKey.Escape)
+        {
+            e.Handled = true;
+            CloseEasterEgg();
+            return;
+        }
+
+        if (e.Key == Windows.System.VirtualKey.T)
+        {
+            bool isCtrl = (GetAsyncKeyState(0x11) & 0x8000) != 0; // VK_CONTROL
+            if (isCtrl)
+            {
+                e.Handled = true;
+                ToggleEasterEgg();
+            }
+        }
+    }
+
+    public void ToggleEasterEgg()
+    {
+        if (EasterEggOverlay.Visibility == Visibility.Visible)
+        {
+            CloseEasterEgg();
+        }
+        else if (ViewModel.SelectedTab == NavigationTab.Settings && ServerDetailView.Visibility != Visibility.Visible)
+        {
+            OpenEasterEgg();
+        }
+    }
+
+    public void OpenEasterEgg()
+    {
+        EasterEggOverlay.Visibility = Visibility.Visible;
+        EasterEggOverlay.InitializeAndStart();
+    }
+
+    public void CloseEasterEgg()
+    {
+        if (EasterEggOverlay.Visibility == Visibility.Visible)
+        {
+            EasterEggOverlay.Close();
         }
     }
 }

@@ -81,7 +81,10 @@ public sealed partial class MainWindow : Window, Services.ITrayTarget
         Services.TrayIconManager.Shared.Initialize(this);
 
         // Silent background update check on startup
-        _ = System.Threading.Tasks.Task.Run(() => UpdateVM.CheckForUpdatesAsync(silent: true));
+        if (Environment.GetEnvironmentVariable("OVERNODE_CAPTURE_SCREEN") != "1")
+        {
+            _ = System.Threading.Tasks.Task.Run(() => UpdateVM.CheckForUpdatesAsync(silent: true));
+        }
 
         if (Environment.GetEnvironmentVariable("OVERNODE_CAPTURE_SCREEN") == "1")
         {
@@ -285,6 +288,16 @@ public sealed partial class MainWindow : Window, Services.ITrayTarget
                 _dashboardView.OpenFirstServerConsole();
                 await System.Threading.Tasks.Task.Delay(1000);
             }
+            else if (Environment.GetEnvironmentVariable("OVERNODE_CAPTURE_EASTEREGG") == "1")
+            {
+                UpdateVM.Dismiss();
+                _updateModal.Visibility = Visibility.Collapsed;
+                _dashboardView.ViewModel.SelectedTab = NavigationTab.Settings;
+                _dashboardView.OpenEasterEgg();
+                await System.Threading.Tasks.Task.Delay(1500);
+            }
+
+            _updateModal.Visibility = Visibility.Collapsed;
 
             if (Content is FrameworkElement root)
             {

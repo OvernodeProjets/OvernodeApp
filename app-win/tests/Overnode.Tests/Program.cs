@@ -167,6 +167,15 @@ public class Program
         // 13. Folder Sync Tests
         FolderSyncTests.RunAll(Run);
 
+        // 14. Easter Egg Tests (macOS Parity & Windows Ctrl+T)
+        var easterEggTests = new EasterEggTests();
+        Run("EasterEgg Assets Preloaded & Available (12 poses)", easterEggTests.Test_EasterEgg_Assets_Preloaded_And_Available);
+        Run("EasterEgg Excluded Forbidden Image Not Present", easterEggTests.Test_Excluded_Image_Not_Present);
+        Run("EasterEgg Audio Resolution & Properties", easterEggTests.Test_EasterEgg_Audio_Resolution_And_Properties);
+        Run("EasterEgg Phases Timing & Non-Empty Titles", easterEggTests.Test_EasterEgg_Phases_Timing_And_Titles);
+        Run("EasterEgg Localization Active Switch (FR & EN)", easterEggTests.Test_EasterEgg_Localization_Active_Switch);
+        Run("EasterEgg Shortcut & Rules Parity (Ctrl+T in Settings)", easterEggTests.Test_EasterEgg_Shortcut_And_Rules_Parity);
+
         Console.WriteLine($"\n---------------------------------------");
         Console.WriteLine($"Total: {passed + failed} | Passed: {passed} | Failed: {failed}");
         Console.WriteLine("=======================================");

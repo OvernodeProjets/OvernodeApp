@@ -25,6 +25,7 @@
     <FileVersion>1.1.10.0</FileVersion>
     <AssemblyVersion>1.1.10.0</AssemblyVersion>
     <NoWarn>$(NoWarn);MVVMTK0045</NoWarn>
+    <DefineConstants>$(DefineConstants);HAS_WINUI</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

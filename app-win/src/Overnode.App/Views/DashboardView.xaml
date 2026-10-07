@@ -12,7 +12,13 @@
     xmlns:supportViews="using:Overnode.App.Views.Support"
     xmlns:afkViews="using:Overnode.App.Views.AFK"
     xmlns:settingsViews="using:Overnode.App.Views.Settings"
+    xmlns:easterEggViews="using:Overnode.App.Views.EasterEgg"
     mc:Ignorable="d">
+
+    <UserControl.KeyboardAccelerators>
+        <KeyboardAccelerator Key="T" Modifiers="Control" Invoked="OnCtrlTInvoked" />
+        <KeyboardAccelerator Key="Escape" Invoked="OnEscapeInvoked" />
+    </UserControl.KeyboardAccelerators>
 
     <Grid Background="{StaticResource OvernodeBackgroundBrush}" AllowDrop="True">
         <Grid.RowDefinitions>
@@ -350,5 +356,11 @@
                                                   VerticalAlignment="Center"
                                                   Margin="24" />
         </Grid>
+
+        <!-- Easter Egg Immersive Montage Overlay -->
+        <easterEggViews:EasterEggMontageControl x:Name="EasterEggOverlay"
+                                               Grid.RowSpan="2"
+                                               Visibility="Collapsed"
+                                               Canvas.ZIndex="999" />
     </Grid>
 </UserControl>
