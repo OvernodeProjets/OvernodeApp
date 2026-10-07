@@ -11,6 +11,8 @@ public struct DashboardView: View {
     @State private var isShowingCreateServerModal: Bool = false
     @State private var serverPendingDeletion: ServerInstance? = nil
     @State private var showingCardDeleteConfirmation: Bool = false
+    @State private var isEasterEggPresented: Bool = false
+    @State private var easterEggEventMonitor: Any? = nil
     
     public init(authVM: AuthViewModel, initialTab: NavigationTab = .dashboard) {
         self.authVM = authVM
@@ -146,6 +148,19 @@ public struct DashboardView: View {
                let updated = newServers.first(where: { $0.identifier == current.identifier || $0.id == current.id }) {
                 selectedServer = updated
             }
+        }
+        .overlay {
+            if isEasterEggPresented {
+                EasterEggMontageView(isPresented: $isEasterEggPresented)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                    .zIndex(999)
+            }
+        }
+        .onAppear {
+            setupEasterEggKeyMonitor()
+        }
+        .onDisappear {
+            removeEasterEggKeyMonitor()
         }
     }
     
@@ -377,6 +392,18 @@ public struct DashboardView: View {
     private var settingsContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                // Raccourci clavier discret Command + T pour l'Easter Egg
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isEasterEggPresented.toggle()
+                    }
+                }) {
+                    EmptyView()
+                }
+                .keyboardShortcut("t", modifiers: .command)
+                .opacity(0.0001)
+                .frame(width: 0, height: 0)
+                
                 Text(loc.string("nav_settings"))
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundColor(OvernodeTheme.textPrimary)
@@ -522,6 +549,41 @@ public struct DashboardView: View {
                 PlatformStatCard(iconName: "server.rack", label: loc.string("stats_active_servers"), value: dashboardVM.platformStats?.totalServers.map(String.init) ?? "—")
                 PlatformStatCard(iconName: "mappin.and.ellipse", label: loc.string("stats_locations"), value: dashboardVM.platformStats?.totalLocations.map(String.init) ?? "—")
             }
+        }
+    }
+    
+    // MARK: - Easter Egg Keyboard Monitor
+    private func setupEasterEggKeyMonitor() {
+        guard easterEggEventMonitor == nil else { return }
+        easterEggEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // Fermeture via Échap
+            if isEasterEggPresented && event.keyCode == 53 {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    isEasterEggPresented = false
+                }
+                return nil
+            }
+            
+            // Déclencheur Command + T
+            let isCommand = event.modifierFlags.contains(.command)
+            let isT = event.charactersIgnoringModifiers?.lowercased() == "t"
+            if isCommand && isT {
+                // Déclenché uniquement lorsque l'utilisateur est dans l'onglet Réglages (ou si déjà ouvert pour fermer)
+                if selectedTab == .settings && selectedServer == nil {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isEasterEggPresented.toggle()
+                    }
+                    return nil
+                }
+            }
+            return event
+        }
+    }
+    
+    private func removeEasterEggKeyMonitor() {
+        if let monitor = easterEggEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            easterEggEventMonitor = nil
         }
     }
 }

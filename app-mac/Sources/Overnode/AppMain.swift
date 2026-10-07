@@ -172,6 +172,16 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
             )
             updateVM.showModal = true
             finalView = AnyView(RootContentView().preferredColorScheme(.dark).frame(width: 1100, height: 740))
+        } else if args.contains("--snapshot-easteregg") {
+            if let tIdx = args.firstIndex(of: "--snapshot-easteregg-time"), args.count > tIdx + 1,
+               let tVal = Double(args[tIdx + 1]) {
+                EasterEggAudioPlayer.shared.seek(to: tVal)
+            }
+            finalView = AnyView(
+                EasterEggMontageView(isPresented: .constant(true))
+                    .preferredColorScheme(.dark)
+                    .frame(width: 1100, height: 740)
+            )
         } else if args.contains("--snapshot-settings") {
             let authVM = AuthViewModel()
             finalView = AnyView(DashboardView(authVM: authVM, initialTab: .settings).preferredColorScheme(.dark).frame(width: 1100, height: 740))
