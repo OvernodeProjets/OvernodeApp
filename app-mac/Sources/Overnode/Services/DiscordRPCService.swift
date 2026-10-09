@@ -9,6 +9,7 @@ public final class DiscordRPCService: ObservableObject, @unchecked Sendable {
     public static let defaultWebsiteURL = "https://overnode.fr"
     
     @Published public private(set) var isConnected: Bool = false
+    @Published public private(set) var currentDiscordUserId: String? = nil
     public let isEnabled: Bool = true
     
     private var socketFd: Int32 = -1
@@ -66,7 +67,9 @@ public final class DiscordRPCService: ObservableObject, @unchecked Sendable {
                 guard sendFrame(fd: fd, opcode: .handshake, payload: handshake) else {
                     closeSocket(); continue
                 }
-                _ = readFrame(fd: fd)
+                if let response = readFrame(fd: fd) {
+                    parseReadyPayload(response.data)
+                }
                 sendDefaultActivity(fd: fd)
                 Task { @MainActor [weak self] in self?.isConnected = true }
                 startMonitoring(fd: fd)
@@ -168,5 +171,17 @@ public final class DiscordRPCService: ObservableObject, @unchecked Sendable {
             readTotal += n
         }
         return (op, body)
+    }
+    
+    private func parseReadyPayload(_ data: Data) {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let dataDict = json["data"] as? [String: Any],
+              let userDict = dataDict["user"] as? [String: Any],
+              let userId = userDict["id"] as? String else {
+            return
+        }
+        Task { @MainActor [weak self] in
+            self?.currentDiscordUserId = userId
+        }
     }
 }

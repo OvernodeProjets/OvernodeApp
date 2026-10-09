@@ -63,6 +63,7 @@ public final class StoreViewModel: ObservableObject {
             features: [
                 "Renouvellement automatique total inclus",
                 "Multiplicateur 1.5x AFK et limites étendues",
+                "Personnalisation intégrale de l'application (Thèmes & Fond)",
                 "Support prioritaire Overnode"
             ],
             iconName: "crown.fill",

@@ -122,6 +122,7 @@ public struct StoreBundlesView: View {
             return [
                 loc.string("bundle_god_f1"),
                 loc.string("bundle_god_f2"),
+                loc.string("bundle_god_f4"),
                 loc.string("bundle_god_f3")
             ]
         default:

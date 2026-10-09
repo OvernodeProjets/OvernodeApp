@@ -99,7 +99,11 @@ public struct HeaderBarView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(OvernodeTheme.cardBackground)
+        .background(
+            ThemeManager.shared.hasActiveCustomBackground
+                ? OvernodeTheme.cardBackground.opacity(0.85)
+                : OvernodeTheme.cardBackground
+        )
         .overlay(
             Rectangle()
                 .frame(height: 1)

@@ -35,6 +35,7 @@ The detailed rules live in `.agents/rules/`. Read the relevant file before actin
 - **Discord Rich Presence** - [.agents/rules/discord-rpc.md](.agents/rules/discord-rpc.md) - Intégration Discord RPC, statut Overnode App et respect de la vie privée
 - **Menu Bar & Quick Actions** - [.agents/rules/menu-bar.md](.agents/rules/menu-bar.md) - Menu Bar macOS, présence en arrière-plan et contrôle rapide du serveur
 - **Easter Egg** - [.agents/rules/easter-egg.md](.agents/rules/easter-egg.md) - Raccourci secret ⌘T (macOS) / Ctrl+T (Windows) dans les réglages et montage félin WTF
+- **God Pack Customization** - [.agents/rules/god-pack-customization.md](.agents/rules/god-pack-customization.md) - Personnalisation intégrale de l'application macOS réservée aux possesseurs du Pack God et VIP Updater
  
 ## Universal Rules
 

@@ -28,6 +28,7 @@ public enum NavigationTab: String, CaseIterable, Identifiable {
 
 public struct SidebarView: View {
     @ObservedObject var loc = LocalizationManager.shared
+    @ObservedObject var themeManager = ThemeManager.shared
     @Binding var selectedTab: NavigationTab
     @Binding var selectedServer: ServerInstance?
     @Binding var selectedServerTab: ServerTab
@@ -70,7 +71,11 @@ public struct SidebarView: View {
         }
         .padding(12)
         .frame(width: 230)
-        .background(OvernodeTheme.cardBackground)
+        .background(
+            themeManager.hasActiveCustomBackground
+                ? OvernodeTheme.cardBackground.opacity(0.85)
+                : OvernodeTheme.cardBackground
+        )
         .overlay(
             Rectangle()
                 .frame(width: 1)

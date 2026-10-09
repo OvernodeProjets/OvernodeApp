@@ -5,6 +5,8 @@ public struct DashboardView: View {
     @StateObject private var dashboardVM: DashboardViewModel
     @ObservedObject var loc = LocalizationManager.shared
     @ObservedObject var updateVM = UpdateViewModel.shared
+    @ObservedObject var themeManager = ThemeManager.shared
+    @ObservedObject var godPackService = GodPackService.shared
     @State private var selectedTab: NavigationTab = .dashboard
     @State private var selectedServer: ServerInstance?
     @State private var selectedServerTab: ServerTab = .console
@@ -14,90 +16,65 @@ public struct DashboardView: View {
     @State private var isEasterEggPresented: Bool = false
     @State private var easterEggEventMonitor: Any? = nil
     
-    public init(authVM: AuthViewModel, initialTab: NavigationTab = .dashboard) {
+    public init(authVM: AuthViewModel, initialTab: NavigationTab? = nil) {
         self.authVM = authVM
         self._dashboardVM = StateObject(wrappedValue: DashboardViewModel(initialResources: authVM.initialResources))
-        self._selectedTab = State(initialValue: initialTab)
+        let effectiveTab = initialTab ?? ThemeManager.shared.resolvedLandingTab
+        self._selectedTab = State(initialValue: effectiveTab)
         if ProcessInfo.processInfo.environment["OVERNODE_DEMO_CREATE_SERVER"] == "1" {
             self._isShowingCreateServerModal = State(initialValue: true)
         }
     }
     
     public var body: some View {
-        VStack(spacing: 0) {
-            HeaderBarView(
-                onRefresh: {
-                    authVM.checkSession()
-                    dashboardVM.loadDashboardData(force: true)
-                }
-            )
+        ZStack {
+            // Fond uni du thème à la racine (assure que la fenêtre est toujours peinte)
+            ColorHexHelper.color(from: themeManager.currentConfig.colors.backgroundHex)
+                .ignoresSafeArea()
             
-            HStack(spacing: 0) {
-                SidebarView(
-                    selectedTab: $selectedTab,
-                    selectedServer: $selectedServer,
-                    selectedServerTab: $selectedServerTab,
-                    servers: dashboardVM.servers,
-                    user: authVM.currentUser,
-                    onLogout: { authVM.logout() }
+            // Incrustation d'arrière-plan personnalisée (Pack God)
+            if themeManager.hasActiveCustomBackground, let nsImg = themeManager.backgroundNSImage {
+                GeometryReader { geo in
+                    Image(nsImage: nsImg)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                        .blur(radius: CGFloat(themeManager.currentConfig.backgroundBlur))
+                        .opacity(themeManager.currentConfig.backgroundOpacity)
+                        .overlay(
+                            Color.black.opacity(themeManager.currentConfig.backgroundOverlayDarkness)
+                        )
+                }
+                .ignoresSafeArea()
+            }
+            
+            VStack(spacing: 0) {
+                HeaderBarView(
+                    onRefresh: {
+                        authVM.checkSession()
+                        dashboardVM.loadDashboardData(force: true)
+                    }
                 )
                 
-                Group {
-                    if let server = selectedServer {
-                        ServerDetailView(
-                            server: server,
-                            selectedTab: $selectedServerTab,
-                            onBack: { selectedServer = nil },
-                            onServerDeleted: {
-                                let deleted = server
-                                selectedServer = nil
-                                dashboardVM.onServerDeleted(deleted)
-                                authVM.checkSession()
-                            }
-                        )
-                        .id(server.identifier)
+                HStack(spacing: 0) {
+                    if themeManager.currentConfig.sidebarPosition == .left {
+                        sidebarView
+                        mainBodyContent
                     } else {
-                        switch selectedTab {
-                        case .dashboard:
-                            overviewContent
-                        case .servers:
-                            serversListContent
-                        case .wallet:
-                            WalletView(userCoins: authVM.currentUser?.coins ?? 0)
-                        case .dailyReward:
-                            DailyRewardView(
-                                userCoins: authVM.currentUser?.coins ?? 0,
-                                currentUserId: authVM.currentUser?.id,
-                                onRewardClaimed: { newCoins in
-                                    authVM.currentUser?.coins = newCoins
-                                    authVM.checkSession()
-                                    dashboardVM.loadDashboardData(force: true)
-                                }
-                            )
-                        case .store:
-                            StoreView(
-                                initialCoins: authVM.currentUser?.coins ?? 0,
-                                onResourcePurchased: { newCoins in
-                                    authVM.currentUser?.coins = newCoins
-                                    dashboardVM.loadDashboardData(force: true)
-                                }
-                            )
-                        case .support:
-                            SupportView()
-                        case .afk:
-                            AFKView()
-                        case .settings:
-                            settingsContent
-                        }
+                        mainBodyContent
+                        sidebarView
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .background(OvernodeTheme.background)
+        .background(themeManager.hasActiveCustomBackground ? Color.clear : OvernodeTheme.background)
         .onAppear {
             dashboardVM.setInitialResourcesIfNeeded(authVM.initialResources)
             dashboardVM.loadDashboardData()
+            Task {
+                await godPackService.checkAccess(user: authVM.currentUser)
+            }
         }
         .onChange(of: selectedTab) { _, newTab in
             if newTab == .servers {
@@ -162,6 +139,72 @@ public struct DashboardView: View {
         .onDisappear {
             removeEasterEggKeyMonitor()
         }
+    }
+    
+    // MARK: - Navigation Views
+    private var sidebarView: some View {
+        SidebarView(
+            selectedTab: $selectedTab,
+            selectedServer: $selectedServer,
+            selectedServerTab: $selectedServerTab,
+            servers: dashboardVM.servers,
+            user: authVM.currentUser,
+            onLogout: { authVM.logout() }
+        )
+    }
+    
+    @ViewBuilder
+    private var mainBodyContent: some View {
+        Group {
+            if let server = selectedServer {
+                ServerDetailView(
+                    server: server,
+                    selectedTab: $selectedServerTab,
+                    onBack: { selectedServer = nil },
+                    onServerDeleted: {
+                        let deleted = server
+                        selectedServer = nil
+                        dashboardVM.onServerDeleted(deleted)
+                        authVM.checkSession()
+                    }
+                )
+                .id(server.identifier)
+            } else {
+                switch selectedTab {
+                case .dashboard:
+                    overviewContent
+                case .servers:
+                    serversListContent
+                case .wallet:
+                    WalletView(userCoins: authVM.currentUser?.coins ?? 0)
+                case .dailyReward:
+                    DailyRewardView(
+                        userCoins: authVM.currentUser?.coins ?? 0,
+                        currentUserId: authVM.currentUser?.id,
+                        onRewardClaimed: { newCoins in
+                            authVM.currentUser?.coins = newCoins
+                            authVM.checkSession()
+                            dashboardVM.loadDashboardData(force: true)
+                        }
+                    )
+                case .store:
+                    StoreView(
+                        initialCoins: authVM.currentUser?.coins ?? 0,
+                        onResourcePurchased: { newCoins in
+                            authVM.currentUser?.coins = newCoins
+                            dashboardVM.loadDashboardData(force: true)
+                        }
+                    )
+                case .support:
+                    SupportView()
+                case .afk:
+                    AFKView()
+                case .settings:
+                    settingsContent
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     // MARK: - Tab: Overview
@@ -314,7 +357,7 @@ public struct DashboardView: View {
             }
             .padding(24)
         }
-        .background(OvernodeTheme.background)
+        .background(themeManager.hasActiveCustomBackground ? Color.clear : OvernodeTheme.background)
     }
     
     // MARK: - Tab: Servers List
@@ -382,7 +425,7 @@ public struct DashboardView: View {
             }
             .padding(24)
         }
-        .background(OvernodeTheme.background)
+        .background(themeManager.hasActiveCustomBackground ? Color.clear : OvernodeTheme.background)
         .onAppear {
             dashboardVM.refreshServersOnNavigatingToServersSection()
         }
@@ -392,22 +435,16 @@ public struct DashboardView: View {
     private var settingsContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                // Raccourci clavier discret Command + T pour l'Easter Egg
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        isEasterEggPresented.toggle()
-                    }
-                }) {
-                    EmptyView()
-                }
-                .keyboardShortcut("t", modifiers: .command)
-                .opacity(0.0001)
-                .frame(width: 0, height: 0)
-                
                 Text(loc.string("nav_settings"))
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundColor(OvernodeTheme.textPrimary)
                     .padding(.top, 4)
+                
+                // Pack God Theme & Customization Card
+                GodPackThemeSettingsCardView(
+                    user: authVM.currentUser,
+                    onNavigateToStore: { selectedTab = .store }
+                )
                 
                // Language Switcher Card
                VStack(alignment: .leading, spacing: 16) {
@@ -532,7 +569,7 @@ public struct DashboardView: View {
             }
             .padding(24)
         }
-        .background(OvernodeTheme.background)
+        .background(themeManager.hasActiveCustomBackground ? Color.clear : OvernodeTheme.background)
     }
     
     private var platformStatsSection: some View {

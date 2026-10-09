@@ -3,6 +3,7 @@ import SwiftUI
 public struct RootContentView: View {
     @StateObject private var authVM = AuthViewModel()
     @StateObject private var updateVM = UpdateViewModel.shared
+    @ObservedObject private var themeManager = ThemeManager.shared
     
     public init() {}
     

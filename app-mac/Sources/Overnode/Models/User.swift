@@ -8,6 +8,7 @@ public struct User: Codable, Identifiable, Equatable, Sendable {
     public let role: String?
     public let avatarUrl: String?
     public var coins: Int
+    public let discordId: String?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -17,6 +18,8 @@ public struct User: Codable, Identifiable, Equatable, Sendable {
         case role
         case avatarUrl
         case coins
+        case discordId
+        case discordIdSnake = "discord_id"
     }
     
     public init(
@@ -26,7 +29,8 @@ public struct User: Codable, Identifiable, Equatable, Sendable {
         globalName: String? = nil,
         role: String? = nil,
         avatarUrl: String? = nil,
-        coins: Int = 0
+        coins: Int = 0,
+        discordId: String? = nil
     ) {
         self.id = id
         self.username = username
@@ -35,6 +39,7 @@ public struct User: Codable, Identifiable, Equatable, Sendable {
         self.role = role
         self.avatarUrl = avatarUrl
         self.coins = coins
+        self.discordId = discordId
     }
     
     public init(from decoder: Decoder) throws {
@@ -52,6 +57,29 @@ public struct User: Codable, Identifiable, Equatable, Sendable {
         self.role = try? c.decode(String.self, forKey: .role)
         self.avatarUrl = try? c.decode(String.self, forKey: .avatarUrl)
         self.coins = (try? c.decode(Int.self, forKey: .coins)) ?? 0
+        if let dId = try? c.decode(String.self, forKey: .discordId) {
+            self.discordId = dId
+        } else if let dId = try? c.decode(String.self, forKey: .discordIdSnake) {
+            self.discordId = dId
+        } else if let dInt = try? c.decode(Int.self, forKey: .discordId) {
+            self.discordId = String(dInt)
+        } else if let dInt = try? c.decode(Int.self, forKey: .discordIdSnake) {
+            self.discordId = String(dInt)
+        } else {
+            self.discordId = nil
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(username, forKey: .username)
+        try container.encode(email, forKey: .email)
+        try container.encodeIfPresent(globalName, forKey: .globalName)
+        try container.encodeIfPresent(role, forKey: .role)
+        try container.encodeIfPresent(avatarUrl, forKey: .avatarUrl)
+        try container.encode(coins, forKey: .coins)
+        try container.encodeIfPresent(discordId, forKey: .discordId)
     }
 }
 
@@ -62,6 +90,7 @@ public struct InitResponse: Codable, Sendable {
         public let email: String
         public let globalName: String?
         public let pterodactylEmail: String?
+        public let discordId: String?
         
         enum CodingKeys: String, CodingKey {
             case id
@@ -69,6 +98,8 @@ public struct InitResponse: Codable, Sendable {
             case email
             case globalName = "global_name"
             case pterodactylEmail
+            case discordId
+            case discordIdSnake = "discord_id"
         }
         
         public init(from decoder: Decoder) throws {
@@ -84,6 +115,27 @@ public struct InitResponse: Codable, Sendable {
             self.email = (try? c.decode(String.self, forKey: .email)) ?? ""
             self.globalName = try? c.decode(String.self, forKey: .globalName)
             self.pterodactylEmail = try? c.decode(String.self, forKey: .pterodactylEmail)
+            if let dId = try? c.decode(String.self, forKey: .discordId) {
+                self.discordId = dId
+            } else if let dId = try? c.decode(String.self, forKey: .discordIdSnake) {
+                self.discordId = dId
+            } else if let dInt = try? c.decode(Int.self, forKey: .discordId) {
+                self.discordId = String(dInt)
+            } else if let dInt = try? c.decode(Int.self, forKey: .discordIdSnake) {
+                self.discordId = String(dInt)
+            } else {
+                self.discordId = nil
+            }
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(id, forKey: .id)
+            try container.encode(username, forKey: .username)
+            try container.encode(email, forKey: .email)
+            try container.encodeIfPresent(globalName, forKey: .globalName)
+            try container.encodeIfPresent(pterodactylEmail, forKey: .pterodactylEmail)
+            try container.encodeIfPresent(discordId, forKey: .discordId)
         }
     }
     

@@ -38,7 +38,8 @@ public final class AuthViewModel: ObservableObject {
                         globalName: u.globalName,
                         role: initData.roles?.first?.name,
                         avatarUrl: nil,
-                        coins: initData.coins ?? 0
+                        coins: initData.coins ?? 0,
+                        discordId: u.discordId
                     )
                     self.isAuthenticated = true
                     DailyRewardSyncManager.shared.sync()
