@@ -7,7 +7,7 @@
     mc:Ignorable="d"
     Title="Overnode">
 
-    <Grid Background="#101218">
+    <Grid Background="{StaticResource OvernodeBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="48" />
             <RowDefinition Height="*" />
@@ -16,8 +16,8 @@
         <!-- Custom Overnode Header Bar matching macOS -->
         <Border x:Name="AppTitleBar" 
                 Grid.Row="0" 
-                Background="#181B22" 
-                BorderBrush="#2E3337" 
+                Background="{StaticResource OvernodeCardBrush}" 
+                BorderBrush="{StaticResource OvernodeBorderBrush}" 
                 BorderThickness="0,0,0,1" 
                 Padding="16,0">
             <Grid>

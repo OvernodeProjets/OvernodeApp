@@ -35,6 +35,9 @@
     <Compile Include="..\..\src\Overnode.App\Services\TrayIconManager.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Services\ConsoleColorHelper.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\Services\EasterEggAssetManager.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\ColorHexHelper.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\GodPackService.cs" Link="Services\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Overnode.App\Services\ThemeManager.cs" Link="Services\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\ViewModels\TwoFactorViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\ViewModels\ServerDetailViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Overnode.App\ViewModels\CreateServerViewModel.cs" Link="ViewModels\%(Filename)%(Extension)" />

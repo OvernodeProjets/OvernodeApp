@@ -31,6 +31,9 @@ public class User : INotifyPropertyChanged
     [JsonPropertyName("avatar_url")]
     public string? AvatarUrl { get; set; }
 
+    [JsonPropertyName("discord_id")]
+    public string? DiscordId { get; set; }
+
     private int _coins = 0;
 
     [JsonPropertyName("coins")]

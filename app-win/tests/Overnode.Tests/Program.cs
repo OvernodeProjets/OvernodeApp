@@ -176,6 +176,17 @@ public class Program
         Run("EasterEgg Localization Active Switch (FR & EN)", easterEggTests.Test_EasterEgg_Localization_Active_Switch);
         Run("EasterEgg Shortcut & Rules Parity (Ctrl+T in Settings)", easterEggTests.Test_EasterEgg_Shortcut_And_Rules_Parity);
 
+        // 15. God Pack Customization Tests (macOS Parity & Windows Ctrl+D)
+        var godPackTests = new GodPackThemeTests();
+        Run("GodPack 9 Community Presets Validity & Colors", godPackTests.Test_All_9_Presets_Validity);
+        Run("GodPack ColorHexHelper Normalization & Parsing", godPackTests.Test_ColorHexHelper_Normalization);
+        Run("GodPack BundleStatus & Updater DTO Deserialization", godPackTests.Test_BundleStatus_And_Updater_Deserialization);
+        Run("GodPack AppThemeConfig Serialization Round-Trip (.overnode.app)", godPackTests.Test_ThemeConfig_Serialization_Parity);
+        Run("GodPack ThemeManager Preset Application & Reset", godPackTests.Test_ThemeManager_Preset_And_Reset);
+        Run("GodPack ThemeManager Disk Persistence Round-Trip", godPackTests.Test_ThemeManager_Persistence_RoundTrip);
+        Run("GodPack ThemeManager Resolved Landing Tabs", godPackTests.Test_ThemeManager_ResolvedLandingTab);
+        Run("GodPack Localization Parity (FR & EN + Ctrl+D Shortcut)", godPackTests.Test_GodPack_Localization_Parity_FR_EN);
+
         Console.WriteLine($"\n---------------------------------------");
         Console.WriteLine($"Total: {passed + failed} | Passed: {passed} | Failed: {failed}");
         Console.WriteLine("=======================================");

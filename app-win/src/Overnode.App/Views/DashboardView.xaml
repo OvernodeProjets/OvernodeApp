@@ -17,14 +17,27 @@
 
     <UserControl.KeyboardAccelerators>
         <KeyboardAccelerator Key="T" Modifiers="Control" Invoked="OnCtrlTInvoked" />
+        <KeyboardAccelerator Key="D" Modifiers="Control" Invoked="OnCtrlDInvoked" />
         <KeyboardAccelerator Key="Escape" Invoked="OnEscapeInvoked" />
     </UserControl.KeyboardAccelerators>
 
-    <Grid Background="{StaticResource OvernodeBackgroundBrush}" AllowDrop="True">
+    <Grid x:Name="DashboardRootGrid" Background="{StaticResource OvernodeBackgroundBrush}" AllowDrop="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+
+        <!-- Custom Background Image Overlay (God Pack) -->
+        <Grid x:Name="CustomBgOverlayGrid"
+              Grid.RowSpan="2"
+              Visibility="Collapsed"
+              IsHitTestVisible="False">
+            <Image x:Name="CustomBgImage"
+                   Stretch="UniformToFill"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" />
+            <Border x:Name="CustomBgDarkOverlay" Background="#000000" />
+        </Grid>
 
         <!-- Top Header Bar -->
         <components:HeaderBarControl x:Name="HeaderBar"
@@ -32,10 +45,10 @@
                                      RefreshRequested="OnRefreshRequested" />
 
         <!-- Main Workspace (Sidebar + Content) -->
-        <Grid Grid.Row="1" AllowDrop="True">
+        <Grid x:Name="WorkspaceGrid" Grid.Row="1" AllowDrop="True">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="WorkspaceCol0" Width="Auto" />
+                <ColumnDefinition x:Name="WorkspaceCol1" Width="*" />
             </Grid.ColumnDefinitions>
 
             <!-- Navigation Sidebar -->
@@ -48,7 +61,7 @@
                                        LogoutRequested="OnLogoutRequested" />
 
             <!-- Content Area -->
-            <Grid Grid.Column="1" AllowDrop="True">
+            <Grid x:Name="ContentAreaGrid" Grid.Column="1" AllowDrop="True">
                 <!-- Overview / Dashboard Tab -->
                 <ScrollViewer x:Name="OverviewContent"
                               VerticalScrollBarVisibility="Hidden"
@@ -355,6 +368,19 @@
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"
                                                   Margin="24" />
+        </Grid>
+
+        <!-- Discord VIP Prompt Modal Overlay (Ctrl+D) -->
+        <Grid x:Name="DiscordVIPModalOverlay"
+              Grid.RowSpan="2"
+              Background="#D90B0D13"
+              Visibility="Collapsed"
+              Tapped="OnDiscordVIPModalOverlayTapped"
+              Canvas.ZIndex="998">
+            <settingsViews:DiscordVIPPromptModalControl x:Name="DiscordVIPModal"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Margin="24" />
         </Grid>
 
         <!-- Easter Egg Immersive Montage Overlay -->

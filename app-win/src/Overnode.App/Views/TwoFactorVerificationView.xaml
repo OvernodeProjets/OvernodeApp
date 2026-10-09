@@ -6,7 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Background="#101218">
+    <Grid Background="{StaticResource OvernodeBackgroundBrush}">
         <ScrollViewer VerticalScrollBarVisibility="Hidden" 
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalAlignment="Center" 

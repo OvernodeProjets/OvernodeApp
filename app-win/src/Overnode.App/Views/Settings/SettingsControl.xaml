@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:Overnode.App.Views.Settings"
     mc:Ignorable="d">
 
     <ScrollViewer x:Name="SettingsScrollViewer" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
@@ -20,6 +21,9 @@
                            FontSize="13"
                            Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
             </StackPanel>
+
+            <!-- God Pack Customization Card -->
+            <local:GodPackThemeSettingsControl x:Name="GodPackSettings" />
 
             <!-- Language Card -->
             <Border Background="{StaticResource OvernodeCardBrush}"

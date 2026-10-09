@@ -98,4 +98,84 @@ public static class WindowsPickerHelper
             return null;
         }
     }
+
+    public static async Task<string?> PickImageFileAsync(IntPtr hwnd = default)
+    {
+        try
+        {
+            var picker = new FileOpenPicker();
+            picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
+            picker.FileTypeFilter.Add(".png");
+            picker.FileTypeFilter.Add(".jpg");
+            picker.FileTypeFilter.Add(".jpeg");
+            picker.FileTypeFilter.Add(".webp");
+            picker.FileTypeFilter.Add(".bmp");
+
+            IntPtr handle = hwnd != IntPtr.Zero ? hwnd : (ActiveWindowHandleProvider?.Invoke() ?? IntPtr.Zero);
+            if (handle != IntPtr.Zero)
+            {
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, handle);
+            }
+
+            var file = await picker.PickSingleFileAsync();
+            return file?.Path;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[WindowsPickerHelper] PickImageFileAsync error: {ex.Message}");
+            return null;
+        }
+    }
+
+    public static async Task<string?> PickSaveConfigFileAsync(string defaultFileName = "config.overnode.app", IntPtr hwnd = default)
+    {
+        try
+        {
+            var picker = new FileSavePicker();
+            picker.SuggestedStartLocation = PickerLocationId.Desktop;
+            picker.SuggestedFileName = defaultFileName;
+            picker.FileTypeChoices.Add("Overnode App Configuration", new System.Collections.Generic.List<string> { ".app", ".json" });
+            picker.DefaultFileExtension = ".app";
+
+            IntPtr handle = hwnd != IntPtr.Zero ? hwnd : (ActiveWindowHandleProvider?.Invoke() ?? IntPtr.Zero);
+            if (handle != IntPtr.Zero)
+            {
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, handle);
+            }
+
+            var file = await picker.PickSaveFileAsync();
+            return file?.Path;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[WindowsPickerHelper] PickSaveConfigFileAsync error: {ex.Message}");
+            return null;
+        }
+    }
+
+    public static async Task<string?> PickConfigFileAsync(IntPtr hwnd = default)
+    {
+        try
+        {
+            var picker = new FileOpenPicker();
+            picker.SuggestedStartLocation = PickerLocationId.Desktop;
+            picker.FileTypeFilter.Add(".app");
+            picker.FileTypeFilter.Add(".json");
+            picker.FileTypeFilter.Add("*");
+
+            IntPtr handle = hwnd != IntPtr.Zero ? hwnd : (ActiveWindowHandleProvider?.Invoke() ?? IntPtr.Zero);
+            if (handle != IntPtr.Zero)
+            {
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, handle);
+            }
+
+            var file = await picker.PickSingleFileAsync();
+            return file?.Path;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[WindowsPickerHelper] PickConfigFileAsync error: {ex.Message}");
+            return null;
+        }
+    }
 }

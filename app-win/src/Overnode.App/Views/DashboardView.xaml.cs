@@ -1,9 +1,11 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Overnode.App.Localization;
 using Overnode.App.Models;
 using Overnode.App.Services;
@@ -42,14 +44,46 @@ public sealed partial class DashboardView : UserControl
         CreateServerModal.Dismissed += OnModalDismissed;
         CreateServerModal.ServerCreated += OnServerCreated;
         SettingsViewContent.LogoutRequested += OnLogoutRequested;
+        SettingsViewContent.NavigateToStoreRequested += (s, e) =>
+        {
+            ViewModel.SelectedTab = NavigationTab.Store;
+            Sidebar.SelectedTab = NavigationTab.Store;
+            UpdateTabContent();
+        };
+        SettingsViewContent.OpenDiscordVIPModalRequested += (s, e) => OpenDiscordVIPModal();
         StoreViewContent.ResourcePurchased += OnResourcePurchased;
         DailyRewardViewContent.RewardClaimed += (s, e) => _ = RefreshCoinsAsync();
+
+        DiscordVIPModal.Dismissed += (s, e) =>
+        {
+            DiscordVIPModalOverlay.Visibility = Visibility.Collapsed;
+        };
+        DiscordVIPModal.VIPActivated += (s, e) =>
+        {
+            SettingsViewContent.Refresh();
+            ThemeManager.Shared.ApplyCurrentColorsToApplicationResources();
+        };
+        DiscordVIPModal.VIPUnlinked += (s, e) =>
+        {
+            SettingsViewContent.Refresh();
+        };
+
+        ThemeManager.Shared.PropertyChanged += (s, e) =>
+        {
+            DispatcherQueue.TryEnqueue(UpdateThemeCustomizations);
+        };
 
         var testTabEnv = Environment.GetEnvironmentVariable("OVERNODE_TEST_TAB");
         if (!string.IsNullOrEmpty(testTabEnv) && Enum.TryParse<NavigationTab>(testTabEnv, true, out var initialNavTab))
         {
             ViewModel.SelectedTab = initialNavTab;
             Sidebar.SelectedTab = initialNavTab;
+        }
+        else
+        {
+            var landingTab = ThemeManager.Shared.ResolvedLandingTab;
+            ViewModel.SelectedTab = landingTab;
+            Sidebar.SelectedTab = landingTab;
         }
 
         EasterEggOverlay.Dismissed += (s, e) =>
@@ -78,6 +112,7 @@ public sealed partial class DashboardView : UserControl
 
         UpdateLocalization();
         UpdateUI();
+        UpdateThemeCustomizations();
     }
 
     private void OnAuthVMChanged()
@@ -86,6 +121,10 @@ public sealed partial class DashboardView : UserControl
         {
             Sidebar.CurrentUser = AuthVM.CurrentUser;
             SettingsViewContent.CurrentUser = AuthVM.CurrentUser;
+            DiscordVIPModal.CurrentUser = AuthVM.CurrentUser;
+            _ = GodPackService.Shared.CheckAccessAsync(AuthVM.CurrentUser);
+            UpdateThemeCustomizations();
+
             if (AuthVM.CurrentUser != null)
             {
                 StoreViewContent.ViewModel.UserCoins = AuthVM.CurrentUser.Coins;
@@ -99,6 +138,8 @@ public sealed partial class DashboardView : UserControl
                 {
                     Sidebar.CurrentUser = AuthVM.CurrentUser;
                     SettingsViewContent.CurrentUser = AuthVM.CurrentUser;
+                    DiscordVIPModal.CurrentUser = AuthVM.CurrentUser;
+                    _ = GodPackService.Shared.CheckAccessAsync(AuthVM.CurrentUser);
                     if (AuthVM.CurrentUser != null)
                     {
                         StoreViewContent.ViewModel.UserCoins = AuthVM.CurrentUser.Coins;
@@ -532,8 +573,21 @@ public sealed partial class DashboardView : UserControl
         ToggleEasterEgg();
     }
 
+    private void OnCtrlDInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        OpenDiscordVIPModal();
+    }
+
     private void OnEscapeInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
+        if (DiscordVIPModalOverlay.Visibility == Visibility.Visible)
+        {
+            args.Handled = true;
+            DiscordVIPModalOverlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         if (EasterEggOverlay.Visibility == Visibility.Visible)
         {
             args.Handled = true;
@@ -543,6 +597,13 @@ public sealed partial class DashboardView : UserControl
 
     private void OnDashboardPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        if (DiscordVIPModalOverlay.Visibility == Visibility.Visible && e.Key == Windows.System.VirtualKey.Escape)
+        {
+            e.Handled = true;
+            DiscordVIPModalOverlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         if (EasterEggOverlay.Visibility == Visibility.Visible && e.Key == Windows.System.VirtualKey.Escape)
         {
             e.Handled = true;
@@ -558,6 +619,65 @@ public sealed partial class DashboardView : UserControl
                 e.Handled = true;
                 ToggleEasterEgg();
             }
+        }
+        else if (e.Key == Windows.System.VirtualKey.D)
+        {
+            bool isCtrl = (GetAsyncKeyState(0x11) & 0x8000) != 0; // VK_CONTROL
+            if (isCtrl)
+            {
+                e.Handled = true;
+                OpenDiscordVIPModal();
+            }
+        }
+    }
+
+    public void OpenDiscordVIPModal()
+    {
+        DiscordVIPModal.CurrentUser = AuthVM?.CurrentUser;
+        DiscordVIPModal.RefreshState();
+        DiscordVIPModalOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void OnDiscordVIPModalOverlayTapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (ReferenceEquals(e.OriginalSource, DiscordVIPModalOverlay))
+        {
+            DiscordVIPModalOverlay.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    public void UpdateThemeCustomizations()
+    {
+        var theme = ThemeManager.Shared;
+        bool hasCustomBg = theme.HasActiveCustomBackground;
+
+        if (hasCustomBg && theme.BackgroundBitmap != null)
+        {
+            CustomBgOverlayGrid.Visibility = Visibility.Visible;
+            CustomBgImage.Source = theme.BackgroundBitmap;
+            CustomBgImage.Opacity = theme.CurrentConfig.BackgroundOpacity;
+            CustomBgDarkOverlay.Opacity = theme.CurrentConfig.BackgroundOverlayDarkness;
+            DashboardRootGrid.Background = new SolidColorBrush(Colors.Transparent);
+        }
+        else
+        {
+            CustomBgOverlayGrid.Visibility = Visibility.Collapsed;
+            DashboardRootGrid.Background = (Brush)Application.Current.Resources["OvernodeBackgroundBrush"];
+        }
+
+        if (theme.CurrentConfig.SidebarPosition == SidebarPosition.Right)
+        {
+            WorkspaceCol0.Width = new GridLength(1, GridUnitType.Star);
+            WorkspaceCol1.Width = GridLength.Auto;
+            Grid.SetColumn(Sidebar, 1);
+            Grid.SetColumn(ContentAreaGrid, 0);
+        }
+        else
+        {
+            WorkspaceCol0.Width = GridLength.Auto;
+            WorkspaceCol1.Width = new GridLength(1, GridUnitType.Star);
+            Grid.SetColumn(Sidebar, 0);
+            Grid.SetColumn(ContentAreaGrid, 1);
         }
     }
 

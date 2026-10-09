@@ -1,0 +1,164 @@
+<UserControl
+    x:Class="Overnode.App.Views.Settings.DiscordVIPPromptModalControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Border Background="{StaticResource OvernodeCardBrush}"
+            BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+            BorderThickness="1"
+            CornerRadius="12"
+            Padding="24"
+            MaxWidth="460"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+            <!-- Header -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0"
+                        Width="40" Height="40"
+                        CornerRadius="8"
+                        Background="#335865F2"
+                        Margin="0,0,12,0"
+                        VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE8BD;" FontSize="18" Foreground="{StaticResource OvernodeAccentDiscordBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock x:Name="ModalTitleText"
+                               Text="Activation VIP Discord"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource OvernodeTextPrimaryBrush}" />
+                    <TextBlock x:Name="ModalSubtitleText"
+                               Text="Raccourci secret Ctrl+D"
+                               FontSize="12"
+                               Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                </StackPanel>
+
+                <Button Grid.Column="2"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="6"
+                        Click="OnCloseClicked"
+                        VerticalAlignment="Top">
+                    <FontIcon Glyph="&#xE711;" FontSize="13" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                </Button>
+            </Grid>
+
+            <Rectangle Height="1" Fill="{StaticResource OvernodeBorderSubtleBrush}" />
+
+            <!-- Description -->
+            <TextBlock x:Name="ModalDescText"
+                       Text="Entrez votre identifiant Discord (ex: 966633645144158209) pour vérifier et débloquer vos fonctionnalités Pack God :"
+                       FontSize="12.5"
+                       TextWrapping="Wrap"
+                       Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+
+            <!-- Active VIP badge if linked -->
+            <Border x:Name="ActiveVipBadge"
+                    Visibility="Collapsed"
+                    Background="#2622C55E"
+                    BorderBrush="#4D22C55E"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="12,8">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="{StaticResource OvernodeAccentSuccessBrush}" VerticalAlignment="Center" />
+                        <TextBlock x:Name="ActiveVipText" Text="VIP Discord : 966633645144158209" FontSize="12" FontWeight="Medium" Foreground="{StaticResource OvernodeTextPrimaryBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button x:Name="UnlinkBtn"
+                            HorizontalAlignment="Right"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="8,4"
+                            Click="OnUnlinkClicked">
+                        <TextBlock x:Name="UnlinkBtnText" Text="Dissocier" FontSize="11" Foreground="{StaticResource OvernodeAccentDangerBrush}" FontWeight="SemiBold" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Discord ID Input -->
+            <StackPanel Spacing="8">
+                <TextBox x:Name="DiscordIdInput"
+                         PlaceholderText="Identifiant Discord (ex: 966633645144158209)"
+                         FontFamily="Consolas, Segoe UI"
+                         FontSize="13"
+                         TextChanged="OnDiscordIdInputChanged" />
+
+                <!-- Detected RPC Button -->
+                <Button x:Name="DetectedDiscordBtn"
+                        Visibility="Collapsed"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="0"
+                        HorizontalAlignment="Left"
+                        Click="OnUseDetectedDiscordIdClicked">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE735;" FontSize="11" Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                        <TextBlock x:Name="DetectedDiscordText"
+                                   Text="Détecté via Discord : 966633645144158209"
+                                   FontSize="11.5"
+                                   Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <!-- Error Banner -->
+            <Border x:Name="ErrorBanner"
+                    Visibility="Collapsed"
+                    Background="#26EF4444"
+                    BorderBrush="#4DEF4444"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="12,8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE783;" FontSize="12" Foreground="{StaticResource OvernodeAccentDangerBrush}" VerticalAlignment="Center" />
+                    <TextBlock x:Name="ErrorBannerText"
+                               Text="Aucun accès Pack God VIP trouvé pour cet identifiant Discord sur le portail Updater."
+                               FontSize="11.5"
+                               Foreground="{StaticResource OvernodeAccentDangerBrush}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- Actions -->
+            <Grid Margin="0,8,0,0">
+                <Button x:Name="CancelBtn"
+                        HorizontalAlignment="Left"
+                        Background="Transparent"
+                        BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="16,8"
+                        Click="OnCloseClicked">
+                    <TextBlock x:Name="CancelBtnText" Text="Annuler" FontSize="12" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
+                </Button>
+
+                <Button x:Name="VerifyBtn"
+                        HorizontalAlignment="Right"
+                        Background="#405865F2"
+                        BorderBrush="{StaticResource OvernodeAccentDiscordBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="16,8"
+                        Click="OnVerifyClicked">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ProgressRing x:Name="VerifyProgressRing" Width="14" Height="14" Visibility="Collapsed" Foreground="#FFFFFF" />
+                        <FontIcon x:Name="VerifyIcon" Glyph="&#xE73E;" FontSize="11" Foreground="#FFFFFF" />
+                        <TextBlock x:Name="VerifyBtnText" Text="Vérifier &amp; Activer" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

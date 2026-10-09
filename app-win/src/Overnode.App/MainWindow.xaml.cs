@@ -62,6 +62,9 @@ public sealed partial class MainWindow : Window, Services.ITrayTarget
         }
         catch { }
 
+        Services.ThemeManager.Shared.ApplyCurrentColorsToApplicationResources();
+        _ = Services.ThemeManager.Shared.LoadBackgroundImageIfNeededAsync();
+
         AuthVM = new AuthViewModel();
         AuthVM.PropertyChanged += OnAuthVMPropertyChanged;
 

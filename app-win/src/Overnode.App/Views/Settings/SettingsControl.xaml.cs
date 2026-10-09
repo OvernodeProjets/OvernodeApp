@@ -15,6 +15,8 @@ public sealed partial class SettingsControl : UserControl
     private User? _currentUser;
 
     public event EventHandler? LogoutRequested;
+    public event EventHandler? NavigateToStoreRequested;
+    public event EventHandler? OpenDiscordVIPModalRequested;
 
     public User? CurrentUser
     {
@@ -22,6 +24,7 @@ public sealed partial class SettingsControl : UserControl
         set
         {
             _currentUser = value;
+            GodPackSettings.CurrentUser = value;
             UpdateUserInfo();
         }
     }
@@ -29,10 +32,14 @@ public sealed partial class SettingsControl : UserControl
     public SettingsControl()
     {
         InitializeComponent();
+        GodPackSettings.NavigateToStoreRequested += (s, e) => NavigateToStoreRequested?.Invoke(this, EventArgs.Empty);
+        GodPackSettings.OpenDiscordVIPModalRequested += (s, e) => OpenDiscordVIPModalRequested?.Invoke(this, EventArgs.Empty);
+
         _loc.LanguageChanged += (_, _) =>
         {
             UpdateLocalization();
             UpdateLanguageButtons();
+            GodPackSettings.RefreshState();
         };
 
         UpdateLocalization();
@@ -46,6 +53,7 @@ public sealed partial class SettingsControl : UserControl
         UpdateLocalization();
         UpdateLanguageButtons();
         UpdateUserInfo();
+        GodPackSettings.RefreshState();
         ExternalEditorToggle.IsOn = Services.ExternalEditorManager.Shared.AlwaysOpenInExternalEditor;
         PopulateExternalEditorsCombo();
     }

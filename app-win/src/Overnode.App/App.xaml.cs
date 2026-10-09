@@ -93,8 +93,14 @@ public partial class App : Application
     {
         try
         {
+            // Apply custom theme colors before creating MainWindow
+            Services.ThemeManager.Shared.ApplyCurrentColorsToApplicationResources();
+
             _window = new MainWindow();
             _window.Activate();
+
+            // Re-apply to ensure newly instantiated window resources catch any updates
+            Services.ThemeManager.Shared.ApplyCurrentColorsToApplicationResources();
 
             // Start Discord Rich Presence in background
             try

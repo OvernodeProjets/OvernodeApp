@@ -14,6 +14,7 @@
 
     <!-- Accents -->
     <Color x:Key="OvernodeAccentGoldColor">#F59E0B</Color>
+    <Color x:Key="OvernodeAccentCyanColor">#06B6D4</Color>
     <Color x:Key="OvernodeAccentDiscordColor">#5865F2</Color>
     <Color x:Key="OvernodeAccentSuccessColor">#22C55E</Color>
     <Color x:Key="OvernodeAccentDangerColor">#EF4444</Color>
@@ -35,6 +36,7 @@
     <SolidColorBrush x:Key="OvernodeTextSecondaryBrush" Color="{StaticResource OvernodeTextSecondaryColor}" />
     <SolidColorBrush x:Key="OvernodeTextMutedBrush" Color="{StaticResource OvernodeTextMutedColor}" />
     <SolidColorBrush x:Key="OvernodeAccentGoldBrush" Color="{StaticResource OvernodeAccentGoldColor}" />
+    <SolidColorBrush x:Key="OvernodeAccentCyanBrush" Color="{StaticResource OvernodeAccentCyanColor}" />
     <SolidColorBrush x:Key="OvernodeAccentDiscordBrush" Color="{StaticResource OvernodeAccentDiscordColor}" />
     <SolidColorBrush x:Key="OvernodeAccentSuccessBrush" Color="{StaticResource OvernodeAccentSuccessColor}" />
     <SolidColorBrush x:Key="OvernodeAccentDangerBrush" Color="{StaticResource OvernodeAccentDangerColor}" />

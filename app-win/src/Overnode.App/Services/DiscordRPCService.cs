@@ -27,6 +27,7 @@ public sealed class DiscordRPCService : IDisposable
     private bool _isConnected;
 
     public bool IsConnected => _isConnected;
+    public string? CurrentDiscordUserId { get; private set; }
 
     private DiscordRPCService()
     {
@@ -121,7 +122,24 @@ public sealed class DiscordRPCService : IDisposable
 
             await SendFrameAsync(0, payload, token);
             var (op, responseJson) = await ReadFrameAsync(token);
-            return op == 1; // 1 = Frame acknowledged
+            if (op == 1)
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(responseJson);
+                    if (doc.RootElement.TryGetProperty("data", out var dataEl) &&
+                        dataEl.TryGetProperty("user", out var userEl) &&
+                        userEl.TryGetProperty("id", out var idEl))
+                    {
+                        CurrentDiscordUserId = idEl.GetString();
+                    }
+                }
+                catch
+                {
+                }
+                return true;
+            }
+            return false;
         }
         catch
         {
@@ -238,6 +256,7 @@ public sealed class DiscordRPCService : IDisposable
     private void Disconnect()
     {
         _isConnected = false;
+        CurrentDiscordUserId = null;
         try
         {
             _pipeStream?.Dispose();
