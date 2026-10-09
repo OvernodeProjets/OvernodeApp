@@ -159,5 +159,28 @@ router.get('/v1/update/stats', (req, res) => {
   res.json(stats);
 });
 
+// God Pack Verification API
+// GET /api/v1/godpack/check/:discordId or GET /api/v1/godpack/check?discordId=...
+router.get(['/v1/godpack/check/:discordId', '/v1/godpack/check'], (req, res) => {
+  const discordId = (req.params.discordId || req.query.discordId || '').trim();
+  if (!discordId) {
+    return res.status(400).json({ error: 'Discord ID parameter required', hasGodPack: false });
+  }
+  const hasGodPack = db.isGodPackUser(discordId);
+  res.json({
+    discordId,
+    hasGodPack
+  });
+});
+
+// GET /api/v1/godpack/list
+router.get('/v1/godpack/list', (req, res) => {
+  const users = db.getGodPackUsers();
+  res.json({
+    total: users.length,
+    users: users.map(u => ({ discordId: u.discordId, note: u.note }))
+  });
+});
+
 module.exports = router;
 

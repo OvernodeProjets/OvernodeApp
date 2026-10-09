@@ -12,6 +12,7 @@ const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const DEPLOYMENT_FILE = path.join(DATA_DIR, 'deployment.json');
 const STATS_FILE = path.join(DATA_DIR, 'stats.json');
+const GODPACK_FILE = path.join(DATA_DIR, 'godpack.json');
 
 function readJSON(file, defaultVal) {
   try {
@@ -373,6 +374,53 @@ function getStats() {
   return readJSON(STATS_FILE, { totalChecks: 0, lastCheckAt: null, versions: {}, platforms: {} });
 }
 
+// 5. God Pack Discord IDs Management
+function getGodPackUsers() {
+  const data = readJSON(GODPACK_FILE, []);
+  return data.map(item => {
+    if (typeof item === 'string') {
+      return { discordId: item.trim(), note: '', addedBy: 'admin', addedAt: new Date().toISOString() };
+    }
+    return item;
+  });
+}
+
+function addGodPackUser(discordId, note, addedBy) {
+  const cleanId = String(discordId || '').trim();
+  if (!cleanId) throw new Error('ID Discord requis.');
+  const list = getGodPackUsers();
+  const existingIndex = list.findIndex(u => u.discordId === cleanId);
+  const now = new Date().toISOString();
+  if (existingIndex >= 0) {
+    list[existingIndex].note = note ? String(note).trim() : list[existingIndex].note;
+    list[existingIndex].updatedAt = now;
+  } else {
+    list.unshift({
+      discordId: cleanId,
+      note: note ? String(note).trim() : '',
+      addedBy: addedBy || 'admin',
+      addedAt: now
+    });
+  }
+  writeJSON(GODPACK_FILE, list);
+  return list;
+}
+
+function removeGodPackUser(discordId) {
+  const cleanId = String(discordId || '').trim();
+  let list = getGodPackUsers();
+  list = list.filter(u => u.discordId !== cleanId);
+  writeJSON(GODPACK_FILE, list);
+  return list;
+}
+
+function isGodPackUser(discordId) {
+  if (!discordId) return false;
+  const cleanId = String(discordId).trim();
+  const list = getGodPackUsers();
+  return list.some(u => u.discordId === cleanId);
+}
+
 module.exports = {
   CONSOLE_CODE: CONSOLE_CODE,
   verifyConsoleCode: verifyConsoleCode,
@@ -383,5 +431,9 @@ module.exports = {
   getAllDeployments: getAllDeployments,
   pushNewVersion: pushNewVersion,
   recordUpdateCheck: recordUpdateCheck,
-  getStats: getStats
+  getStats: getStats,
+  getGodPackUsers: getGodPackUsers,
+  addGodPackUser: addGodPackUser,
+  removeGodPackUser: removeGodPackUser,
+  isGodPackUser: isGodPackUser
 };

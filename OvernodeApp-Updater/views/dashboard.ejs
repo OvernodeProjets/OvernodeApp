@@ -166,6 +166,11 @@
       border-color: rgba(245, 158, 11, 0.4);
       color: #fbbf24;
     }
+    .platform-tab-btn.active.tab-godpack {
+      background: linear-gradient(135deg, rgba(229, 184, 66, 0.3), rgba(15, 23, 42, 0.95));
+      border-color: rgba(229, 184, 66, 0.7);
+      color: #e5b842;
+    }
     .tab-badge {
       font-size: 11px;
       padding: 2px 8px;
@@ -585,28 +590,34 @@
       </div>
     <% } %>
 
-    <!-- Navigation par Plateforme (macOS vs Windows) -->
+    <!-- Navigation par Plateforme & Fonctionnalités -->
     <div class="platform-tabs">
-      <button type="button" class="platform-tab-btn tab-mac <%= activeTab === 'macos' ? 'active' : '' %>" onclick="switchPlatform('macos')" id="tabBtn-macos">
+      <button type="button" class="platform-tab-btn tab-mac <%= activeSection !== 'godpack' && activeTab === 'macos' ? 'active' : '' %>" onclick="switchPlatform('macos')" id="tabBtn-macos">
         <span>🍎</span>
         <span>macOS (Apple Silicon)</span>
         <span class="tab-badge tab-badge-mac">v<%= macDeployment.currentVersion %></span>
       </button>
 
-      <button type="button" class="platform-tab-btn tab-win <%= activeTab === 'windows' ? 'active' : '' %>" onclick="switchPlatform('windows')" id="tabBtn-windows">
+      <button type="button" class="platform-tab-btn tab-win <%= activeSection !== 'godpack' && activeTab === 'windows' ? 'active' : '' %>" onclick="switchPlatform('windows')" id="tabBtn-windows">
         <span>🪟</span>
         <span>Windows (x64 Native)</span>
         <span class="tab-badge tab-badge-win">v<%= winDeployment.currentVersion %></span>
       </button>
 
-      <button type="button" class="platform-tab-btn tab-all <%= activeTab === 'all' ? 'active' : '' %>" onclick="switchPlatform('all')" id="tabBtn-all">
+      <button type="button" class="platform-tab-btn tab-all <%= activeSection !== 'godpack' && activeTab === 'all' ? 'active' : '' %>" onclick="switchPlatform('all')" id="tabBtn-all">
         <span>🌐</span>
         <span>Vue Globale (Bi-Plateforme)</span>
+      </button>
+
+      <button type="button" class="platform-tab-btn tab-godpack <%= activeSection === 'godpack' ? 'active' : '' %>" onclick="switchPlatform('godpack')" id="tabBtn-godpack">
+        <span>👑</span>
+        <span>Pack God VIPs</span>
+        <span class="tab-badge" style="background: rgba(229, 184, 66, 0.2); color: #e5b842; border: 1px solid rgba(229, 184, 66, 0.4);"><%= godPackUsers.length %></span>
       </button>
     </div>
 
     <!-- ==================== ONGLET 1: MACOS ==================== -->
-    <div class="platform-container <%= activeTab === 'macos' ? 'active' : '' %>" id="view-macos">
+    <div class="platform-container <%= activeSection !== 'godpack' && activeTab === 'macos' ? 'active' : '' %>" id="view-macos">
       <div class="stats-grid">
         <div class="card">
           <div class="card-label">
@@ -718,7 +729,7 @@ GET /api/v1/update/check?version=<%= macDeployment.currentVersion %>&amp;platfor
     </div>
 
     <!-- ==================== ONGLET 2: WINDOWS ==================== -->
-    <div class="platform-container <%= activeTab === 'windows' ? 'active' : '' %>" id="view-windows">
+    <div class="platform-container <%= activeSection !== 'godpack' && activeTab === 'windows' ? 'active' : '' %>" id="view-windows">
       <div class="stats-grid">
         <div class="card">
           <div class="card-label">
@@ -830,7 +841,7 @@ GET /api/v1/update/check?version=<%= winDeployment.currentVersion %>&amp;platfor
     </div>
 
     <!-- ==================== ONGLET 3: VUE GLOBALE ==================== -->
-    <div class="platform-container <%= activeTab === 'all' ? 'active' : '' %>" id="view-all">
+    <div class="platform-container <%= activeSection !== 'godpack' && activeTab === 'all' ? 'active' : '' %>" id="view-all">
       <div class="stats-grid">
         <div class="card">
           <div class="card-label">
@@ -911,6 +922,127 @@ GET /api/v1/update/check?version=<%= winDeployment.currentVersion %>&amp;platfor
         <div class="code-block">
 macOS   : GET /api/v1/update/check?version=<%= macDeployment.currentVersion %>&amp;platform=darwin-arm64
 Windows : GET /api/v1/update/check?version=<%= winDeployment.currentVersion %>&amp;platform=win-x64
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ONGLET 4: PACK GOD VIPS ==================== -->
+    <div class="platform-container <%= activeSection === 'godpack' ? 'active' : '' %>" id="view-godpack">
+      <div class="stats-grid">
+        <div class="card" style="border-color: rgba(229, 184, 66, 0.35); background: linear-gradient(135deg, rgba(229, 184, 66, 0.08), rgba(15, 23, 42, 0.9));">
+          <div class="card-label">
+            <span>Privilèges Pack God</span>
+            <span class="tab-badge" style="background: #e5b842; color: #000; font-weight: 700;">VIP Actif</span>
+          </div>
+          <div class="card-val" style="color: #e5b842;"><%= godPackUsers.length %> membre(s)</div>
+          <div class="card-desc">Débloque la personnalisation totale de l'app macOS (thèmes, incrustation de fond, landing page, export/import).</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">API Vérification Client</div>
+          <div class="card-val" style="font-size: 15px; color: #38bdf8;">/api/v1/godpack/check/:id</div>
+          <div class="card-desc">Interrogé automatiquement par l'application Overnode macOS native.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Synchronisation</div>
+          <div class="card-val val-green">Instantanée</div>
+          <div class="card-desc">Chaque modification prend effet immédiatement sans redémarrage du serveur.</div>
+        </div>
+      </div>
+
+      <!-- Formulaire d'ajout d'un ID Discord -->
+      <div class="deploy-section" style="border: 1px solid rgba(229, 184, 66, 0.35); background: linear-gradient(180deg, rgba(229, 184, 66, 0.06) 0%, rgba(15, 23, 42, 0.8) 100%);">
+        <div class="section-header">
+          <div class="section-title">
+            <span>👑</span>
+            <span>Accorder l'accès Pack God à un ID Discord</span>
+          </div>
+          <div class="section-badge" style="background: rgba(229, 184, 66, 0.15); color: #e5b842; border: 1px solid rgba(229, 184, 66, 0.4);">
+            ACCÈS PREMIUM
+          </div>
+        </div>
+
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">
+          L'utilisateur ayant cet identifiant Discord aura immédiatement accès à l'ensemble des fonctionnalités du Pack God dans son application macOS Overnode (personnalisation intégrale, thèmes prédéfinis, extraction de configuration).
+        </p>
+
+        <form action="/godpack/add" method="POST">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="gp_discordId">Identifiant Discord (ID Numérique)</label>
+              <input type="text" id="gp_discordId" name="discordId" required placeholder="Ex: 852174910283746304" pattern="[0-9]{15,22}" title="Identifiant Discord numérique (15 à 22 chiffres)">
+            </div>
+            <div class="form-group">
+              <label for="gp_note">Note / Pseudo / Description (Optionnel)</label>
+              <input type="text" id="gp_note" name="note" placeholder="Ex: Partenaire VIP / Fondateur">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-push" style="background: linear-gradient(135deg, #e5b842, #b8860b); color: #000; font-weight: 700; margin-top: 10px;">
+            <span>👑</span>
+            <span>Ajouter au Pack God</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Tableau des utilisateurs Pack God -->
+      <div class="table-container" style="margin-top: 32px;">
+        <div class="table-header">
+          <div>
+            <span>Membres avec Accès Pack God VIP (<%= godPackUsers.length %>)</span>
+          </div>
+          <a href="/?section=godpack" style="color: #e5b842; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center;">↻ Actualiser</a>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID Discord</th>
+              <th>Note / Description</th>
+              <th>Ajouté par</th>
+              <th>Date d'ajout</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (godPackUsers.length === 0) { %>
+              <tr>
+                <td colspan="5" style="text-align: center; color: #64748b; padding: 28px;">
+                  Aucun ID Discord n'est actuellement enregistré. Utilisez le formulaire ci-dessus pour accorder l'accès Pack God.
+                </td>
+              </tr>
+            <% } else { %>
+              <% godPackUsers.forEach(function(u) { %>
+                <tr>
+                  <td>
+                    <span style="font-family: monospace; font-size: 13px; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 4px 8px; border-radius: 6px;">
+                      <%= u.discordId %>
+                    </span>
+                  </td>
+                  <td style="color: #e2e8f0; font-weight: 500;"><%= u.note || '—' %></td>
+                  <td style="color: #94a3b8;"><%= u.addedBy || 'admin' %></td>
+                  <td style="color: #94a3b8; font-size: 12px;"><%= new Date(u.addedAt || Date.now()).toLocaleDateString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %></td>
+                  <td>
+                    <form action="/godpack/remove" method="POST" onsubmit="return confirm('Retirer l\'accès Pack God à cet ID Discord ?');" style="display: inline;">
+                      <input type="hidden" name="discordId" value="<%= u.discordId %>">
+                      <button type="submit" class="btn-select" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        Retirer
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Point de terminaison API info -->
+      <div class="api-card" style="margin-top: 24px;">
+        <strong style="color: #ffffff;">Points de terminaison API Pack God :</strong>
+        <div class="code-block">
+Vérifier un ID Discord : GET /api/v1/godpack/check/:discordId
+Liste complète des VIP : GET /api/v1/godpack/list
         </div>
       </div>
     </div>
@@ -1016,7 +1148,11 @@ Windows : GET /api/v1/update/check?version=<%= winDeployment.currentVersion %>&a
       if (tabBtn) tabBtn.classList.add('active');
 
       if (window.history && window.history.replaceState) {
-        window.history.replaceState(null, '', '?platform=' + platform);
+        if (platform === 'godpack') {
+          window.history.replaceState(null, '', '?section=godpack');
+        } else {
+          window.history.replaceState(null, '', '?platform=' + platform);
+        }
       }
     }
 

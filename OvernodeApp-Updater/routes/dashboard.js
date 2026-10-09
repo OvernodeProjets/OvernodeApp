@@ -50,6 +50,8 @@ router.get('/', async (req, res) => {
       hasNewerMacRelease: macComparison > 0,
       hasNewerWinRelease: winComparison > 0,
       activeTab,
+      activeSection: req.query.section || 'deploy',
+      godPackUsers: db.getGodPackUsers(),
       repo: github.GITHUB_REPO,
       successMessage: req.query.success || null,
       errorMessage: req.query.error || null
@@ -87,6 +89,40 @@ router.post('/deploy', (req, res) => {
     res.redirect(`/?platform=${encodeURIComponent(targetPlatform)}&success=Version+v${encodeURIComponent(version)}+d%C3%A9ploy%C3%A9e+avec+succ%C3%A8s+pour+${encodeURIComponent(platLabel)}`);
   } catch (err) {
     res.redirect(`/?platform=${encodeURIComponent(targetPlatform)}&error=` + encodeURIComponent(err.message));
+  }
+});
+
+// "Add God Pack Discord ID" Action
+router.post('/godpack/add', (req, res) => {
+  const { discordId, note } = req.body;
+  const cleanId = String(discordId || '').trim();
+  if (!cleanId) {
+    return res.redirect('/?section=godpack&error=' + encodeURIComponent('Identifiant Discord requis.'));
+  }
+
+  try {
+    db.addGodPackUser(cleanId, note, req.session.username || 'admin');
+    console.log(`[GodPack] 👑 Added Discord ID ${cleanId} to God Pack VIPs by ${req.session.username}`);
+    res.redirect('/?section=godpack&success=' + encodeURIComponent(`ID Discord ${cleanId} ajouté avec succès au Pack God.`));
+  } catch (err) {
+    res.redirect('/?section=godpack&error=' + encodeURIComponent(err.message));
+  }
+});
+
+// "Remove God Pack Discord ID" Action
+router.post('/godpack/remove', (req, res) => {
+  const { discordId } = req.body;
+  const cleanId = String(discordId || '').trim();
+  if (!cleanId) {
+    return res.redirect('/?section=godpack&error=' + encodeURIComponent('Identifiant Discord requis.'));
+  }
+
+  try {
+    db.removeGodPackUser(cleanId);
+    console.log(`[GodPack] 🗑️ Removed Discord ID ${cleanId} from God Pack VIPs by ${req.session.username}`);
+    res.redirect('/?section=godpack&success=' + encodeURIComponent(`ID Discord ${cleanId} retiré du Pack God.`));
+  } catch (err) {
+    res.redirect('/?section=godpack&error=' + encodeURIComponent(err.message));
   }
 });
 
