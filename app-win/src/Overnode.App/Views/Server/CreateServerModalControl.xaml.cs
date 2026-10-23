@@ -287,12 +287,18 @@ public sealed partial class CreateServerModalControl : UserControl
                 Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextPrimaryBrush"]
             });
 
-            stack.Children.Add(new TextBlock
+            if (!string.IsNullOrWhiteSpace(nodeInfo.City)
+                && !nodeInfo.City.Equals("Datacenter", StringComparison.OrdinalIgnoreCase)
+                && !nodeInfo.City.Contains("overnode", StringComparison.OrdinalIgnoreCase)
+                && nodeInfo.City.Length < 25)
             {
-                Text = $"({nodeInfo.City})",
-                FontSize = 10,
-                Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"]
-            });
+                stack.Children.Add(new TextBlock
+                {
+                    Text = $"({nodeInfo.City})",
+                    FontSize = 10,
+                    Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"]
+                });
+            }
 
             if (node.GoldOnly)
             {

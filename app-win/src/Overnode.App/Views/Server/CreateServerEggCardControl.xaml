@@ -18,8 +18,8 @@
                 BorderBrush="{StaticResource OvernodeBorderSubtleBrush}"
                 BorderThickness="1"
                 CornerRadius="10"
-                Padding="12"
-                MinHeight="90">
+                Padding="12,10"
+                MinHeight="104">
             <Grid ColumnSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />

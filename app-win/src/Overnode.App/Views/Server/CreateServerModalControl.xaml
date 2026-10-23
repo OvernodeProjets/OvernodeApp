@@ -167,8 +167,8 @@
                                     Padding="10">
                                 <StackPanel Spacing="6">
                                     <TextBlock x:Name="NodeSelectionLabel" Text="Nœud de déploiement disponible" FontSize="11" Foreground="{StaticResource OvernodeTextSecondaryBrush}" />
-                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                                        <StackPanel x:Name="NodesChipsPanel" Orientation="Horizontal" Spacing="8" />
+                                    <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                                        <StackPanel x:Name="NodesChipsPanel" Orientation="Horizontal" Spacing="8" Padding="0,2,0,4" />
                                     </ScrollViewer>
                                 </StackPanel>
                             </Border>
@@ -193,7 +193,7 @@
                             <ItemsControl x:Name="EggsList">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <VariableSizedWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" ItemWidth="375" />
+                                        <VariableSizedWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" ItemWidth="375" ItemHeight="115" />
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                             </ItemsControl>

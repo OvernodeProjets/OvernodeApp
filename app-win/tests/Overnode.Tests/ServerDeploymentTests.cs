@@ -24,6 +24,15 @@ public class ServerDeploymentTests
         Assert.AreEqual("Marseille", mrsInfo.City);
         Assert.AreEqual("Game Anti-DDoS", mrsInfo.Tag);
 
+        var rouNode = new ServerNode(11, "fr.rou.gold", "1");
+        var rouInfo = LocationHelper.Format(rouNode);
+        Assert.AreEqual("Roubaix", rouInfo.City);
+        Assert.IsTrue(LocationHelper.IsMatch(rouNode, frLoc));
+
+        var hashNode = new ServerNode(12, "Unknown Node", "1") { Fqdn = "pbnuwcmg1qiez0e9dopy19d2zmmn805e1.overnode.fr" };
+        var hashInfo = LocationHelper.Format(hashNode);
+        Assert.AreEqual("Datacenter", hashInfo.City);
+
         Assert.IsTrue(LocationHelper.IsMatch(mrsNode, frLoc));
         Assert.IsFalse(LocationHelper.IsMatch(mrsNode, deLoc));
     }

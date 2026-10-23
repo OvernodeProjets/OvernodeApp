@@ -117,9 +117,14 @@ public static class LocationHelper
             city = "Gravelines";
             tag = "Anti-DDoS Pro";
         }
-        else if (rawName.Contains("rbx"))
+        else if (rawName.Contains("rbx") || rawName.Contains("rou"))
         {
             city = "Roubaix";
+            tag = "Anti-DDoS Pro";
+        }
+        else if (rawName.Contains("sxb") || rawName.Contains("str"))
+        {
+            city = "Strasbourg";
             tag = "Anti-DDoS Pro";
         }
         else if (rawName.Contains("nyc"))
@@ -137,14 +142,24 @@ public static class LocationHelper
             city = "Francfort";
             tag = "Central Hub";
         }
+        else if (rawName.Contains("lon"))
+        {
+            city = "Londres";
+            tag = "EU West";
+        }
         else if (rawName.Contains("bhs"))
         {
             city = "Beauharnois";
             tag = "Game DDoS";
         }
-        else if (!string.IsNullOrEmpty(node.Fqdn))
+        else if (!string.IsNullOrEmpty(node.Fqdn) && !node.Fqdn.Contains("overnode") && node.Fqdn.Length < 25)
         {
             city = node.Fqdn;
+            tag = "Online";
+        }
+        else
+        {
+            city = "Datacenter";
             tag = "Online";
         }
 
@@ -180,7 +195,7 @@ public static class LocationHelper
         bool locIsFrance = locId == "fr" || locName.Contains("france") || locName.Contains("gravelines") || locName.Contains("marseille") || locName.Contains("paris") || (location.Flags != null && location.Flags.Any(f => f.Equals("fr", StringComparison.OrdinalIgnoreCase)));
         if (locIsFrance)
         {
-            if (nLoc == "fr" || nLoc.Contains("france") || nName.Contains("-fr") || nName.Contains("fr-") || nName.Contains("gra") || nName.Contains("mrs") || nName.Contains("par") || nName.Contains("rbx"))
+            if (nLoc == "fr" || nLoc.Contains("france") || nName.StartsWith("fr.") || nName.Contains("-fr") || nName.Contains("fr-") || nName.Contains("gra") || nName.Contains("mrs") || nName.Contains("par") || nName.Contains("rbx") || nName.Contains("rou"))
                 return true;
         }
 
