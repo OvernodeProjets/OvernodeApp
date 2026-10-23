@@ -50,18 +50,24 @@ const isPostgres = dbUrl && (dbUrl.startsWith("postgresql://") || dbUrl.startsWi
 
 let sessionStore;
 if (isPostgres) {
+  const { Pool } = require("pg");
+  const pool = new Pool({ connectionString: dbUrl });
+  pool.on("error", (err) => console.error("PG session store pool error:", err));
   const PgStore = require("connect-pg-simple")(session);
-  sessionStore = new PgStore({ conString: dbUrl, tableName: "session", createTableIfMissing: true });
+  sessionStore = new PgStore({ pool, tableName: "session", createTableIfMissing: true });
+  sessionStore.pool = pool;
 } else {
   const SQLiteStore = require("connect-sqlite3")(session);
   let sessionDb = "sessions.db";
-  if (typeof settings.database === "string") {
-    sessionDb = settings.database;
-  } else if (settings.database && typeof settings.database.url === "string") {
-    sessionDb = settings.database.url.replace(/^file:/, "");
+  if (settings.session && typeof settings.session.db === "string") {
+    sessionDb = settings.session.db;
   }
-  sessionStore = new SQLiteStore({ db: sessionDb, dir: "./" });
+  const resolvedSessionDb = path.isAbsolute(sessionDb) ? sessionDb : path.resolve(__dirname, sessionDb);
+  const sessionDir = path.dirname(resolvedSessionDb);
+  const sessionFile = path.basename(resolvedSessionDb);
+  sessionStore = new SQLiteStore({ db: sessionFile, dir: sessionDir });
 }
+app.set("sessionStore", sessionStore);
 
 app.use(session({
   store: sessionStore,
@@ -102,13 +108,14 @@ if (require.main === module || require.main?.filename === __filename || !module.
       await moduleLoader.loadAllModules();
       global.moduleInfo = moduleLoader.getLoadedModuleInfo();
 
-      const server = app.listen(settings.website.port, "0.0.0.0", () => {
+      const host = settings.website?.host || "0.0.0.0";
+      const server = app.listen(settings.website.port, host, () => {
         const bootTime = process.hrtime(startTime);
         const bootTimeMs = (bootTime[0] * 1000 + bootTime[1] / 1000000).toFixed(2);
         const duration = bootTimeMs > 1000 ? (bootTimeMs / 1000).toFixed(2) + "s" : bootTimeMs + "ms";
         logger.info(
           `${chalk.red("https server")} listening on ` +
-          chalk.cyan(`0.0.0.0:${settings.website.port} ` + chalk.gray(`(app@${VERSION} / ${PLATFORM_CODENAME}, ${duration})`)),
+          chalk.cyan(`${host}:${settings.website.port} ` + chalk.gray(`(app@${VERSION} / ${PLATFORM_CODENAME}, ${duration})`)),
           {}, true
         );
       });

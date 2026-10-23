@@ -1,9 +1,34 @@
-const puppeteer = require('puppeteer');
+let puppeteer;
+try {
+  puppeteer = require('puppeteer');
+} catch (e) {
+  // Optional dependency, loaded on demand
+}
 const loadConfig = require('../handlers/config');
 const path = require('path');
 const fs = require('fs');
 
 const settings = loadConfig('./config.toml');
+
+const HeliactylModule = {
+  name: "Invoice Generator",
+  version: "1.1.0",
+  api_level: 4,
+  target_platform: "10.0.0",
+  description: "PDF invoice generation for billing module",
+  author: {
+    name: "aachul123",
+    email: "ludo@overnode.fr",
+    url: "https://achul123.pages.dev/"
+  },
+  dependencies: [],
+  permissions: [],
+  routes: [],
+  config: {},
+  hooks: [],
+  tags: ["billing", "invoices"],
+  license: "MIT"
+};
 
 class InvoiceGenerator {
   /**
@@ -13,6 +38,9 @@ class InvoiceGenerator {
    * @returns {Buffer} PDF buffer
    */
   async generateInvoice(transaction, user) {
+    if (!puppeteer) {
+      puppeteer = require('puppeteer');
+    }
     const details = typeof transaction.details === 'string'
       ? JSON.parse(transaction.details)
       : (transaction.details || {});
@@ -22,7 +50,7 @@ class InvoiceGenerator {
     const logo = settings.website?.logo || '';
 
     // Determine what was purchased and what the customer actually paid
-    const { description, quantity, paidAmount, itemType } = this._getItemInfo(transaction, details);
+    const { description, quantity, paidAmount, itemType, currency } = this._getItemInfo(transaction, details);
 
     // The paid amount is the total including VAT (EU B2C norm)
     const total = paidAmount;
@@ -64,18 +92,19 @@ class InvoiceGenerator {
     let quantity = 1;
     let paidAmount = 0;
     let itemType = 'credit';
+    let currency = (details.currency || (details.amount_usd !== undefined || details.price_usd !== undefined ? 'USD' : 'EUR')).toUpperCase();
 
     if (details.package_amount) {
       // Coin purchase — details.price_eur is the total paid (incl. VAT)
       quantity = details.package_amount;
-      paidAmount = details.price_eur !== undefined ? details.price_eur : 0;
+      paidAmount = details.price_eur !== undefined ? details.price_eur : (details.price_usd !== undefined ? details.price_usd : 0);
       description = `Purchase of ${details.package_amount} Coins`;
       itemType = 'coins';
-    } else if (details.amount_eur !== undefined) {
+    } else if (details.amount_eur !== undefined || details.amount_usd !== undefined) {
       // Credit top-up — details.amount_eur is the total paid (incl. VAT)
       quantity = 1;
-      paidAmount = details.amount_eur;
-      description = `Credit Top-up (${paidAmount} €)`;
+      paidAmount = details.amount_eur !== undefined ? details.amount_eur : details.amount_usd;
+      description = currency === "USD" ? ("Credit Top-up ($" + paidAmount + ")") : ("Credit Top-up (" + paidAmount + " €)");
       itemType = 'credit';
     } else if (details.resource) {
       // Store purchase with coins — no real money, no VAT
@@ -86,7 +115,7 @@ class InvoiceGenerator {
     } else if (details.bundle) {
       // Bundle purchase — price_eur is the total paid (incl. VAT)
       quantity = 1;
-      paidAmount = details.price_eur !== undefined ? details.price_eur : (Math.abs(transaction.amount) / 100);
+      paidAmount = details.price_eur !== undefined ? details.price_eur : (details.price_usd !== undefined ? details.price_usd : (Math.abs(transaction.amount) / 100));
       description = `Bundle ${details.name || details.bundle}`;
       itemType = 'bundle';
     } else {
@@ -96,10 +125,10 @@ class InvoiceGenerator {
       description = transaction.description || 'Purchase';
     }
 
-    return { description, quantity, paidAmount, itemType };
+    return { description, quantity, paidAmount, itemType, currency };
   }
 
-  _buildHtml({ seller, logo, vatRate, firstName, lastName, email, invoiceId, invoiceDate, paymentMethod, description, quantity, unitPrice, subtotal, vatAmount, total, itemType, fmt }) {
+  _buildHtml({ seller, logo, vatRate, firstName, lastName, email, invoiceId, invoiceDate, paymentMethod, description, quantity, unitPrice, subtotal, vatAmount, total, itemType, fmt, currency = "EUR" }) {
     const dateStr = invoiceDate.toLocaleDateString('en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
@@ -378,8 +407,8 @@ class InvoiceGenerator {
       <tr>
         <td style="font-weight:500">${description}</td>
         <td>${quantity}</td>
-        <td>${fmt(unitPrice)} EUR</td>
-        <td>${fmt(subtotal)} EUR</td>
+        <td>${fmt(unitPrice)} ${currency}</td>
+        <td>${fmt(subtotal)} ${currency}</td>
       </tr>
     </tbody>
   </table>
@@ -389,15 +418,15 @@ class InvoiceGenerator {
     <div class="totals-inner">
       <div class="total-row sub">
         <span>Subtotal</span>
-        <span>${fmt(subtotal)} EUR</span>
+        <span>${fmt(subtotal)} ${currency}</span>
       </div>
       <div class="total-row">
         <span>VAT (${vatRate}%)</span>
-        <span>${fmt(vatAmount)} EUR</span>
+        <span>${fmt(vatAmount)} ${currency}</span>
       </div>
       <div class="total-row grand">
         <span>Total (incl. VAT)</span>
-        <span>${fmt(total)} EUR</span>
+        <span>${fmt(total)} ${currency}</span>
       </div>
     </div>
   </div>
@@ -458,4 +487,8 @@ class InvoiceGenerator {
   }
 }
 
+InvoiceGenerator.HeliactylModule = HeliactylModule;
+InvoiceGenerator.load = async function () {};
 module.exports = InvoiceGenerator;
+module.exports.HeliactylModule = HeliactylModule;
+module.exports.load = async function () {};

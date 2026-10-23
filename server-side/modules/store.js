@@ -6,10 +6,11 @@ const log = require("../handlers/log.js");
 const adminjs = require("./admin.js");
 const { validate, schemas } = require("../handlers/validate.js");
 const createAuthz = require('../handlers/authz');
+const { getClientIp } = require('../handlers/antiVpnAllowlist');
 
 const HeliactylModule = {
   "name": "Store",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "api_level": 4,
   "target_platform": "10.0.0",
   "description": "Core module",
@@ -18,6 +19,13 @@ const HeliactylModule = {
     "email": "me@ether.pizza",
     "url": "https://ether.pizza"
   },
+  "contributors": [
+    {
+      "name": "aachul123",
+      "email": "ludo@overnode.fr",
+      "url": "https://achul123.pages.dev/"
+    }
+  ],
   "dependencies": [],
   "permissions": [],
   "routes": [],
@@ -391,7 +399,7 @@ module.exports.load = function (app, db) {
       afkManager.scheduleNextReward(userId, ws);
       afkManager.startStateUpdates(userId, ws);
 
-      const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress?.replace('::ffff:', '');
+      const clientIp = getClientIp(req);
       const user = await db.user.findUnique({ where: { id: userId }, select: { email: true, discordId: true } });
       log('afk_connect', `**${sessionUser.username}** started an AFK session\nEmail: \`${user?.email || 'unknown'}\`\nDiscord: \`${user?.discordId || 'none'}\`\nIP: \`${clientIp || 'unknown'}\``);
 

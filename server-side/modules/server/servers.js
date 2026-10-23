@@ -49,15 +49,22 @@ const pteroClientApi = axios.create({
 /* --------------------------------------------- */
 const HeliactylModule = {
     "name": "Servers",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "api_level": 4,
     "target_platform": "10.0.0",
     "description": "Core module",
     "author": {
-        "name": "Matt James",
-        "email": "me@ether.pizza",
-        "url": "https://ether.pizza"
-    },
+    "name": "Matt James",
+    "email": "me@ether.pizza",
+    "url": "https://ether.pizza"
+  },
+  "contributors": [
+    {
+      "name": "aachul123",
+      "email": "ludo@overnode.fr",
+      "url": "https://achul123.pages.dev/"
+    }
+  ],
     "dependencies": [],
     "permissions": [],
     "routes": [],
@@ -182,6 +189,8 @@ module.exports.load = async function (app, db) {
                                 name: egg.displayName || egg.originalName,
                                 description: egg.description || '',
                                 category: egg.category || 'other',
+                                goldOnly: Boolean(egg.goldOnly),
+                                nodeId: egg.nodeId || null,
                                 minimum: {
                                     ram: egg.minimum?.ram || 0,
                                     disk: egg.minimum?.disk || 0,
@@ -291,7 +300,8 @@ module.exports.load = async function (app, db) {
                     fqdn: node.fqdn,
                     memory: node.memory,
                     disk: node.disk,
-                    allocated_resources: node.allocated_resources
+                    allocated_resources: node.allocated_resources,
+                    goldOnly: Boolean(node.goldOnly)
                 }));
 
             res.json(nodes);
@@ -493,6 +503,29 @@ module.exports.load = async function (app, db) {
                         if (!dbEgg.enabled) {
                             return res.status(400).json({ error: 'This egg is not available' });
                         }
+
+                        if (dbEgg.goldOnly) {
+                            const hasGodPack = await db.userPack.findFirst({
+                                where: {
+                                    userId: sessionUser.id,
+                                    type: 'god_pack',
+                                    status: 'active',
+                                    expiresAt: { gt: new Date() }
+                                }
+                            });
+
+                            if (!hasGodPack) {
+                                return res.status(403).json({
+                                    error: 'This software is reserved for God Pack subscribers only'
+                                });
+                            }
+                        }
+
+                        if (dbEgg.nodeId && String(dbEgg.nodeId) !== String(nodeId)) {
+                            return res.status(400).json({
+                                error: 'This software is not available on the selected node'
+                            });
+                        }
                         eggInfo = {
                             minimum: dbEgg.minimum,
                             maximum: dbEgg.maximum,
@@ -535,6 +568,23 @@ module.exports.load = async function (app, db) {
 
                 if (!selectedNode || !selectedNode.enabled) {
                     return res.status(400).json({ error: 'This node is not available' });
+                }
+
+                if (selectedNode.goldOnly) {
+                    const hasGodPack = await db.userPack.findFirst({
+                        where: {
+                            userId: sessionUser.id,
+                            type: 'god_pack',
+                            status: 'active',
+                            expiresAt: { gt: new Date() }
+                        }
+                    });
+
+                    if (!hasGodPack) {
+                        return res.status(403).json({
+                            error: 'This node is reserved for God Pack subscribers only'
+                        });
+                    }
                 }
 
                 const selectedLocation = locations.find((entry) => entry.id.toString() === selectedNode.locationId?.toString());

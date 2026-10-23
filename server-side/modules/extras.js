@@ -6,7 +6,7 @@ const createAuthz = require('../handlers/authz');
 
 const HeliactylModule = {
   "name": "Extras",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "api_level": 4,
   "target_platform": "10.0.0",
   "description": "Core module",
@@ -15,6 +15,13 @@ const HeliactylModule = {
     "email": "me@ether.pizza",
     "url": "https://ether.pizza"
   },
+  "contributors": [
+    {
+      "name": "aachul123",
+      "email": "ludo@overnode.fr",
+      "url": "https://achul123.pages.dev/"
+    }
+  ],
   "dependencies": [],
   "permissions": [],
   "routes": [],
@@ -74,18 +81,6 @@ module.exports.load = async function (app, db) {
 
   app.get("/panel", async (req, res) => {
     res.redirect(settings.pterodactyl.domain);
-  });
-
-  app.get("/notifications", async (req, res) => {
-    if (!authz.hasUserSession(req)) return res.redirect("/login");
-    const sessionUser = authz.getSessionUser(req);
-
-    const notifications = await db.notification.findMany({
-      where: { userId: sessionUser.id },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    res.json(notifications);
   });
 
   app.get("/regen", async (req, res) => {

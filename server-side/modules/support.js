@@ -22,7 +22,18 @@ function logTicket(action, message) {
         color: 0x5865F2,
         title: `Ticket: \`${action}\``,
         description: message,
-        author: { name: 'Heliactyl Support Tickets' },
+        "author": {
+    "name": "Matt James",
+    "email": "me@ether.pizza",
+    "url": "https://ether.pizza"
+  },
+  "contributors": [
+    {
+      "name": "aachul123",
+      "email": "ludo@overnode.fr",
+      "url": "https://achul123.pages.dev/"
+    }
+  ],
         thumbnail: { url: settings.website?.logo || '' }
       }]
     }).catch(() => {});
@@ -44,7 +55,7 @@ const pteroApi = axios.create({
 /* Ensure platform release target is met */
 const HeliactylModule = {
   "name": "Support Tickets",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "api_level": 4,
   "target_platform": "10.0.0",
   "description": "Core module",
@@ -104,28 +115,6 @@ module.exports.load = async function (app, db) {
       res.json(stats);
     } catch (error) {
       console.error("Error fetching ticket statistics:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  app.post("/api/notifications/:id/read", async (req, res) => {
-    if (!authz.hasUserSession(req)) return res.status(401).json({ error: "Unauthorized" });
-    const sessionUser = authz.getSessionUser(req);
-
-    try {
-      await db.notification.updateMany({
-        where: {
-          id: req.params.id,
-          userId: sessionUser.id
-        },
-        data: {
-          read: true
-        }
-      });
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
