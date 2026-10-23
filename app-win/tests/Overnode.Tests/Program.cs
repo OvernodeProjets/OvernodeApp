@@ -99,6 +99,9 @@ public class Program
         Run("LocationHelper Formatting & Matching", deployTests.Test_LocationHelper_FormattingAndMatching);
         Run("CreateServerViewModel Name Validation", deployTests.Test_CreateServerViewModel_Validation);
         Run("CreateServerViewModel Deploy Flow", () => deployTests.Test_CreateServerViewModel_DeployFlowAsync().GetAwaiter().GetResult());
+        Run("ServerEgg and ServerNode God Pack Properties", deployTests.Test_ServerEggAndNode_GodPack_Properties);
+        Run("CreateServerViewModel God Pack Restrictions", () => deployTests.Test_CreateServerViewModel_GodPack_RestrictionsAsync().GetAwaiter().GetResult());
+        Run("God Pack Tooltips and Localization", deployTests.Test_GodPack_Tooltips_And_Localization);
 
         // 7. Localization Tests
         var locTests = new LocalizationTests();

@@ -24,16 +24,22 @@ public partial class CreateServerViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanDeploy))]
+    [NotifyPropertyChangedFor(nameof(IsEggGodPackLocked))]
+    [NotifyPropertyChangedFor(nameof(IsGodPackLocked))]
     private ServerEgg? _selectedEgg;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(AvailableNodes))]
     [NotifyPropertyChangedFor(nameof(EffectiveNode))]
+    [NotifyPropertyChangedFor(nameof(IsNodeGodPackLocked))]
+    [NotifyPropertyChangedFor(nameof(IsGodPackLocked))]
     private ServerLocation? _selectedLocation;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EffectiveNode))]
     [NotifyPropertyChangedFor(nameof(CanDeploy))]
+    [NotifyPropertyChangedFor(nameof(IsNodeGodPackLocked))]
+    [NotifyPropertyChangedFor(nameof(IsGodPackLocked))]
     private ServerNode? _selectedNode;
 
     [ObservableProperty]
@@ -68,7 +74,28 @@ public partial class CreateServerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSuccess;
 
-    public CreateServerViewModel() { }
+    public bool HasGodPack => GodPackService.Shared.HasGodPack;
+
+    public bool IsEggGodPackLocked => (SelectedEgg?.GoldOnly == true) && !HasGodPack;
+
+    public bool IsNodeGodPackLocked => (EffectiveNode?.GoldOnly == true) && !HasGodPack;
+
+    public bool IsGodPackLocked => IsEggGodPackLocked || IsNodeGodPackLocked;
+
+    public CreateServerViewModel()
+    {
+        GodPackService.Shared.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(GodPackService.HasGodPack))
+            {
+                OnPropertyChanged(nameof(HasGodPack));
+                OnPropertyChanged(nameof(IsEggGodPackLocked));
+                OnPropertyChanged(nameof(IsNodeGodPackLocked));
+                OnPropertyChanged(nameof(IsGodPackLocked));
+                OnPropertyChanged(nameof(CanDeploy));
+            }
+        };
+    }
 
     public List<ServerEgg> FilteredEggs
     {
@@ -120,6 +147,7 @@ public partial class CreateServerViewModel : ObservableObject
         get
         {
             if (!IsNameValid || SelectedEgg == null || EffectiveNode == null || IsDeploying) return false;
+            if (IsGodPackLocked) return false;
             if (Options?.Resources.Remaining == null || Options.Resources.Remaining.Servers <= 0) return false;
 
             var rem = Options.Resources.Remaining;
@@ -139,6 +167,12 @@ public partial class CreateServerViewModel : ObservableObject
         ErrorMessage = null;
         try
         {
+            try
+            {
+                await GodPackService.Shared.CheckAccessAsync();
+            }
+            catch { }
+
             var res = await _service.FetchDeployOptionsAsync();
             Options = res;
 

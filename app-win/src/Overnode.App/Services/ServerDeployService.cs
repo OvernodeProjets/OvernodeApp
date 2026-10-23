@@ -239,6 +239,7 @@ public sealed class ServerDeployService
             new("minecraft_paper", "Paper Minecraft", "High-performance Spigot fork for Minecraft servers", "minecraft", new ResourceRequirement(1024, 2048, 100)),
             new("minecraft_purpur", "Purpur Minecraft", "Configurable and optimized gameplay fork of Paper", "minecraft", new ResourceRequirement(1024, 2048, 100)),
             new("minecraft_forge", "Forge Modded", "Minecraft modded server support with Forge", "minecraft", new ResourceRequirement(2048, 4096, 150)),
+            new("fivem", "FiveM Server", "Dedicated FiveM multiplayer server with custom resources", "game", new ResourceRequirement(2048, 8192, 200), goldOnly: true),
             new("nodejs", "Node.js", "Node.js runtime for JavaScript & TypeScript bots", "discord", new ResourceRequirement(256, 512, 20)),
             new("python", "Python", "Python 3 runtime for Discord bots and automation", "discord", new ResourceRequirement(256, 512, 20))
         };
@@ -253,7 +254,8 @@ public sealed class ServerDeployService
         {
             new(1, "Node FR-01", "1"),
             new(2, "Node FR-02", "1"),
-            new(3, "Node DE-01", "2")
+            new(3, "Node DE-01", "2"),
+            new(4, "Node VIP-01", "1", goldOnly: true)
         };
 
         var res = new DeployResourcesInfo(

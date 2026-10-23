@@ -120,6 +120,11 @@ public partial class GodPackService : ObservableObject
 
     public async Task CheckAccessAsync(User? user = null, string? explicitDiscordId = null)
     {
+        if (Environment.GetEnvironmentVariable("OVERNODE_DEMO") == "1")
+        {
+            return;
+        }
+
         if (Environment.GetEnvironmentVariable("OVERNODE_FORCE_GOD_PACK") == "1")
         {
             HasGodPack = true;

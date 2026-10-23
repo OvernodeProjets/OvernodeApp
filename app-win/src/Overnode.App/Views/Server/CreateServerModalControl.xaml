@@ -279,6 +279,62 @@
                             </Border>
                         </StackPanel>
 
+                        <!-- God Pack Restricted Alert Banner -->
+                        <Border x:Name="GodPackAlertBanner"
+                                Visibility="Collapsed"
+                                Background="#20F59E0B"
+                                BorderBrush="{StaticResource OvernodeAccentGoldBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="14,12">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0"
+                                        Width="36" Height="36"
+                                        CornerRadius="18"
+                                        Background="#30F59E0B"
+                                        VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE735;" FontSize="16" Foreground="{StaticResource OvernodeAccentGoldBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                    <TextBlock x:Name="GodPackAlertTitle"
+                                               Text="Pack God Requis"
+                                               FontWeight="SemiBold"
+                                               FontSize="13"
+                                               Foreground="{StaticResource OvernodeAccentGoldBrush}" />
+                                    <TextBlock x:Name="GodPackAlertDesc"
+                                               Text="Ce logiciel ou ce nœud est réservé aux membres possédant le Pack God."
+                                               FontSize="11.5"
+                                               Foreground="{StaticResource OvernodeTextSecondaryBrush}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <Button Grid.Column="2"
+                                        x:Name="GodPackStoreButton"
+                                        Click="OnGoToStoreClicked"
+                                        Padding="14,7"
+                                        Background="{StaticResource OvernodeAccentGoldBrush}"
+                                        BorderThickness="0"
+                                        CornerRadius="7"
+                                        VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE719;" FontSize="11" Foreground="#000000" FontWeight="Bold" />
+                                        <TextBlock x:Name="GodPackStoreButtonText"
+                                                   Text="Boutique"
+                                                   FontSize="11.5"
+                                                   FontWeight="Bold"
+                                                   Foreground="#000000" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+
                         <!-- Error Message Banner -->
                         <Border x:Name="ErrorBanner"
                                 Visibility="Collapsed"

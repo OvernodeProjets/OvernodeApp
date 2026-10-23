@@ -43,3 +43,9 @@ Règles pour la gestion des serveurs dans les applications natives Overnode (mac
     - Protection stricte contre les traversées de chemin (`..`, `\`, caractères de contrôle, doubles barres obliques).
     - Respect des limites d'upload : limite unitaire de 100 Mo par fichier, maximum 500 éléments par lot, et contrôle systématique de l'espace disque disponible restant par rapport au quota serveur (`server.diskLimitMB - server.diskUsedMB`).
   - Pour les dossiers, la hiérarchie des sous-dossiers est créée sur le serveur avant le transfert multipart des fichiers vers l'endpoint sécurisé Wings (`ServerFilesService.shared.getUploadURL`).
+- **Nœuds & Logiciels God Pack (Déploiement)**:
+  - Les nœuds (`ServerNode`) et les logiciels/œufs (`ServerEgg`) peuvent être réservés aux abonnés du Pack God (`goldOnly == true`).
+  - Dans la vue de création de serveur (`CreateServerModalControl`), afficher un badge distinctif et clair (doré / "God Pack") sur les éléments concernés.
+  - Les cartes de logiciels et les puces de nœuds God Pack doivent impérativement rester cliquables même lorsque l'utilisateur ne possède pas le Pack God.
+  - Au survol (ToolTip), indiquer explicitement que l'élément est réservé aux membres God Pack et qu'il est disponible à l'achat dans la Boutique (Bundles).
+  - Si un élément réservé est sélectionné par un utilisateur sans Pack God, bloquer le déploiement (`CanDeploy = false`), afficher une bannière informative claire et un bouton menant directement à la Boutique (Boutique > Abonnements & Packs) pour éviter tout rejet 403 du serveur.

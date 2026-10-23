@@ -3,6 +3,7 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Overnode.App.Localization;
 using Overnode.App.Models;
 
 namespace Overnode.App.Views.Server;
@@ -15,6 +16,9 @@ public sealed partial class CreateServerEggCardControl : UserControl
     public static readonly DependencyProperty IsSelectedProperty =
         DependencyProperty.Register(nameof(IsSelected), typeof(bool), typeof(CreateServerEggCardControl), new PropertyMetadata(false, OnIsSelectedChanged));
 
+    public static readonly DependencyProperty HasGodPackProperty =
+        DependencyProperty.Register(nameof(HasGodPack), typeof(bool), typeof(CreateServerEggCardControl), new PropertyMetadata(false, OnHasGodPackChanged));
+
     public ServerEgg? Egg
     {
         get => (ServerEgg?)GetValue(EggProperty);
@@ -25,6 +29,12 @@ public sealed partial class CreateServerEggCardControl : UserControl
     {
         get => (bool)GetValue(IsSelectedProperty);
         set => SetValue(IsSelectedProperty, value);
+    }
+
+    public bool HasGodPack
+    {
+        get => (bool)GetValue(HasGodPackProperty);
+        set => SetValue(HasGodPackProperty, value);
     }
 
     public event Action<ServerEgg>? EggSelected;
@@ -50,6 +60,14 @@ public sealed partial class CreateServerEggCardControl : UserControl
         }
     }
 
+    private static void OnHasGodPackChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is CreateServerEggCardControl control)
+        {
+            control.UpdateEgg();
+        }
+    }
+
     private void UpdateEgg()
     {
         if (Egg == null) return;
@@ -61,6 +79,28 @@ public sealed partial class CreateServerEggCardControl : UserControl
         RamSpecText.Text = $"{Egg.Minimum.Ram:F0} MB";
         CpuSpecText.Text = $"{Egg.Minimum.Cpu:F0}%";
         DiskSpecText.Text = $"{Egg.Minimum.Disk:F0} MB";
+
+        var loc = LocalizationManager.Instance;
+        if (Egg.GoldOnly)
+        {
+            GodPackBadge.Visibility = Visibility.Visible;
+            GodPackBadgeText.Text = loc.GetString("create_server_godpack_badge", "God Pack");
+            GodPackLockBadge.Visibility = HasGodPack ? Visibility.Collapsed : Visibility.Visible;
+
+            string tooltipText = HasGodPack
+                ? loc.GetString("create_server_godpack_unlocked_tooltip", "Inclus avec votre abonnement God Pack.")
+                : loc.GetString("create_server_godpack_locked_tooltip", "Réservé aux membres God Pack. Vous pouvez l'obtenir dans la Boutique (Bundles).");
+
+            ToolTipService.SetToolTip(CardBorder, tooltipText);
+            ToolTipService.SetToolTip(CardButton, tooltipText);
+        }
+        else
+        {
+            GodPackBadge.Visibility = Visibility.Collapsed;
+            GodPackLockBadge.Visibility = Visibility.Collapsed;
+            ToolTipService.SetToolTip(CardBorder, Egg.Description);
+            ToolTipService.SetToolTip(CardButton, Egg.Description);
+        }
 
         UpdateSelection();
     }

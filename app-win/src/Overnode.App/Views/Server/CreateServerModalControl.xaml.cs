@@ -19,6 +19,7 @@ public sealed partial class CreateServerModalControl : UserControl
     public CreateServerViewModel ViewModel { get; } = new();
 
     public event Action? Dismissed;
+    public event Action? NavigateToStoreRequested;
     public event Action<ServerInstance>? ServerCreated;
 
     public CreateServerModalControl()
@@ -80,6 +81,8 @@ public sealed partial class CreateServerModalControl : UserControl
         DiskLabel.Text = _loc.GetString("resource_disk");
         CancelButton.Content = _loc.GetString("btn_cancel");
         DeployButtonText.Text = _loc.GetString("create_server_action_deploy");
+        GodPackAlertTitle.Text = _loc.GetString("create_server_godpack_required_title");
+        GodPackStoreButtonText.Text = _loc.GetString("create_server_btn_get_godpack");
     }
 
     private void UpdateUI()
@@ -223,19 +226,102 @@ public sealed partial class CreateServerModalControl : UserControl
             bool isSelected = ViewModel.EffectiveNode?.Id == node.Id;
             var nodeInfo = LocationHelper.Format(node);
 
+            Brush backgroundBrush;
+            Brush borderBrush;
+
+            if (isSelected)
+            {
+                backgroundBrush = new SolidColorBrush(ColorHelper.FromArgb(40, 245, 158, 11));
+                borderBrush = (SolidColorBrush)Application.Current.Resources["OvernodeAccentGoldBrush"];
+            }
+            else if (node.GoldOnly)
+            {
+                backgroundBrush = new SolidColorBrush(ColorHelper.FromArgb(18, 245, 158, 11));
+                borderBrush = new SolidColorBrush(ColorHelper.FromArgb(90, 245, 158, 11));
+            }
+            else
+            {
+                backgroundBrush = new SolidColorBrush(ColorHelper.FromArgb(16, 255, 255, 255));
+                borderBrush = (SolidColorBrush)Application.Current.Resources["OvernodeBorderSubtleBrush"];
+            }
+
             var chip = new Button
             {
                 Padding = new Thickness(10, 5, 10, 5),
                 CornerRadius = new CornerRadius(6),
-                Background = isSelected ? new SolidColorBrush(ColorHelper.FromArgb(40, 245, 158, 11)) : new SolidColorBrush(ColorHelper.FromArgb(16, 255, 255, 255)),
-                BorderBrush = isSelected ? (SolidColorBrush)Application.Current.Resources["OvernodeAccentGoldBrush"] : (SolidColorBrush)Application.Current.Resources["OvernodeBorderSubtleBrush"],
+                Background = backgroundBrush,
+                BorderBrush = borderBrush,
                 BorderThickness = new Thickness(1)
             };
 
             var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-            stack.Children.Add(new FontIcon { Glyph = "\uE945", FontSize = 11, Foreground = isSelected ? (SolidColorBrush)Application.Current.Resources["OvernodeAccentGoldBrush"] : (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"] });
-            stack.Children.Add(new TextBlock { Text = nodeInfo.DisplayName, FontSize = 11, FontFamily = new FontFamily("Consolas"), FontWeight = isSelected ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal, Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextPrimaryBrush"] });
-            stack.Children.Add(new TextBlock { Text = $"({nodeInfo.City})", FontSize = 10, Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"] });
+            stack.Children.Add(new FontIcon
+            {
+                Glyph = node.GoldOnly ? "\uE735" : "\uE945",
+                FontSize = 11,
+                Foreground = (isSelected || node.GoldOnly)
+                    ? (SolidColorBrush)Application.Current.Resources["OvernodeAccentGoldBrush"]
+                    : (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"]
+            });
+
+            stack.Children.Add(new TextBlock
+            {
+                Text = nodeInfo.DisplayName,
+                FontSize = 11,
+                FontFamily = new FontFamily("Consolas"),
+                FontWeight = isSelected ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal,
+                Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextPrimaryBrush"]
+            });
+
+            stack.Children.Add(new TextBlock
+            {
+                Text = $"({nodeInfo.City})",
+                FontSize = 10,
+                Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeTextSecondaryBrush"]
+            });
+
+            if (node.GoldOnly)
+            {
+                var godBadge = new Border
+                {
+                    Background = new SolidColorBrush(ColorHelper.FromArgb(37, 245, 158, 11)),
+                    BorderBrush = (SolidColorBrush)Application.Current.Resources["OvernodeAccentGoldBrush"],
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(4),
+                    Padding = new Thickness(4, 1, 4, 1),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                var badgeStack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3 };
+                badgeStack.Children.Add(new TextBlock
+                {
+                    Text = _loc.GetString("create_server_godpack_badge", "God Pack"),
+                    FontSize = 9,
+                    FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                    Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeAccentGoldBrush"]
+                });
+                godBadge.Child = badgeStack;
+                stack.Children.Add(godBadge);
+
+                if (!ViewModel.HasGodPack)
+                {
+                    var lockBorder = new Border
+                    {
+                        Background = new SolidColorBrush(ColorHelper.FromArgb(37, 239, 68, 68)),
+                        BorderBrush = new SolidColorBrush(ColorHelper.FromArgb(96, 239, 68, 68)),
+                        BorderThickness = new Thickness(1),
+                        CornerRadius = new CornerRadius(4),
+                        Padding = new Thickness(3, 1, 3, 1),
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    lockBorder.Child = new FontIcon { Glyph = "\uE72E", FontSize = 8.5, Foreground = (SolidColorBrush)Application.Current.Resources["OvernodeAccentDangerBrush"] };
+                    stack.Children.Add(lockBorder);
+                }
+
+                string nodeTooltip = ViewModel.HasGodPack
+                    ? _loc.GetString("create_server_node_godpack_unlocked_tooltip", "Nœud exclusif God Pack (Haute performance).")
+                    : _loc.GetString("create_server_node_godpack_tooltip", "Nœud réservé aux membres God Pack. Vous pouvez l'obtenir dans la Boutique (Bundles).");
+                ToolTipService.SetToolTip(chip, nodeTooltip);
+            }
 
             chip.Content = stack;
             chip.Click += (_, _) => ViewModel.SelectedNode = node;
@@ -279,6 +365,7 @@ public sealed partial class CreateServerModalControl : UserControl
             var card = new CreateServerEggCardControl
             {
                 Egg = egg,
+                HasGodPack = ViewModel.HasGodPack,
                 IsSelected = ViewModel.SelectedEgg?.Id == egg.Id,
                 Margin = new Thickness(4)
             };
@@ -357,11 +444,40 @@ public sealed partial class CreateServerModalControl : UserControl
 
         if (ViewModel.SelectedEgg != null)
         {
-            SummaryEggText.Text = ViewModel.SelectedEgg.Name;
+            string eggText = ViewModel.SelectedEgg.Name;
+            if (ViewModel.SelectedEgg.GoldOnly)
+            {
+                eggText += " ★";
+            }
+            SummaryEggText.Text = eggText;
         }
 
         int remServers = ViewModel.Options?.Resources.Remaining.Servers ?? 0;
         SummaryServersText.Text = $"{_loc.GetString("create_server_servers_remaining")} : {remServers}";
+
+        if (ViewModel.IsGodPackLocked)
+        {
+            GodPackAlertBanner.Visibility = Visibility.Visible;
+            GodPackAlertTitle.Text = _loc.GetString("create_server_godpack_required_title", "Pack God Requis");
+            GodPackStoreButtonText.Text = _loc.GetString("create_server_btn_get_godpack", "Acheter dans la Boutique");
+
+            if (ViewModel.IsEggGodPackLocked && ViewModel.IsNodeGodPackLocked)
+            {
+                GodPackAlertDesc.Text = _loc.GetString("create_server_godpack_egg_and_node_locked", "Ce logiciel et ce nœud sont réservés aux membres possédant le Pack God. Obtenez-le dans la Boutique pour déployer ce serveur.");
+            }
+            else if (ViewModel.IsEggGodPackLocked)
+            {
+                GodPackAlertDesc.Text = _loc.GetString("create_server_godpack_egg_locked", "Ce logiciel est réservé aux membres possédant le Pack God. Obtenez-le dans la Boutique pour déployer ce serveur.");
+            }
+            else
+            {
+                GodPackAlertDesc.Text = _loc.GetString("create_server_godpack_node_locked", "Ce nœud est réservé aux membres possédant le Pack God. Obtenez-le dans la Boutique pour déployer ce serveur.");
+            }
+        }
+        else
+        {
+            GodPackAlertBanner.Visibility = Visibility.Collapsed;
+        }
 
         DeployButton.IsEnabled = ViewModel.CanDeploy && !ViewModel.IsDeploying;
         DeploySpinner.Visibility = ViewModel.IsDeploying ? Visibility.Visible : Visibility.Collapsed;
@@ -376,6 +492,12 @@ public sealed partial class CreateServerModalControl : UserControl
         {
             ErrorBanner.Visibility = Visibility.Collapsed;
         }
+    }
+
+    private void OnGoToStoreClicked(object sender, RoutedEventArgs e)
+    {
+        Dismissed?.Invoke();
+        NavigateToStoreRequested?.Invoke();
     }
 
     private void OnServerNameChanged(object sender, TextChangedEventArgs e)

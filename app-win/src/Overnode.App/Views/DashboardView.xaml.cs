@@ -42,6 +42,14 @@ public sealed partial class DashboardView : UserControl
         };
 
         CreateServerModal.Dismissed += OnModalDismissed;
+        CreateServerModal.NavigateToStoreRequested += () =>
+        {
+            OnModalDismissed();
+            ViewModel.SelectedTab = NavigationTab.Store;
+            Sidebar.SelectedTab = NavigationTab.Store;
+            StoreViewContent.ViewModel.SelectedTab = StoreTab.Bundles;
+            UpdateTabContent();
+        };
         CreateServerModal.ServerCreated += OnServerCreated;
         SettingsViewContent.LogoutRequested += OnLogoutRequested;
         SettingsViewContent.NavigateToStoreRequested += (s, e) =>

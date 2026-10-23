@@ -87,6 +87,13 @@ public class ServerEgg
     [JsonPropertyName("category")]
     public string Category { get; set; } = "other";
 
+    [JsonPropertyName("goldOnly")]
+    public bool GoldOnly { get; set; }
+
+    [JsonPropertyName("nodeId")]
+    [JsonConverter(typeof(FlexibleStringConverter))]
+    public string? NodeId { get; set; }
+
     [JsonPropertyName("minimum")]
     public ResourceRequirement Minimum { get; set; } = new();
 
@@ -95,7 +102,7 @@ public class ServerEgg
 
     public ServerEgg() { }
 
-    public ServerEgg(string id, string name, string description, string category, ResourceRequirement min, ResourceRequirement? max = null)
+    public ServerEgg(string id, string name, string description, string category, ResourceRequirement min, ResourceRequirement? max = null, bool goldOnly = false, string? nodeId = null)
     {
         Id = id;
         Name = name;
@@ -103,6 +110,8 @@ public class ServerEgg
         Category = category;
         Minimum = min;
         Maximum = max;
+        GoldOnly = goldOnly;
+        NodeId = nodeId;
     }
 
     [JsonIgnore]
@@ -221,13 +230,17 @@ public class ServerNode
     [JsonPropertyName("disk")]
     public double? Disk { get; set; }
 
+    [JsonPropertyName("goldOnly")]
+    public bool GoldOnly { get; set; }
+
     public ServerNode() { }
 
-    public ServerNode(int id, string name, string locationId)
+    public ServerNode(int id, string name, string locationId, bool goldOnly = false)
     {
         Id = id;
         Name = name;
         LocationId = locationId;
+        GoldOnly = goldOnly;
     }
 }
 
