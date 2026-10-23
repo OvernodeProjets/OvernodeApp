@@ -45,6 +45,20 @@ public sealed partial class CreateServerModalControl : UserControl
             ViewModel.ServerName = testName;
         }
 
+        if (Environment.GetEnvironmentVariable("OVERNODE_TEST_SELECT_GODPACK") == "1")
+        {
+            var godEgg = ViewModel.FilteredEggs.FirstOrDefault(e => e.GoldOnly);
+            if (godEgg != null)
+            {
+                ViewModel.SelectEgg(godEgg);
+            }
+            var godNode = ViewModel.AvailableNodes.FirstOrDefault(n => n.GoldOnly);
+            if (godNode != null)
+            {
+                ViewModel.SelectedNode = godNode;
+            }
+        }
+
         UpdateUI();
 
         if (Environment.GetEnvironmentVariable("OVERNODE_TEST_CREATE_SCROLL") == "1")
@@ -54,7 +68,7 @@ public sealed partial class CreateServerModalControl : UserControl
                 await Task.Delay(400);
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    ModalScrollViewer.ChangeView(null, 600, null, true);
+                    ModalScrollViewer.ChangeView(null, 850, null, true);
                 });
             });
         }
